@@ -1,0 +1,329 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-primary: #eef3f9;
+  --bg-secondary: #e2ebf5;
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --accent-cyan: #0284c7;
+  --accent-magenta: #db2777;
+  --accent-emerald: #059669;
+  --accent-amber: #d97706;
+
+  /* Liquid Glass Light Tokens */
+  --glass-bg: rgba(255, 255, 255, 0.58);
+  --glass-bg-hover: rgba(255, 255, 255, 0.74);
+  --glass-bg-strong: rgba(255, 255, 255, 0.82);
+  --glass-border: rgba(255, 255, 255, 0.85);
+  --glass-border-subtle: rgba(148, 163, 184, 0.28);
+  --glass-shadow:
+    0 12px 36px -8px rgba(15, 23, 42, 0.08),
+    0 4px 12px -2px rgba(14, 165, 233, 0.06),
+    inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -1px 2px 0 rgba(14, 165, 233, 0.12);
+  --glass-shadow-hover:
+    0 20px 44px -10px rgba(15, 23, 42, 0.13),
+    0 6px 20px -4px rgba(14, 165, 233, 0.14),
+    inset 0 2px 2px 0 rgba(255, 255, 255, 1),
+    inset 0 -1.5px 3px 0 rgba(219, 39, 119, 0.14);
+  --pixel-grid-color: rgba(15, 23, 42, 0.045);
+  --pixel-dot-color: rgba(2, 132, 199, 0.16);
+}
+
+html.dark {
+  --bg-primary: #060913;
+  --bg-secondary: #0b1021;
+  --text-primary: #f1f5f9;
+  --text-secondary: #cbd5e1;
+  --text-muted: #64748b;
+  --accent-cyan: #38bdf8;
+  --accent-magenta: #f472b6;
+  --accent-emerald: #34d399;
+  --accent-amber: #fbbf24;
+
+  /* Liquid Glass Dark Tokens */
+  --glass-bg: rgba(15, 23, 42, 0.52);
+  --glass-bg-hover: rgba(22, 33, 58, 0.66);
+  --glass-bg-strong: rgba(11, 17, 34, 0.78);
+  --glass-border: rgba(255, 255, 255, 0.15);
+  --glass-border-subtle: rgba(148, 163, 184, 0.14);
+  --glass-shadow:
+    0 18px 42px -10px rgba(2, 6, 23, 0.7),
+    0 4px 20px -2px rgba(56, 189, 248, 0.08),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.24),
+    inset 1px 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 -1px 2px 0 rgba(56, 189, 248, 0.16);
+  --glass-shadow-hover:
+    0 24px 52px -12px rgba(2, 6, 23, 0.85),
+    0 0 28px -4px rgba(56, 189, 248, 0.2),
+    inset 0 1.5px 1.5px 0 rgba(255, 255, 255, 0.34),
+    inset 0 -1.5px 3px 0 rgba(244, 114, 182, 0.22);
+  --pixel-grid-color: rgba(56, 189, 248, 0.055);
+  --pixel-dot-color: rgba(56, 189, 248, 0.2);
+}
+
+/* Resolution-Aware Root Scaling for 1080p, 2K (2560x1440), and 4K (3840x2160) */
+html {
+  font-size: 16px;
+}
+
+@media (min-width: 2200px) {
+  html {
+    font-size: 18.5px;
+  }
+}
+
+@media (min-width: 3200px) {
+  html {
+    font-size: 23px;
+  }
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  transition: background-color 0.35s cubic-bezier(0.16, 1, 0.3, 1), color 0.25s ease;
+  overflow-x: hidden;
+}
+
+/* High-Contrast Text Selection for Light & Dark Themes */
+::selection {
+  background-color: #0284c7;
+  color: #ffffff;
+  -webkit-text-fill-color: #ffffff;
+}
+
+html.dark ::selection {
+  background-color: #38bdf8;
+  color: #020617;
+  -webkit-text-fill-color: #020617;
+}
+
+/* Pixelated rendering utility */
+.pixelated {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* Liquid Glass Core Classes */
+.liquid-glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(22px) saturate(190%);
+  -webkit-backdrop-filter: blur(22px) saturate(190%);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  transition:
+    background 0.28s ease,
+    box-shadow 0.28s ease,
+    transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.28s ease;
+}
+
+.liquid-glass-interactive:hover {
+  background: var(--glass-bg-hover);
+  box-shadow: var(--glass-shadow-hover);
+}
+
+.liquid-glass-strong {
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(28px) saturate(200%);
+  -webkit-backdrop-filter: blur(28px) saturate(200%);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+/* Liquid Pill / Button */
+.liquid-pill {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid var(--glass-border);
+  box-shadow:
+    0 4px 14px -2px rgba(15, 23, 42, 0.12),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.35);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.liquid-pill:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 8px 20px -4px rgba(56, 189, 248, 0.24),
+    inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.5);
+}
+
+/* Pixel Background Matrix (rem-based to scale on 2K / 4K) */
+.bg-pixel-matrix {
+  background-size: 1.5rem 1.5rem;
+  background-image:
+    linear-gradient(to right, var(--pixel-grid-color) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--pixel-grid-color) 1px, transparent 1px);
+}
+
+.bg-pixel-dots {
+  background-image: radial-gradient(var(--pixel-dot-color) 1.5px, transparent 1.5px);
+  background-size: 1rem 1rem;
+}
+
+/* CRT Scanlines for Terminal Mode */
+.crt-scanlines {
+  background: linear-gradient(
+    rgba(18, 16, 16, 0) 50%,
+    rgba(0, 0, 0, 0.16) 50%
+  );
+  background-size: 100% 4px;
+}
+
+html:not(.dark) .crt-scanlines {
+  background: linear-gradient(
+    rgba(255, 255, 255, 0) 50%,
+    rgba(15, 23, 42, 0.04) 50%
+  );
+  background-size: 100% 4px;
+}
+
+/* Custom Pixel Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.35);
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(56, 189, 248, 0.6);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+/* ==========================================================================
+   Minimalist 4-Way Symmetric Pixel Circle Cursors (Mouse / Fine Pointer)
+   States: Default Circle, Pointer Focus Ring, Text I-Ring, Loading Ring, Disabled Ring
+   ========================================================================== */
+@media (pointer: fine) {
+  :root {
+    /* 1. Default: Minimalist Symmetric Pixel Circle + Center Dot (Hotspot: 12 12) */
+    --cursor-pixel-default: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' shape-rendering='crispEdges'%3E%3Cg fill='%230F172A' fill-opacity='0.75'%3E%3Crect x='8' y='4' width='8' height='4'/%3E%3Crect x='8' y='16' width='8' height='4'/%3E%3Crect x='4' y='8' width='4' height='8'/%3E%3Crect x='16' y='8' width='4' height='8'/%3E%3Crect x='6' y='6' width='4' height='4'/%3E%3Crect x='14' y='6' width='4' height='4'/%3E%3Crect x='6' y='14' width='4' height='4'/%3E%3Crect x='14' y='14' width='4' height='4'/%3E%3C/g%3E%3Cg fill='%23F8FAFC'%3E%3Crect x='9' y='5' width='6' height='2'/%3E%3Crect x='9' y='17' width='6' height='2'/%3E%3Crect x='5' y='9' width='2' height='6'/%3E%3Crect x='17' y='9' width='2' height='6'/%3E%3Crect x='7' y='7' width='2' height='2'/%3E%3Crect x='15' y='7' width='2' height='2'/%3E%3Crect x='7' y='15' width='2' height='2'/%3E%3Crect x='15' y='15' width='2' height='2'/%3E%3C/g%3E%3Crect x='11' y='11' width='2' height='2' fill='%2338BDF8'/%3E%3C/svg%3E") 12 12, auto;
+
+    /* 2. Pointer / Select: Expanded Cyan Pixel Ring + Glowing Core (Hotspot: 12 12) */
+    --cursor-pixel-pointer: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' shape-rendering='crispEdges'%3E%3Cg fill='%230F172A' fill-opacity='0.8'%3E%3Crect x='8' y='2' width='8' height='4'/%3E%3Crect x='8' y='18' width='8' height='4'/%3E%3Crect x='2' y='8' width='4' height='8'/%3E%3Crect x='18' y='8' width='4' height='8'/%3E%3Crect x='9' y='9' width='6' height='6'/%3E%3C/g%3E%3Cg fill='%2338BDF8'%3E%3Crect x='9' y='3' width='6' height='2'/%3E%3Crect x='9' y='19' width='6' height='2'/%3E%3Crect x='3' y='9' width='2' height='6'/%3E%3Crect x='19' y='9' width='2' height='6'/%3E%3Crect x='5' y='5' width='2' height='2'/%3E%3Crect x='17' y='5' width='2' height='2'/%3E%3Crect x='5' y='17' width='2' height='2'/%3E%3Crect x='17' y='17' width='2' height='2'/%3E%3C/g%3E%3Crect x='10' y='10' width='4' height='4' fill='%23F8FAFC'/%3E%3C/svg%3E") 12 12, pointer;
+
+    /* 3. Text Input: Minimalist Pixel Vertical Beam with Center Ring Node (Hotspot: 12 12) */
+    --cursor-pixel-text: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' shape-rendering='crispEdges'%3E%3Crect x='8' y='3' width='8' height='4' fill='%230F172A' fill-opacity='0.75'/%3E%3Crect x='8' y='17' width='8' height='4' fill='%230F172A' fill-opacity='0.75'/%3E%3Crect x='10' y='5' width='4' height='14' fill='%230F172A' fill-opacity='0.75'/%3E%3Crect x='9' y='4' width='6' height='2' fill='%2338BDF8'/%3E%3Crect x='9' y='18' width='6' height='2' fill='%2338BDF8'/%3E%3Crect x='11' y='6' width='2' height='12' fill='%23F8FAFC'/%3E%3Crect x='9' y='10' width='6' height='4' fill='%230F172A' fill-opacity='0.75'/%3E%3Crect x='10' y='11' width='4' height='2' fill='%2338BDF8'/%3E%3C/svg%3E") 12 12, text;
+
+    /* 4. Loading / Wait: Tri-Color Quas-Wex-Exort Pixel Ring (Hotspot: 12 12) */
+    --cursor-pixel-wait: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' shape-rendering='crispEdges'%3E%3Cg fill='%230F172A' fill-opacity='0.8'%3E%3Crect x='8' y='4' width='8' height='4'/%3E%3Crect x='8' y='16' width='8' height='4'/%3E%3Crect x='4' y='8' width='4' height='8'/%3E%3Crect x='16' y='8' width='4' height='8'/%3E%3C/g%3E%3Crect x='9' y='5' width='6' height='2' fill='%2338BDF8'/%3E%3Crect x='7' y='7' width='2' height='2' fill='%2338BDF8'/%3E%3Crect x='15' y='7' width='2' height='2' fill='%23E879F9'/%3E%3Crect x='17' y='9' width='2' height='6' fill='%23E879F9'/%3E%3Crect x='15' y='15' width='2' height='2' fill='%23F59E0B'/%3E%3Crect x='9' y='17' width='6' height='2' fill='%23F59E0B'/%3E%3Crect x='7' y='15' width='2' height='2' fill='%2338BDF8'/%3E%3Crect x='5' y='9' width='2' height='6' fill='%2338BDF8'/%3E%3Crect x='11' y='11' width='2' height='2' fill='%23FFFFFF'/%3E%3C/svg%3E") 12 12, wait;
+
+    /* 5. Disabled / Not-Allowed: Crimson Pixel Circle with Slash (Hotspot: 12 12) */
+    --cursor-pixel-not-allowed: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' shape-rendering='crispEdges'%3E%3Cg fill='%230F172A' fill-opacity='0.8'%3E%3Crect x='8' y='4' width='8' height='4'/%3E%3Crect x='8' y='16' width='8' height='4'/%3E%3Crect x='4' y='8' width='4' height='8'/%3E%3Crect x='16' y='8' width='4' height='8'/%3E%3C/g%3E%3Cg fill='%23F43F5E'%3E%3Crect x='9' y='5' width='6' height='2'/%3E%3Crect x='9' y='17' width='6' height='2'/%3E%3Crect x='5' y='9' width='2' height='6'/%3E%3Crect x='17' y='9' width='2' height='6'/%3E%3Crect x='7' y='7' width='2' height='2'/%3E%3Crect x='15' y='7' width='2' height='2'/%3E%3Crect x='7' y='15' width='2' height='2'/%3E%3Crect x='15' y='15' width='2' height='2'/%3E%3Crect x='9' y='9' width='2' height='2'/%3E%3Crect x='11' y='11' width='2' height='2'/%3E%3Crect x='13' y='13' width='2' height='2'/%3E%3C/g%3E%3C/svg%3E") 12 12, not-allowed;
+  }
+
+  html,
+  body {
+    cursor: var(--cursor-pixel-default);
+  }
+
+  a,
+  button,
+  select,
+  summary,
+  [role='button'],
+  [role='tab'],
+  .cursor-pointer,
+  .liquid-glass-interactive,
+  .liquid-pill {
+    cursor: var(--cursor-pixel-pointer) !important;
+  }
+
+  input[type='text'],
+  input[type='search'],
+  input[type='url'],
+  input[type='email'],
+  input[type='number'],
+  textarea,
+  pre,
+  code,
+  .cursor-text {
+    cursor: var(--cursor-pixel-text) !important;
+  }
+
+  .cursor-wait,
+  .cursor-progress,
+  body.pixel-cursor-busy,
+  body.pixel-cursor-busy * {
+    cursor: var(--cursor-pixel-wait) !important;
+  }
+
+  button:disabled,
+  input:disabled,
+  .cursor-not-allowed {
+    cursor: var(--cursor-pixel-not-allowed) !important;
+  }
+}
+
+/* Randomized Pixel Shard Burst Animation on Mouse Click */
+@keyframes pixelShardBurst {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 1;
+  }
+  65% {
+    opacity: 0.92;
+  }
+  100% {
+    transform: translate3d(var(--tx, 0px), var(--ty, 0px), 0) scale(0.2);
+    opacity: 0;
+  }
+}
+
+.animate-pixel-shard {
+  animation: pixelShardBurst var(--dur, 520ms) cubic-bezier(0.15, 0.9, 0.25, 1) forwards;
+  will-change: transform, opacity;
+}
+
+/* ==========================================================================
+   Global micro-interactions: hover lift + press feedback for all buttons
+   ========================================================================== */
+button,
+a.liquid-pill {
+  transition:
+    transform 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.18s ease,
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease,
+    opacity 0.18s ease,
+    filter 0.18s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  button:not(:disabled):hover,
+  a.liquid-pill:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.06);
+  }
+}
+
+button:not(:disabled):active,
+a.liquid-pill:active {
+  transform: translateY(0) scale(0.955);
+  filter: brightness(0.97);
+  transition-duration: 0.08s;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
