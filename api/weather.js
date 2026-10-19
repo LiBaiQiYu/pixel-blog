@@ -3,12 +3,29 @@ import {
   fetchWeatherForLocation,
 } from '../server/weather-core.mjs';
 
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+};
+
 export default async function handler(req, res) {
+  Object.entries(CORS_HEADERS).forEach(([key, value]) =>
+    res.setHeader(key, value)
+  );
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+
+  // CORS preflight for cross-origin static hosts (e.g. GitHub Pages)
+  if (req.method === 'OPTIONS') {
+    res.statusCode = 204;
+    res.end();
+    return;
+  }
+
   const config = getWeatherConfig();
 
   if (!config) {
     res.statusCode = 503;
-    res.setHeader('Content-Type', 'application/json; charset=utf-8');
     res.end(
       JSON.stringify({ error: 'Weather service is not configured on the server.' })
     );
@@ -26,7 +43,6 @@ export default async function handler(req, res) {
     Math.abs(lon) > 180
   ) {
     res.statusCode = 400;
-    res.setHeader('Content-Type', 'application/json; charset=utf-8');
     res.end(JSON.stringify({ error: 'Invalid latitude/longitude.' }));
     return;
   }
@@ -34,7 +50,6 @@ export default async function handler(req, res) {
   try {
     const data = await fetchWeatherForLocation(config, lat, lon);
     res.statusCode = 200;
-    res.setHeader('Content-Type', 'application/json; charset=utf-8');
     res.setHeader(
       'Cache-Control',
       'public, s-maxage=600, stale-while-revalidate=300'
@@ -42,7 +57,7 @@ export default async function handler(req, res) {
     res.end(JSON.stringify(data));
   } catch (err) {
     res.statusCode = 502;
-    res.setHeader('Content-Type', 'application/json; charset=utf-8');
     res.end(JSON.stringify({ error: 'Failed to fetch weather data.' }));
   }
 }
+

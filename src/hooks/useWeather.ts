@@ -7,6 +7,14 @@ export type WeatherStatus = 'locating' | 'live' | 'fallback';
 const CACHE_KEY = 'pixel_blog_weather_live_v1';
 const CACHE_TTL = 10 * 60 * 1000;
 
+// Local dev uses the built-in Vite proxy; static hosts (GitHub Pages) can point
+// to an externally deployed proxy via VITE_WEATHER_API_ENDPOINT at build time.
+const WEATHER_ENDPOINT = (() => {
+  const configured = import.meta.env.VITE_WEATHER_API_ENDPOINT?.trim();
+  if (!configured) return '/api/weather';
+  return configured.replace(/\/+$/, '');
+})();
+
 export interface UseWeatherResult {
   weather: WeatherData;
   status: WeatherStatus;
@@ -34,7 +42,7 @@ export function useWeather(): UseWeatherResult {
         try {
           const { latitude, longitude } = position.coords;
           const res = await fetch(
-            `/api/weather?lat=${latitude.toFixed(2)}&lon=${longitude.toFixed(2)}`
+            `${WEATHER_ENDPOINT}?lat=${latitude.toFixed(2)}&lon=${longitude.toFixed(2)}`
           );
           if (!res.ok) {
             setHint(

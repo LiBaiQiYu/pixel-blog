@@ -1,0 +1,6 @@
+name = "pixel-blog-weather"
+main = "weather-worker.js"
+compatibility_date = "2026-01-01"
+
+# 敏感变量请使用 wrangler secret put 配置，不要写在这里：
+# QWEATHER_HOST / QWEATHER_KID / QWEATHER_PROJECT_ID / QWEATHER_DEVELOPER_ID / QWEATHER_PRIVATE_KEY
