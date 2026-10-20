@@ -45,6 +45,7 @@ interface TerminalBlogViewProps {
   weatherStatus: WeatherStatus;
   weatherHint: string | null;
   onWeatherRelocate: () => void;
+  onOpenGallery: () => void;
   initialCommand?: string | null;
   onConsumeInitialCommand?: () => void;
   onCommandSound: () => void;
@@ -86,6 +87,7 @@ export const TerminalBlogView: React.FC<TerminalBlogViewProps> = ({
   weatherStatus,
   weatherHint,
   onWeatherRelocate,
+  onOpenGallery,
   initialCommand,
   onConsumeInitialCommand,
   onCommandSound,
@@ -359,6 +361,9 @@ export const TerminalBlogView: React.FC<TerminalBlogViewProps> = ({
             </div>
             <div>
               <code className="text-emerald-600 dark:text-emerald-400 font-bold">weather demo &lt;类型&gt;</code> — 预览任意天气背景 (auto 恢复实况)
+            </div>
+            <div>
+              <code className="text-emerald-600 dark:text-emerald-400 font-bold">gallery</code> — 打开旅行画廊（照片 + 地图）
             </div>
             <div>
               <code className="text-emerald-600 dark:text-emerald-400 font-bold">seed &lt;id&gt; [序号]</code> — 随机或指定序号生成封面
@@ -700,6 +705,15 @@ export const TerminalBlogView: React.FC<TerminalBlogViewProps> = ({
         onSwitchToStandard();
         return null;
 
+      case 'gallery':
+      case 'photos':
+        onOpenGallery();
+        return (
+          <div className="text-xs font-mono text-pink-500 dark:text-pink-400">
+            正在打开「旅行画廊」…
+          </div>
+        );
+
       case 'seed': {
         const targetArg = (args[0] || 'all').toLowerCase();
         const seedValArg = args[1];
@@ -860,6 +874,7 @@ export const TerminalBlogView: React.FC<TerminalBlogViewProps> = ({
         'cat 02',
         'cat 03',
         'weather',
+        'gallery',
         'whoami',
         'seed 01',
         'theme',

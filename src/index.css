@@ -327,3 +327,64 @@ button:disabled {
   cursor: not-allowed;
   opacity: 0.6;
 }
+
+/* ==========================================================================
+   Gallery map: pixel markers + dark controls
+   ========================================================================== */
+.gallery-pin {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gallery-pin span {
+  display: block;
+  width: 10px;
+  height: 10px;
+  background: #38bdf8;
+  border: 2px solid #0f172a;
+  box-shadow:
+    3px 3px 0 0 rgba(244, 114, 182, 0.85),
+    0 0 10px rgba(56, 189, 248, 0.8);
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.gallery-pin:hover span {
+  transform: scale(1.2);
+}
+
+.gallery-pin.is-active span {
+  background: #f472b6;
+  transform: scale(1.35);
+  box-shadow:
+    2px 2px 0 0 rgba(56, 189, 248, 0.9),
+    0 0 14px rgba(244, 114, 182, 0.9);
+}
+
+html.dark .maplibregl-ctrl-attrib {
+  background: rgba(2, 6, 23, 0.75);
+  color: #94a3b8;
+}
+
+html.dark .maplibregl-ctrl-attrib a {
+  color: #38bdf8;
+}
+
+html.dark .maplibregl-ctrl-group {
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+html.dark .maplibregl-ctrl-group button + button {
+  border-top-color: rgba(255, 255, 255, 0.12);
+}
+
+html.dark .maplibregl-ctrl-icon {
+  filter: invert(1) brightness(1.4);
+}

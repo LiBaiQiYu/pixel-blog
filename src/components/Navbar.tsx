@@ -42,7 +42,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <header
       className={`${
-        viewMode === 'standard' ? 'sticky top-4' : 'relative'
+        viewMode !== 'terminal' ? 'sticky top-4' : 'relative'
       } mt-4 shrink-0 z-40 px-4 sm:px-6 lg:px-8 max-w-6xl w-full mx-auto`}
     >
       <div className="liquid-glass-strong rounded-2xl px-4 py-2.5 flex items-center justify-between gap-3 relative overflow-hidden">

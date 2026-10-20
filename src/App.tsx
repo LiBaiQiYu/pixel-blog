@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { AUTHOR_PROFILE, INITIAL_POSTS, ensurePostMarkdown } from './data/posts';
 import { BlogPost, ThemeMode, ViewMode } from './types/blog';
 import { AmbientPixelBackground } from './components/AmbientPixelBackground';
@@ -11,12 +11,19 @@ import { useWeather } from './hooks/useWeather';
 import { isWeatherKind, resolveWeatherVisual } from './utils/weather';
 import type { WeatherKind } from './types/weather';
 import { pixelAudio } from './utils/sound';
-import { Terminal, LayoutGrid } from 'lucide-react';
+import { Terminal, LayoutGrid, Camera } from 'lucide-react';
 import { generateRandomSeed } from './components/PixelArtwork';
 import {
   PixelCursorEffects,
   triggerPixelLoadingCursor,
 } from './components/PixelCursorEffects';
+
+// MapLibre is heavy: load the gallery (and the map engine) only when needed
+const GalleryView = lazy(() =>
+  import('./components/GalleryView').then((module) => ({
+    default: module.GalleryView,
+  }))
+);
 
 export const App: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
@@ -386,6 +393,21 @@ export const App: React.FC = () => {
               handleViewModeChange('terminal');
             }}
           />
+        ) : viewMode === 'gallery' ? (
+          <Suspense
+            fallback={
+              <div className="liquid-glass rounded-2xl p-10 text-center space-y-2">
+                <div className="font-pixel text-xs text-sky-500 dark:text-cyan-300">
+                  LOADING GALLERY // 正在加载画廊与地图…
+                </div>
+                <div className="text-xs font-mono text-slate-500 dark:text-slate-400">
+                  MapLibre 引擎按需加载中
+                </div>
+              </div>
+            }
+          >
+            <GalleryView theme={theme} />
+          </Suspense>
         ) : (
           <TerminalBlogView
             posts={posts}
@@ -410,6 +432,7 @@ export const App: React.FC = () => {
             weatherStatus={weatherStatus}
             weatherHint={weatherHint}
             onWeatherRelocate={requestLiveWeather}
+            onOpenGallery={() => handleViewModeChange('gallery')}
             initialCommand={pendingTerminalCmd}
             onConsumeInitialCommand={() => setPendingTerminalCmd(null)}
             onCommandSound={() => pixelAudio.playCommandRun()}
@@ -418,7 +441,7 @@ export const App: React.FC = () => {
       </main>
 
       {/* Minimalist Colophon Footer */}
-      {viewMode === 'standard' && (
+      {viewMode !== 'terminal' && (
         <footer className="relative z-20 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 pb-8">
           <div className="border-t border-slate-300/50 dark:border-white/10 pt-5 flex flex-col items-start gap-1.5 sm:flex-row sm:items-center sm:justify-between text-xs font-mono text-slate-400 pr-12 sm:pr-0">
             <span>李白的白 · CarlosWhite (LV.7)</span>
@@ -439,15 +462,21 @@ export const App: React.FC = () => {
         }}
       />
 
-      {/* Subtle Floating Mode Toggle Button (bottom-right; lifted above terminal input on mobile) */}
+      {/* Subtle Floating Mode Toggle Button (cycles blog → gallery → terminal) */}
       <button
         onClick={() =>
           handleViewModeChange(
-            viewMode === 'standard' ? 'terminal' : 'standard'
+            viewMode === 'standard'
+              ? 'gallery'
+              : viewMode === 'gallery'
+              ? 'terminal'
+              : 'standard'
           )
         }
         title={
           viewMode === 'standard'
+            ? '切换至旅行画廊'
+            : viewMode === 'gallery'
             ? '切换至终端风格'
             : '切换至普通博客风格'
         }
@@ -458,6 +487,11 @@ export const App: React.FC = () => {
         }`}
       >
         {viewMode === 'standard' ? (
+          <>
+            <Camera className="w-3.5 h-3.5 text-pink-500" />
+            <span className="hidden sm:inline">旅行画廊</span>
+          </>
+        ) : viewMode === 'gallery' ? (
           <>
             <Terminal className="w-3.5 h-3.5 text-emerald-500" />
             <span className="hidden sm:inline">终端模式</span>
