@@ -34,47 +34,187 @@ function formatCoords(lat: number, lon: number) {
   return `${Math.abs(lat).toFixed(5)}°${ns}, ${Math.abs(lon).toFixed(5)}°${ew}`;
 }
 
-const HISTOGRAM_ROWS = [
-  { key: 'r' as const, label: 'R', color: '#F87171' },
-  { key: 'g' as const, label: 'G', color: '#34D399' },
-  { key: 'b' as const, label: 'B', color: '#60A5FA' },
+// Catmull-Rom -> cubic Bézier, for a smooth professional histogram curve
+function buildSmoothArea(values: number[], width: number, height: number) {
+  const n = values.length;
+  if (n === 0) return `M 0 ${height} L ${width} ${height} Z`;
+  const pts = values.map((v, i) => ({
+    x: (i / (n - 1)) * width,
+    y: height - Math.max(0.01, Math.min(1, v)) * height,
+  }));
+
+  let d = `M 0 ${height} L ${pts[0].x} ${pts[0].y}`;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[i - 1] || pts[i];
+    const p1 = pts[i];
+    const p2 = pts[i + 1];
+    const p3 = pts[i + 2] || p2;
+    const cp1x = p1.x + (p2.x - p0.x) / 6;
+    const cp1y = p1.y + (p2.y - p0.y) / 6;
+    const cp2x = p2.x - (p3.x - p1.x) / 6;
+    const cp2y = p2.y - (p3.y - p1.y) / 6;
+    d += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(
+      1
+    )} ${cp2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
+  }
+  d += ` L ${width} ${height} Z`;
+  return d;
+}
+
+const CHANNELS = [
+  { key: 'r' as const, label: 'R', color: '#F87171', dark: '#FCA5A5' },
+  { key: 'g' as const, label: 'G', color: '#34D399', dark: '#6EE7B7' },
+  { key: 'b' as const, label: 'B', color: '#60A5FA', dark: '#93C5FD' },
 ];
 
-const Histogram: React.FC<{
+const RgbHistogram: React.FC<{
   histogram: { r: number[]; g: number[]; b: number[] };
-}> = ({ histogram }) => (
-  <div className="rounded-xl border border-white/10 bg-black/50 p-3">
-    <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 mb-2">
-      <span className="text-cyan-300">HISTOGRAM // RGB</span>
-      <span>{histogram.r.length} BINS</span>
-    </div>
-    <div className="space-y-1.5">
-      {HISTOGRAM_ROWS.map((row) => (
-        <div key={row.key} className="flex items-center gap-2">
-          <span
-            className="w-3 text-[10px] font-mono font-bold"
-            style={{ color: row.color }}
-          >
-            {row.label}
-          </span>
-          <div className="flex-1 flex items-end gap-[2px] h-[26px] bg-white/5 px-1 py-0.5 rounded-sm">
-            {histogram[row.key].map((value, index) => (
+  theme: ThemeMode;
+}> = ({ histogram, theme }) => {
+  const isDark = theme === 'dark';
+  const width = 320;
+  const height = 96;
+  const paths = useMemo(
+    () =>
+      CHANNELS.map((channel) => ({
+        ...channel,
+        path: buildSmoothArea(histogram[channel.key], width, height),
+      })),
+    [histogram]
+  );
+
+  return (
+    <div
+      className={`rounded-xl border p-3 ${
+        isDark
+          ? 'bg-slate-950/70 border-white/10'
+          : 'bg-white/70 border-slate-300/70'
+      }`}
+    >
+      <div className="flex items-center justify-between mb-2">
+        <span
+          className={`text-[10px] font-mono tracking-wide ${
+            isDark ? 'text-cyan-300' : 'text-sky-600'
+          }`}
+        >
+          RGB HISTOGRAM
+        </span>
+        <div className="flex items-center gap-2.5">
+          {CHANNELS.map((channel) => (
+            <span
+              key={channel.key}
+              className={`flex items-center gap-1 text-[9px] font-mono ${
+                isDark ? 'text-slate-300' : 'text-slate-600'
+              }`}
+            >
               <span
-                key={index}
-                className="flex-1 min-w-[2px]"
-                style={{
-                  height: `${Math.max(3, value * 100)}%`,
-                  backgroundColor: row.color,
-                  opacity: 0.85,
-                }}
+                className="w-1.5 h-1.5 rounded-full"
+                style={{ backgroundColor: isDark ? channel.dark : channel.color }}
               />
-            ))}
-          </div>
+              {channel.label}
+            </span>
+          ))}
         </div>
-      ))}
+      </div>
+
+      <svg
+        viewBox={`0 0 ${width} ${height}`}
+        className="w-full h-[104px] block"
+        preserveAspectRatio="none"
+        role="img"
+        aria-label="RGB histogram"
+      >
+        <defs>
+          {paths.map((channel) => (
+            <linearGradient
+              key={channel.key}
+              id={`hist-${channel.key}-${isDark ? 'dark' : 'light'}`}
+              x1="0"
+              y1="0"
+              x2="0"
+              y2="1"
+            >
+              <stop
+                offset="0%"
+                stopColor={isDark ? channel.dark : channel.color}
+                stopOpacity={isDark ? 0.55 : 0.4}
+              />
+              <stop
+                offset="100%"
+                stopColor={isDark ? channel.dark : channel.color}
+                stopOpacity={0.03}
+              />
+            </linearGradient>
+          ))}
+        </defs>
+
+        {/* Grid */}
+        {[0.25, 0.5, 0.75].map((ratio) => (
+          <line
+            key={ratio}
+            x1={0}
+            x2={width}
+            y1={height * ratio}
+            y2={height * ratio}
+            stroke={isDark ? 'rgba(148,163,184,0.16)' : 'rgba(100,116,139,0.18)'}
+            strokeWidth={0.7}
+            strokeDasharray="3 4"
+          />
+        ))}
+        {[0.25, 0.5, 0.75].map((ratio) => (
+          <line
+            key={`v-${ratio}`}
+            x1={width * ratio}
+            x2={width * ratio}
+            y1={0}
+            y2={height}
+            stroke={isDark ? 'rgba(148,163,184,0.1)' : 'rgba(100,116,139,0.12)'}
+            strokeWidth={0.7}
+            strokeDasharray="3 4"
+          />
+        ))}
+
+        {/* Channel curves: additive on dark, multiply on light (like photo editors) */}
+        <g
+          style={{
+            mixBlendMode: isDark ? 'screen' : 'multiply',
+          }}
+        >
+          {paths.map((channel) => (
+            <path
+              key={channel.key}
+              d={channel.path}
+              fill={`url(#hist-${channel.key}-${isDark ? 'dark' : 'light'})`}
+              stroke={isDark ? channel.dark : channel.color}
+              strokeWidth={1.1}
+              strokeLinejoin="round"
+            />
+          ))}
+        </g>
+
+        {/* Baseline */}
+        <line
+          x1={0}
+          x2={width}
+          y1={height - 0.5}
+          y2={height - 0.5}
+          stroke={isDark ? 'rgba(226,232,240,0.25)' : 'rgba(71,85,105,0.3)'}
+          strokeWidth={1}
+        />
+      </svg>
+
+      <div
+        className={`mt-1 flex justify-between text-[9px] font-mono ${
+          isDark ? 'text-slate-500' : 'text-slate-400'
+        }`}
+      >
+        {[0, 64, 128, 192, 255].map((tick) => (
+          <span key={tick}>{tick}</span>
+        ))}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export const PhotoDetail: React.FC<PhotoDetailProps> = ({
   photo,
@@ -104,18 +244,28 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
   }, [onClose, onNavigate]);
 
   const isLive = Boolean(photo.meta.liveVideo) && !videoFailed;
+  const isDark = theme === 'dark';
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md p-2 sm:p-5 flex items-center justify-center animate-fadeIn"
+      className={`fixed inset-0 z-50 p-2 sm:p-5 flex items-center justify-center animate-fadeIn backdrop-blur-md ${
+        isDark ? 'bg-slate-950/88' : 'bg-slate-900/50'
+      }`}
       onClick={onClose}
     >
       <div
-        className="w-full max-w-6xl max-h-[94dvh] rounded-2xl overflow-hidden border border-white/15 shadow-2xl bg-slate-950/95 flex flex-col lg:flex-row"
+        className="relative w-full max-w-6xl max-h-[94dvh] rounded-2xl overflow-hidden liquid-glass-strong border border-slate-300/60 dark:border-white/15 shadow-2xl flex flex-col lg:flex-row"
         onClick={(event) => event.stopPropagation()}
       >
+        {/* Top specular rim */}
+        <div className="pointer-events-none absolute inset-x-10 top-0 h-[1.5px] bg-gradient-to-r from-sky-400/50 via-white/70 to-pink-400/50 dark:from-cyan-400/60 dark:via-white/40 dark:to-pink-400/60 z-10" />
+
         {/* Media */}
-        <div className="relative lg:flex-1 bg-black flex items-center justify-center min-h-[34vh] lg:min-h-[72vh]">
+        <div
+          className={`relative lg:flex-1 flex items-center justify-center min-h-[34vh] lg:min-h-[72vh] ${
+            isDark ? 'bg-black/70' : 'bg-slate-200/70'
+          }`}
+        >
           {isLive ? (
             <video
               key={photo.id}
@@ -137,8 +287,8 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
             />
           )}
 
-          {/* Top-left badges */}
-          <div className="absolute top-3 left-3 flex items-center gap-2">
+          {/* Badges (dark glass ensures readability over photos in both themes) */}
+          <div className="absolute top-3 left-3 flex items-center gap-2 z-10">
             <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-950/80 text-cyan-300 border border-cyan-400/35">
               {index + 1} / {photos.length}
             </span>
@@ -149,46 +299,54 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
             )}
           </div>
 
-          {/* Prev / Next */}
-          <button
-            type="button"
-            onClick={() => onNavigate(-1)}
-            className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-slate-950/70 text-slate-100 border border-white/20 hover:text-cyan-300"
-            title="上一张 (←)"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <button
-            type="button"
-            onClick={() => onNavigate(1)}
-            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-slate-950/70 text-slate-100 border border-white/20 hover:text-cyan-300"
-            title="下一张 (→)"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
-          <button
-            type="button"
-            onClick={onClose}
-            className="absolute top-3 right-3 p-2 rounded-full bg-slate-950/80 text-slate-200 border border-white/20 hover:text-rose-400"
-            title="关闭 (Esc)"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          {/* Prev / Next: flex containers avoid transform conflicts with the global button lift */}
+          <div className="absolute inset-y-0 left-0 flex items-center pl-2 z-10">
+            <button
+              type="button"
+              onClick={() => onNavigate(-1)}
+              className="p-2 rounded-full liquid-glass-strong text-slate-800 dark:text-slate-100 hover:text-sky-600 dark:hover:text-cyan-300 border border-slate-300/70 dark:border-white/20"
+              title="上一张 (←)"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="absolute inset-y-0 right-0 flex items-center pr-2 z-10">
+            <button
+              type="button"
+              onClick={() => onNavigate(1)}
+              className="p-2 rounded-full liquid-glass-strong text-slate-800 dark:text-slate-100 hover:text-sky-600 dark:hover:text-cyan-300 border border-slate-300/70 dark:border-white/20"
+              title="下一张 (→)"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="absolute top-3 right-3 z-10">
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-2 rounded-full liquid-glass-strong text-slate-700 dark:text-slate-200 hover:text-rose-500 border border-slate-300/70 dark:border-white/20"
+              title="关闭 (Esc)"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
-        {/* Info panel: high-contrast dark glass for readability in both themes */}
-        <div className="lg:w-[380px] shrink-0 overflow-y-auto p-5 space-y-4 text-slate-100 border-t lg:border-t-0 lg:border-l border-white/10 bg-slate-950/80">
+        {/* Info panel: theme-aware liquid glass */}
+        <div className="lg:w-[380px] shrink-0 overflow-y-auto p-5 space-y-4 border-t lg:border-t-0 lg:border-l border-slate-300/60 dark:border-white/10 bg-white/70 dark:bg-slate-950/70">
           <div className="space-y-1.5">
-            <div className="flex items-center gap-1.5 text-[10px] font-mono text-cyan-300">
+            <div className="flex items-center gap-1.5 text-[10px] font-mono text-sky-600 dark:text-cyan-300">
               <Camera className="w-3 h-3" />
               {photo.area} · {photo.place}
             </div>
-            <h2 className="text-lg font-bold leading-snug">{photo.title}</h2>
-            <div className="text-xs font-mono text-slate-300">
+            <h2 className="text-lg font-bold leading-snug text-slate-900 dark:text-white">
+              {photo.title}
+            </h2>
+            <div className="text-xs font-mono text-slate-600 dark:text-slate-300">
               {dateFormatter.format(new Date(photo.date))}
             </div>
             {photo.description && (
-              <p className="text-xs text-slate-300 leading-relaxed pt-1">
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed pt-1">
                 {photo.description}
               </p>
             )}
@@ -196,16 +354,16 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
 
           <div className="space-y-2">
             <PhotoMiniMap photo={photo} theme={theme} />
-            <div className="flex items-start gap-1.5 text-[11px] font-mono text-slate-300">
-              <MapPin className="w-3 h-3 text-pink-400 shrink-0 mt-0.5" />
+            <div className="flex items-start gap-1.5 text-[11px] font-mono">
+              <MapPin className="w-3 h-3 text-pink-500 shrink-0 mt-0.5" />
               <div className="min-w-0">
-                <div className="text-cyan-200">
+                <div className="text-sky-700 dark:text-cyan-200">
                   {formatCoords(photo.lat, photo.lon)}
                   {photo.meta.altitude !== null
                     ? ` · 海拔 ${Math.round(photo.meta.altitude)} m`
                     : ''}
                 </div>
-                <div className="text-slate-400 leading-snug break-words">
+                <div className="text-slate-500 dark:text-slate-400 leading-snug break-words">
                   {photo.locationName}
                 </div>
               </div>
@@ -214,17 +372,17 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
 
           {/* EXIF parameters */}
           <div className="space-y-2">
-            <div className="text-[10px] font-mono text-cyan-300">
+            <div className="text-[10px] font-mono text-sky-600 dark:text-cyan-300">
               EXIF // 拍摄参数
             </div>
             <div className="grid grid-cols-2 gap-x-3 gap-y-2">
               {photo.meta.params.map((param) => (
                 <div key={param.label} className="min-w-0">
-                  <div className="text-[10px] font-mono text-slate-400">
+                  <div className="text-[10px] font-mono text-slate-500 dark:text-slate-400">
                     {param.label}
                   </div>
                   <div
-                    className="text-[11px] font-mono text-slate-100 leading-snug break-words"
+                    className="text-[11px] font-mono text-slate-800 dark:text-slate-100 leading-snug break-words"
                     title={param.value}
                   >
                     {param.value}
@@ -234,10 +392,10 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
             </div>
           </div>
 
-          {/* RGB histogram */}
-          <Histogram histogram={photo.meta.histogram} />
+          {/* RGB histogram (professional, non-pixel styling) */}
+          <RgbHistogram histogram={photo.meta.histogram} theme={theme} />
 
-          <div className="pt-1 border-t border-white/10 text-[10px] font-mono text-slate-500 flex items-center justify-between">
+          <div className="pt-1 border-t border-slate-300/50 dark:border-white/10 text-[10px] font-mono text-slate-400 dark:text-slate-500 flex items-center justify-between">
             <span>SOURCE: chronoframe</span>
             <span>{photo.meta.isLivePhoto ? 'LIVE PHOTO' : 'STILL PHOTO'}</span>
           </div>

@@ -46,7 +46,7 @@ export const PhotoMiniMap: React.FC<PhotoMiniMapProps> = ({ photo, theme }) => {
   }, [photo.id, photo.lat, photo.lon, theme]);
 
   return (
-    <div className="relative h-[150px] rounded-xl overflow-hidden border border-white/15">
+    <div className="relative h-[150px] rounded-xl overflow-hidden border border-slate-300/60 dark:border-white/15">
       <div ref={containerRef} className="w-full h-full" />
       <span className="pointer-events-none absolute top-2 left-2 px-2 py-0.5 rounded text-[10px] font-mono bg-slate-950/80 text-cyan-300 border border-white/15">
         LOCATION
