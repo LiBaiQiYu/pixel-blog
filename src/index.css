@@ -367,24 +367,24 @@ button:disabled {
     0 0 14px rgba(244, 114, 182, 0.9);
 }
 
-html.dark .maplibregl-ctrl-attrib {
+html.dark .mapboxgl-ctrl-attrib {
   background: rgba(2, 6, 23, 0.75);
   color: #94a3b8;
 }
 
-html.dark .maplibregl-ctrl-attrib a {
+html.dark .mapboxgl-ctrl-attrib a {
   color: #38bdf8;
 }
 
-html.dark .maplibregl-ctrl-group {
+html.dark .mapboxgl-ctrl-group {
   background: rgba(15, 23, 42, 0.9);
   border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
-html.dark .maplibregl-ctrl-group button + button {
+html.dark .mapboxgl-ctrl-group button + button {
   border-top-color: rgba(255, 255, 255, 0.12);
 }
 
-html.dark .maplibregl-ctrl-icon {
+html.dark .mapboxgl-ctrl-icon {
   filter: invert(1) brightness(1.4);
 }

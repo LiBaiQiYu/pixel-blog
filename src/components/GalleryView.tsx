@@ -153,7 +153,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ theme }) => {
             </h2>
             <p className="text-[11px] font-mono text-slate-500 dark:text-slate-400 flex items-center gap-1">
               <MapPin className="w-3 h-3 text-pink-500" />
-              点击照片查看地图、EXIF 与直方图 · 悬停 LIVE 照片可播放实况
+              点击查看原图 · 滚轮缩放 / 拖动平移 · 悬停 LIVE 播放实况
             </p>
           </div>
           <span className="ml-1 px-2 py-0.5 rounded text-[10px] font-mono bg-sky-500/10 dark:bg-white/5 text-sky-700 dark:text-cyan-300 border border-sky-400/20 dark:border-white/10">

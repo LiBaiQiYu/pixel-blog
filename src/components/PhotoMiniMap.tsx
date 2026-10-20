@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
-import { MAP_STYLE_DARK, MAP_STYLE_LIGHT, maplibregl } from './maplibreSetup';
+import mapboxgl from 'mapbox-gl';
+import 'mapbox-gl/dist/mapbox-gl.css';
 import type { ThemeMode } from '../types/blog';
 import type { GalleryPhoto } from '../types/gallery';
 
@@ -8,23 +9,30 @@ interface PhotoMiniMapProps {
   theme: ThemeMode;
 }
 
+const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN?.trim() || '';
+
+if (MAPBOX_TOKEN) {
+  mapboxgl.accessToken = MAPBOX_TOKEN;
+}
+
 export const PhotoMiniMap: React.FC<PhotoMiniMapProps> = ({ photo, theme }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const hasToken = Boolean(MAPBOX_TOKEN);
 
   useEffect(() => {
     const container = containerRef.current;
-    if (!container) return;
+    if (!container || !hasToken) return;
 
     const isDark = theme === 'dark';
-    const customStyle = import.meta.env.VITE_MAP_STYLE_URL?.trim();
-    const map = new maplibregl.Map({
+    const map = new mapboxgl.Map({
       container,
-      style:
-        customStyle || (isDark ? MAP_STYLE_DARK : MAP_STYLE_LIGHT),
+      style: isDark
+        ? 'mapbox://styles/mapbox/dark-v11'
+        : 'mapbox://styles/mapbox/light-v11',
       center: [photo.lon, photo.lat],
       zoom: 12.5,
       interactive: false,
-      attributionControl: { compact: true },
+      attributionControl: true,
     });
 
     const el = document.createElement('div');
@@ -32,7 +40,7 @@ export const PhotoMiniMap: React.FC<PhotoMiniMapProps> = ({ photo, theme }) => {
     const core = document.createElement('span');
     el.appendChild(core);
 
-    new maplibregl.Marker({ element: el, anchor: 'center' })
+    new mapboxgl.Marker({ element: el, anchor: 'center' })
       .setLngLat([photo.lon, photo.lat])
       .addTo(map);
 
@@ -43,11 +51,22 @@ export const PhotoMiniMap: React.FC<PhotoMiniMapProps> = ({ photo, theme }) => {
       observer.disconnect();
       map.remove();
     };
-  }, [photo.id, photo.lat, photo.lon, theme]);
+  }, [photo.id, photo.lat, photo.lon, theme, hasToken]);
 
   return (
     <div className="relative h-[150px] rounded-xl overflow-hidden border border-slate-300/60 dark:border-white/15">
-      <div ref={containerRef} className="w-full h-full" />
+      {hasToken ? (
+        <div ref={containerRef} className="w-full h-full" />
+      ) : (
+        <div className="w-full h-full flex flex-col items-center justify-center gap-1 bg-slate-100/70 dark:bg-slate-900/60">
+          <span className="text-[11px] font-mono text-slate-600 dark:text-slate-300">
+            MAPBOX TOKEN 未配置
+          </span>
+          <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500">
+            在 .env.local 填写 VITE_MAPBOX_ACCESS_TOKEN
+          </span>
+        </div>
+      )}
       <span className="pointer-events-none absolute top-2 left-2 px-2 py-0.5 rounded text-[10px] font-mono bg-slate-950/80 text-cyan-300 border border-white/15">
         LOCATION
       </span>

@@ -29,7 +29,7 @@ export interface GalleryPhoto {
   height: number;
   aspect: number;
   src: string;
-  view: string;
+  original: string;
   lat: number;
   lon: number;
   city: string;
