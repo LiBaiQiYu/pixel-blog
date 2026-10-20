@@ -1,6 +1,7 @@
 import React, {
   lazy,
   Suspense,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -10,16 +11,18 @@ import {
   Camera,
   ChevronLeft,
   ChevronRight,
+  Info,
   MapPin,
   Maximize,
+  Minus,
   Pause,
   Play,
+  Plus,
   X,
 } from 'lucide-react';
 import type { GalleryPhoto } from '../types/gallery';
 import type { ThemeMode } from '../types/blog';
 
-// Mapbox is heavy; load it only when a photo preview actually needs the map
 const PhotoMiniMap = lazy(() =>
   import('./PhotoMiniMap').then((module) => ({
     default: module.PhotoMiniMap,
@@ -48,6 +51,10 @@ function formatCoords(lat: number, lon: number) {
   const ns = lat >= 0 ? 'N' : 'S';
   const ew = lon >= 0 ? 'E' : 'W';
   return `${Math.abs(lat).toFixed(5)}°${ns}, ${Math.abs(lon).toFixed(5)}°${ew}`;
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
 }
 
 // Catmull-Rom -> cubic Bézier, for a smooth professional histogram curve
@@ -238,15 +245,32 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
   const [scale, setScale] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
-  const dragRef = useRef<{ x: number; y: number; panX: number; panY: number } | null>(
-    null
+  const [infoOpen, setInfoOpen] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth >= 1024 : true
   );
+  const [viewport, setViewport] = useState({ w: 1, h: 1 });
+  const [fit, setFit] = useState({ w: 1, h: 1 });
+
   const viewportRef = useRef<HTMLDivElement | null>(null);
+  const imageRef = useRef<HTMLImageElement | null>(null);
+  const pointersRef = useRef(new Map<number, { x: number; y: number }>());
+  const pinchRef = useRef<{
+    distance: number;
+    scale: number;
+    x: number;
+    y: number;
+  } | null>(null);
+  const panStartRef = useRef<{
+    x: number;
+    y: number;
+    viewX: number;
+    viewY: number;
+  } | null>(null);
+
   const index = useMemo(
     () => photos.findIndex((item) => item.id === photo.id),
     [photos, photo.id]
   );
-
   const hasLiveVideo = Boolean(photo.meta.liveVideo) && !videoFailed;
   const isDark = theme === 'dark';
 
@@ -258,10 +282,12 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
     setScale(1);
     setPan({ x: 0, y: 0 });
     setDragging(false);
-    dragRef.current = null;
+    pointersRef.current.clear();
+    pinchRef.current = null;
+    panStartRef.current = null;
   }, [photo.id]);
 
-  // Lock background scrolling while the preview is open
+  // Lock background scrolling while preview is open
   useEffect(() => {
     const previous = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
@@ -270,305 +296,546 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
     };
   }, []);
 
+  // Track the viewport size so pan/zoom stays clamped to the image bounds
+  useEffect(() => {
+    const el = viewportRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(() => {
+      setViewport({ w: el.clientWidth, h: el.clientHeight });
+    });
+    observer.observe(el);
+    setViewport({ w: el.clientWidth, h: el.clientHeight });
+    return () => observer.disconnect();
+  }, []);
+
+  // Compute the object-contain display size for clamping
+  useEffect(() => {
+    if (!viewport.w || !viewport.h) return;
+    const ratio = Math.min(
+      viewport.w / photo.width,
+      viewport.h / photo.height
+    );
+    setFit({ w: photo.width * ratio, h: photo.height * ratio });
+  }, [viewport, photo.width, photo.height]);
+
+  const clampPan = useCallback(
+    (x: number, y: number, nextScale: number) => {
+      const maxX = Math.max(0, (fit.w * nextScale - viewport.w) / 2);
+      const maxY = Math.max(0, (fit.h * nextScale - viewport.h) / 2);
+      return {
+        x: clamp(x, -maxX, maxX),
+        y: clamp(y, -maxY, maxY),
+      };
+    },
+    [fit, viewport]
+  );
+
+  const zoomAt = useCallback(
+    (clientX: number, clientY: number, factor: number) => {
+      const el = viewportRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const cx = clientX - rect.left - rect.width / 2;
+      const cy = clientY - rect.top - rect.height / 2;
+      setScale((currentScale) => {
+        const nextScale = clamp(currentScale * factor, 1, 8);
+        setPan((currentPan) => {
+          const ratio = nextScale / currentScale;
+          const next = clampPan(
+            cx - (cx - currentPan.x) * ratio,
+            cy - (cy - currentPan.y) * ratio,
+            nextScale
+          );
+          return next;
+        });
+        return nextScale;
+      });
+    },
+    [clampPan]
+  );
+
+  const resetZoom = useCallback(() => {
+    setScale(1);
+    setPan({ x: 0, y: 0 });
+  }, []);
+
+  // Desktop wheel: zoom under the cursor
+  useEffect(() => {
+    const el = viewportRef.current;
+    if (!el) return;
+    const onWheel = (event: WheelEvent) => {
+      event.preventDefault();
+      zoomAt(event.clientX, event.clientY, Math.exp(-event.deltaY * 0.0015));
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, [zoomAt]);
+
   // Keyboard shortcuts
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose();
       if (event.key === 'ArrowLeft') onNavigate(-1);
       if (event.key === 'ArrowRight') onNavigate(1);
+      if (event.key === '+' || event.key === '=') {
+        const el = viewportRef.current;
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          zoomAt(rect.left + rect.width / 2, rect.top + rect.height / 2, 1.25);
+        }
+      }
+      if (event.key === '-' || event.key === '_') {
+        const el = viewportRef.current;
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          zoomAt(rect.left + rect.width / 2, rect.top + rect.height / 2, 0.8);
+        }
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onClose, onNavigate]);
+  }, [onClose, onNavigate, zoomAt]);
 
-  // Wheel zoom on the image viewport (non-passive to prevent page scroll)
-  useEffect(() => {
-    const el = viewportRef.current;
-    if (!el) return;
-    const onWheel = (event: WheelEvent) => {
-      event.preventDefault();
-      const factor = Math.exp(-event.deltaY * 0.0015);
-      setScale((prev) => Math.min(6, Math.max(1, prev * factor)));
+  // Pointer / touch gestures: drag to pan, pinch to zoom
+  const pointerDistance = () => {
+    const points = Array.from(pointersRef.current.values());
+    if (points.length < 2) return 0;
+    return Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y);
+  };
+
+  const pointerMid = () => {
+    const points = Array.from(pointersRef.current.values());
+    return {
+      x: (points[0].x + points[1].x) / 2,
+      y: (points[0].y + points[1].y) / 2,
     };
-    el.addEventListener('wheel', onWheel, { passive: false });
-    return () => el.removeEventListener('wheel', onWheel);
-  }, [photo.id]);
-
-  // Keep the image centered when fully zoomed out
-  useEffect(() => {
-    if (scale <= 1.001) {
-      setPan({ x: 0, y: 0 });
-    }
-  }, [scale]);
-
-  const resetZoom = () => {
-    setScale(1);
-    setPan({ x: 0, y: 0 });
   };
 
   const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (scale <= 1) return;
-    dragRef.current = {
+    pointersRef.current.set(event.pointerId, {
       x: event.clientX,
       y: event.clientY,
-      panX: pan.x,
-      panY: pan.y,
-    };
-    setDragging(true);
+    });
     event.currentTarget.setPointerCapture(event.pointerId);
+
+    if (pointersRef.current.size === 1) {
+      panStartRef.current = {
+        x: event.clientX,
+        y: event.clientY,
+        viewX: pan.x,
+        viewY: pan.y,
+      };
+      draggedRef.current = false;
+    } else if (pointersRef.current.size === 2) {
+      pinchRef.current = {
+        distance: pointerDistance(),
+        scale,
+        x: pan.x,
+        y: pan.y,
+      };
+      panStartRef.current = null;
+    }
   };
+
+  const draggedRef = useRef(false);
 
   const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!dragging || !dragRef.current) return;
-    setPan({
-      x: dragRef.current.panX + (event.clientX - dragRef.current.x),
-      y: dragRef.current.panY + (event.clientY - dragRef.current.y),
+    if (!pointersRef.current.has(event.pointerId)) return;
+    pointersRef.current.set(event.pointerId, {
+      x: event.clientX,
+      y: event.clientY,
     });
+
+    if (pointersRef.current.size >= 2 && pinchRef.current) {
+      const nextDistance = pointerDistance();
+      if (!nextDistance || !pinchRef.current.distance) return;
+      const factor = nextDistance / pinchRef.current.distance;
+      const nextScale = clamp(pinchRef.current.scale * factor, 1, 8);
+      const mid = pointerMid();
+      const el = viewportRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const cx = mid.x - rect.left - rect.width / 2;
+      const cy = mid.y - rect.top - rect.height / 2;
+      const ratio = nextScale / pinchRef.current.scale;
+      const next = clampPan(
+        cx - (cx - pinchRef.current.x) * ratio,
+        cy - (cy - pinchRef.current.y) * ratio,
+        nextScale
+      );
+      setScale(nextScale);
+      setPan(next);
+      setDragging(true);
+      draggedRef.current = true;
+      return;
+    }
+
+    if (pointersRef.current.size === 1 && panStartRef.current && scale > 1) {
+      const dx = event.clientX - panStartRef.current.x;
+      const dy = event.clientY - panStartRef.current.y;
+      if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
+        draggedRef.current = true;
+        setDragging(true);
+      }
+      setPan(
+        clampPan(
+          panStartRef.current.viewX + dx,
+          panStartRef.current.viewY + dy,
+          scale
+        )
+      );
+    }
   };
 
-  const handlePointerUp = () => {
-    setDragging(false);
-    dragRef.current = null;
+  const handlePointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+    pointersRef.current.delete(event.pointerId);
+    if (pointersRef.current.size < 2) {
+      pinchRef.current = null;
+    }
+    if (pointersRef.current.size === 1) {
+      const [remaining] = Array.from(pointersRef.current.values());
+      panStartRef.current = {
+        x: remaining.x,
+        y: remaining.y,
+        viewX: pan.x,
+        viewY: pan.y,
+      };
+    } else if (pointersRef.current.size === 0) {
+      panStartRef.current = null;
+      setDragging(false);
+    }
+  };
+
+  const handleDoubleClick = () => {
+    if (draggedRef.current) {
+      draggedRef.current = false;
+      return;
+    }
+    resetZoom();
   };
 
   const mediaStyle: React.CSSProperties = {
     transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`,
-    transition: dragging ? 'none' : 'transform 120ms ease-out',
+    transition: dragging || pointersRef.current.size > 1 ? 'none' : 'transform 120ms ease-out',
   };
 
-  return (
-    <div
-      className={`fixed inset-0 z-50 backdrop-blur-xl animate-fadeIn ${
-        isDark ? 'bg-slate-950/80' : 'bg-slate-900/50'
-      }`}
-      onClick={onClose}
-    >
-      <div
-        className="absolute inset-x-0 top-[4.6rem] bottom-0 px-2 pb-2 sm:px-4 sm:pb-4 flex items-center justify-center"
-        onClick={onClose}
-      >
-        <div
-          className="relative w-full max-w-6xl h-full rounded-2xl overflow-hidden liquid-glass border border-slate-300/50 dark:border-white/15 shadow-2xl flex flex-col"
-          onClick={(event) => event.stopPropagation()}
+  const InfoContent = (
+    <div className="space-y-4 text-slate-700 dark:text-slate-200">
+      <div className="space-y-1.5">
+        <div className="flex items-center gap-1.5 text-[10px] font-mono text-sky-600 dark:text-cyan-300">
+          <Camera className="w-3 h-3" />
+          {photo.area} · {photo.place}
+        </div>
+        <h2 className="text-lg font-bold leading-snug text-slate-900 dark:text-white">
+          {photo.title}
+        </h2>
+        <div className="text-xs font-mono text-slate-600 dark:text-slate-300">
+          {dateFormatter.format(new Date(photo.date))}
+        </div>
+        {photo.description && (
+          <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed pt-1">
+            {photo.description}
+          </p>
+        )}
+      </div>
+
+      <div className="space-y-2">
+        <Suspense
+          fallback={
+            <div className="h-[150px] rounded-xl border border-slate-300/60 dark:border-white/15 bg-slate-100/60 dark:bg-slate-900/50 flex items-center justify-center text-[10px] font-mono text-slate-400">
+              LOADING MAP…
+            </div>
+          }
         >
-          {/* Top specular rim */}
-          <div className="pointer-events-none absolute inset-x-10 top-0 h-[1.5px] bg-gradient-to-r from-sky-400/50 via-white/70 to-pink-400/50 dark:from-cyan-400/60 dark:via-white/40 dark:to-pink-400/60 z-10" />
-
-          {/* Control bar (outside the image, never covers the photo) */}
-          <div className="shrink-0 px-3 py-2 flex flex-wrap items-center justify-between gap-2 border-b border-slate-300/50 dark:border-white/10 bg-white/40 dark:bg-slate-950/45">
-            <div className="flex items-center gap-2 text-[10px] font-mono">
-              <span className="px-2 py-0.5 rounded bg-slate-950/75 text-cyan-300 border border-cyan-400/30">
-                {index + 1} / {photos.length}
-              </span>
-              {hasLiveVideo && (
-                <span className="px-2 py-0.5 rounded bg-pink-500/90 text-white border border-pink-300/60 font-bold">
-                  LIVE PHOTO
-                </span>
-              )}
-              <span className="px-2 py-0.5 rounded bg-white/50 dark:bg-white/5 text-slate-600 dark:text-slate-300 border border-slate-300/60 dark:border-white/10">
-                {Math.round(scale * 100)}%
-              </span>
-              {scale > 1 && (
-                <button
-                  type="button"
-                  onClick={resetZoom}
-                  className="px-2 py-0.5 rounded bg-white/50 dark:bg-white/5 text-slate-600 dark:text-slate-300 border border-slate-300/60 dark:border-white/10 hover:text-sky-600 dark:hover:text-cyan-300 flex items-center gap-1"
-                  title="重置缩放"
-                >
-                  <Maximize className="w-3 h-3" />
-                  重置
-                </button>
-              )}
+          <PhotoMiniMap photo={photo} theme={theme} />
+        </Suspense>
+        <div className="flex items-start gap-1.5 text-[11px] font-mono">
+          <MapPin className="w-3 h-3 text-pink-500 shrink-0 mt-0.5" />
+          <div className="min-w-0">
+            <div className="text-sky-700 dark:text-cyan-200">
+              {formatCoords(photo.lat, photo.lon)}
+              {photo.meta.altitude !== null
+                ? ` · 海拔 ${Math.round(photo.meta.altitude)} m`
+                : ''}
             </div>
-
-            <div className="flex items-center gap-1.5">
-              {hasLiveVideo && (
-                <button
-                  type="button"
-                  onClick={() => setLivePlaying((prev) => !prev)}
-                  className="px-2.5 py-1 rounded-lg bg-pink-500/15 text-pink-600 dark:text-pink-300 border border-pink-400/40 hover:bg-pink-500/25 flex items-center gap-1 text-[11px] font-mono font-semibold"
-                  title={livePlaying ? '暂停实况' : '播放实况照片'}
-                >
-                  {livePlaying ? (
-                    <>
-                      <Pause className="w-3.5 h-3.5" />
-                      暂停实况
-                    </>
-                  ) : (
-                    <>
-                      <Play className="w-3.5 h-3.5" />
-                      实况
-                    </>
-                  )}
-                </button>
-              )}
-
-              <button
-                type="button"
-                onClick={() => onNavigate(-1)}
-                className="p-1.5 rounded-lg liquid-pill text-slate-700 dark:text-slate-200 hover:text-sky-600 dark:hover:text-cyan-300"
-                title="上一张 (←)"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => onNavigate(1)}
-                className="p-1.5 rounded-lg liquid-pill text-slate-700 dark:text-slate-200 hover:text-sky-600 dark:hover:text-cyan-300"
-                title="下一张 (→)"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-              <button
-                type="button"
-                onClick={onClose}
-                className="p-1.5 rounded-lg liquid-pill text-slate-700 dark:text-slate-200 hover:text-rose-500"
-                title="关闭 (Esc)"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-
-          {/* Media + info */}
-          <div className="flex-1 min-h-0 flex flex-col lg:flex-row">
-            <div
-              ref={viewportRef}
-              onPointerDown={handlePointerDown}
-              onPointerMove={handlePointerMove}
-              onPointerUp={handlePointerUp}
-              onPointerCancel={handlePointerUp}
-              onDoubleClick={resetZoom}
-              className={`relative flex-1 min-h-[30vh] lg:min-h-0 overflow-hidden flex items-center justify-center select-none ${
-                isDark ? 'bg-black/30' : 'bg-slate-200/35'
-              } ${scale > 1 ? (dragging ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-zoom-in'}`}
-            >
-              {livePlaying && hasLiveVideo ? (
-                <video
-                  key={photo.id}
-                  src={photo.meta.liveVideo as string}
-                  poster={photo.src}
-                  autoPlay
-                  muted
-                  loop
-                  playsInline
-                  onError={() => {
-                    setVideoFailed(true);
-                    setLivePlaying(false);
-                  }}
-                  className="max-h-full max-w-full object-contain pointer-events-none"
-                  style={mediaStyle}
-                />
-              ) : (
-                <>
-                  {/* Blurred thumbnail placeholder while the original loads */}
-                  <img
-                    src={photo.src}
-                    alt=""
-                    aria-hidden="true"
-                    className={`absolute inset-0 m-auto max-h-full max-w-full object-contain blur-lg scale-105 transition-opacity duration-500 ${
-                      loaded ? 'opacity-0' : 'opacity-60'
-                    }`}
-                  />
-                  <img
-                    src={photo.original}
-                    alt={photo.title}
-                    draggable={false}
-                    onLoad={() => setLoaded(true)}
-                    className={`relative max-h-full max-w-full object-contain transition-opacity duration-500 pointer-events-none ${
-                      loaded ? 'opacity-100' : 'opacity-0'
-                    }`}
-                    style={mediaStyle}
-                  />
-                  {!loaded && (
-                    <div className="absolute inset-x-0 bottom-3 flex justify-center pointer-events-none">
-                      <span className="px-3 py-1.5 rounded-lg bg-slate-950/80 text-cyan-300 text-[11px] font-mono border border-cyan-400/30">
-                        LOADING ORIGINAL…
-                      </span>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-
-            {/* Info panel: theme-aware, translucent glass */}
-            <div className="lg:w-[360px] shrink-0 overflow-y-auto p-5 space-y-4 border-t lg:border-t-0 lg:border-l border-slate-300/50 dark:border-white/10 bg-white/35 dark:bg-slate-950/40 backdrop-blur-2xl">
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-1.5 text-[10px] font-mono text-sky-600 dark:text-cyan-300">
-                  <Camera className="w-3 h-3" />
-                  {photo.area} · {photo.place}
-                </div>
-                <h2 className="text-lg font-bold leading-snug text-slate-900 dark:text-white">
-                  {photo.title}
-                </h2>
-                <div className="text-xs font-mono text-slate-600 dark:text-slate-300">
-                  {dateFormatter.format(new Date(photo.date))}
-                </div>
-                {photo.description && (
-                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed pt-1">
-                    {photo.description}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Suspense
-                  fallback={
-                    <div className="h-[150px] rounded-xl border border-slate-300/60 dark:border-white/15 bg-slate-100/60 dark:bg-slate-900/50 flex items-center justify-center text-[10px] font-mono text-slate-400">
-                      LOADING MAP…
-                    </div>
-                  }
-                >
-                  <PhotoMiniMap photo={photo} theme={theme} />
-                </Suspense>
-                <div className="flex items-start gap-1.5 text-[11px] font-mono">
-                  <MapPin className="w-3 h-3 text-pink-500 shrink-0 mt-0.5" />
-                  <div className="min-w-0">
-                    <div className="text-sky-700 dark:text-cyan-200">
-                      {formatCoords(photo.lat, photo.lon)}
-                      {photo.meta.altitude !== null
-                        ? ` · 海拔 ${Math.round(photo.meta.altitude)} m`
-                        : ''}
-                    </div>
-                    <div className="text-slate-500 dark:text-slate-400 leading-snug break-words">
-                      {photo.locationName}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* EXIF parameters */}
-              <div className="space-y-2">
-                <div className="text-[10px] font-mono text-sky-600 dark:text-cyan-300">
-                  EXIF // 拍摄参数
-                </div>
-                <div className="grid grid-cols-2 gap-x-3 gap-y-2">
-                  {photo.meta.params.map((param) => (
-                    <div key={param.label} className="min-w-0">
-                      <div className="text-[10px] font-mono text-slate-500 dark:text-slate-400">
-                        {param.label}
-                      </div>
-                      <div
-                        className="text-[11px] font-mono text-slate-800 dark:text-slate-100 leading-snug break-words"
-                        title={param.value}
-                      >
-                        {param.value}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <RgbHistogram histogram={photo.meta.histogram} theme={theme} />
-
-              <div className="pt-1 border-t border-slate-300/50 dark:border-white/10 text-[10px] font-mono text-slate-400 dark:text-slate-500 flex items-center justify-between">
-                <span>SOURCE: chronoframe</span>
-                <span>{photo.meta.isLivePhoto ? 'LIVE PHOTO' : 'STILL PHOTO'}</span>
-              </div>
+            <div className="text-slate-500 dark:text-slate-400 leading-snug break-words">
+              {photo.locationName}
             </div>
           </div>
         </div>
       </div>
+
+      <div className="space-y-2">
+        <div className="text-[10px] font-mono text-sky-600 dark:text-cyan-300">
+          EXIF // 拍摄参数
+        </div>
+        <div className="grid grid-cols-2 gap-x-3 gap-y-2">
+          {photo.meta.params.map((param) => (
+            <div key={param.label} className="min-w-0">
+              <div className="text-[10px] font-mono text-slate-500 dark:text-slate-400">
+                {param.label}
+              </div>
+              <div
+                className="text-[11px] font-mono text-slate-800 dark:text-slate-100 leading-snug break-words"
+                title={param.value}
+              >
+                {param.value}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <RgbHistogram histogram={photo.meta.histogram} theme={theme} />
+
+      <div className="pt-1 border-t border-slate-300/50 dark:border-white/10 text-[10px] font-mono text-slate-400 dark:text-slate-500 flex items-center justify-between">
+        <span>SOURCE: chronoframe</span>
+        <span>{photo.meta.isLivePhoto ? 'LIVE PHOTO' : 'STILL PHOTO'}</span>
+      </div>
+    </div>
+  );
+
+  return (
+    <div
+      className={`fixed inset-0 z-50 flex flex-col animate-fadeIn ${
+        isDark ? 'bg-slate-950/95' : 'bg-slate-50/96'
+      }`}
+    >
+      {/* Viewer toolbar (never covers the image) */}
+      <div
+        className={`shrink-0 h-14 px-2 sm:px-4 flex items-center justify-between gap-2 border-b backdrop-blur-xl ${
+          isDark
+            ? 'bg-slate-950/70 border-white/10'
+            : 'bg-white/75 border-slate-300/60'
+        }`}
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-2 rounded-lg liquid-pill text-slate-700 dark:text-slate-200 hover:text-rose-500"
+            title="关闭 (Esc)"
+          >
+            <X className="w-4 h-4" />
+          </button>
+          <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-sky-500/10 dark:bg-white/5 text-sky-700 dark:text-cyan-300 border border-sky-400/20 dark:border-white/10 whitespace-nowrap">
+            {index + 1} / {photos.length}
+          </span>
+          {hasLiveVideo && (
+            <span className="hidden sm:inline px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-pink-500/90 text-white border border-pink-300/60">
+              LIVE
+            </span>
+          )}
+          <span className="hidden md:block text-xs font-mono text-slate-600 dark:text-slate-300 truncate">
+            {photo.title}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => {
+              const el = viewportRef.current;
+              if (!el) return;
+              const rect = el.getBoundingClientRect();
+              zoomAt(rect.left + rect.width / 2, rect.top + rect.height / 2, 0.8);
+            }}
+            className="hidden sm:flex p-2 rounded-lg liquid-pill text-slate-700 dark:text-slate-200"
+            title="缩小 (-)"
+          >
+            <Minus className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={resetZoom}
+            className="px-2 py-1 rounded-lg liquid-pill text-[10px] font-mono text-slate-600 dark:text-slate-300 min-w-[3.2rem] flex items-center justify-center gap-1"
+            title="重置缩放 (双击)"
+          >
+            <Maximize className="w-3 h-3" />
+            {Math.round(scale * 100)}%
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const el = viewportRef.current;
+              if (!el) return;
+              const rect = el.getBoundingClientRect();
+              zoomAt(rect.left + rect.width / 2, rect.top + rect.height / 2, 1.25);
+            }}
+            className="hidden sm:flex p-2 rounded-lg liquid-pill text-slate-700 dark:text-slate-200"
+            title="放大 (+)"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
+
+          {hasLiveVideo && (
+            <button
+              type="button"
+              onClick={() => setLivePlaying((prev) => !prev)}
+              className="px-2.5 py-1.5 rounded-lg bg-pink-500/15 text-pink-600 dark:text-pink-300 border border-pink-400/40 hover:bg-pink-500/25 flex items-center gap-1 text-[11px] font-mono font-semibold"
+              title={livePlaying ? '暂停实况' : '播放实况照片'}
+            >
+              {livePlaying ? (
+                <>
+                  <Pause className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">暂停</span>
+                </>
+              ) : (
+                <>
+                  <Play className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">实况</span>
+                </>
+              )}
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setInfoOpen((prev) => !prev)}
+            className={`p-2 rounded-lg liquid-pill ${
+              infoOpen
+                ? 'text-sky-600 dark:text-cyan-300'
+                : 'text-slate-600 dark:text-slate-300'
+            }`}
+            title="照片信息"
+          >
+            <Info className="w-4 h-4" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onNavigate(-1)}
+            className="p-2 rounded-lg liquid-pill text-slate-700 dark:text-slate-200 hover:text-sky-600 dark:hover:text-cyan-300"
+            title="上一张 (←)"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => onNavigate(1)}
+            className="p-2 rounded-lg liquid-pill text-slate-700 dark:text-slate-200 hover:text-sky-600 dark:hover:text-cyan-300"
+            title="下一张 (→)"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* Main viewer */}
+      <div className="flex-1 min-h-0 flex">
+        <div
+          ref={viewportRef}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
+          onDoubleClick={handleDoubleClick}
+          onContextMenu={(event) => event.preventDefault()}
+          className={`relative flex-1 min-h-0 overflow-hidden touch-none select-none flex items-center justify-center ${
+            scale > 1 ? (dragging ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-zoom-in'
+          }`}
+        >
+          {livePlaying && hasLiveVideo ? (
+            <video
+              key={photo.id}
+              src={photo.meta.liveVideo as string}
+              poster={photo.src}
+              autoPlay
+              muted
+              loop
+              playsInline
+              onError={() => {
+                setVideoFailed(true);
+                setLivePlaying(false);
+              }}
+              className="max-h-full max-w-full object-contain pointer-events-none"
+              style={mediaStyle}
+            />
+          ) : (
+            <>
+              <img
+                src={photo.src}
+                alt=""
+                aria-hidden="true"
+                className={`absolute inset-0 m-auto max-h-full max-w-full object-contain blur-lg scale-105 transition-opacity duration-500 ${
+                  loaded ? 'opacity-0' : 'opacity-60'
+                }`}
+              />
+              <img
+                ref={imageRef}
+                src={photo.original}
+                alt={photo.title}
+                draggable={false}
+                onLoad={() => setLoaded(true)}
+                className={`relative max-h-full max-w-full object-contain transition-opacity duration-500 pointer-events-none ${
+                  loaded ? 'opacity-100' : 'opacity-0'
+                }`}
+                style={mediaStyle}
+              />
+              {!loaded && (
+                <div className="absolute inset-x-0 bottom-4 flex justify-center pointer-events-none">
+                  <span className="px-3 py-1.5 rounded-lg bg-slate-950/80 text-cyan-300 text-[11px] font-mono border border-cyan-400/30">
+                    LOADING ORIGINAL…
+                  </span>
+                </div>
+              )}
+            </>
+          )}
+
+          {livePlaying && (
+            <div className="absolute top-3 left-3 px-2 py-0.5 rounded text-[10px] font-mono bg-pink-500/90 text-white border border-pink-300/60 pointer-events-none">
+              LIVE PHOTO
+            </div>
+          )}
+
+          {/* Interaction hint */}
+          <div className="pointer-events-none absolute bottom-3 left-3 text-[10px] font-mono text-slate-500/80 dark:text-slate-400/80 hidden sm:block">
+            滚轮缩放 · 拖动平移 · 双击还原
+          </div>
+          <div className="pointer-events-none absolute bottom-3 left-3 text-[10px] font-mono text-slate-500/80 dark:text-slate-400/80 sm:hidden">
+            双指缩放 · 拖动平移
+          </div>
+        </div>
+
+        {/* Desktop info drawer */}
+        {infoOpen && (
+          <aside
+            className={`hidden lg:flex flex-col w-[380px] shrink-0 border-l overflow-y-auto p-5 backdrop-blur-2xl ${
+              isDark
+                ? 'border-white/10 bg-slate-950/60'
+                : 'border-slate-300/60 bg-white/60'
+            }`}
+          >
+            {InfoContent}
+          </aside>
+        )}
+      </div>
+
+      {/* Mobile/tablet info sheet */}
+      {infoOpen && (
+        <div
+          className={`lg:hidden absolute inset-x-0 bottom-0 max-h-[64dvh] overflow-y-auto rounded-t-2xl border-t p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] backdrop-blur-2xl ${
+            isDark
+              ? 'border-white/15 bg-slate-950/90'
+              : 'border-slate-300/70 bg-white/90'
+          }`}
+        >
+          <div className="flex items-center justify-between mb-3">
+            <span className="font-pixel text-[10px] text-sky-600 dark:text-cyan-300">
+              PHOTO INFO // 照片信息
+            </span>
+            <button
+              type="button"
+              onClick={() => setInfoOpen(false)}
+              className="p-1.5 rounded-lg liquid-pill text-slate-600 dark:text-slate-300"
+              title="收起信息"
+            >
+              <ChevronLeft className="w-4 h-4 -rotate-90" />
+            </button>
+          </div>
+          {InfoContent}
+        </div>
+      )}
     </div>
   );
 };

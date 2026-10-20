@@ -72,6 +72,7 @@ export const App: React.FC = () => {
 
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
   const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
+  const [galleryPreviewOpen, setGalleryPreviewOpen] = useState(false);
   const [weatherBgEnabled, setWeatherBgEnabled] = useState<boolean>(() => {
     return localStorage.getItem('pixel_blog_weather_bg') !== 'off';
   });
@@ -361,6 +362,7 @@ export const App: React.FC = () => {
         onWeatherBgToggle={() => handleSetWeatherBg(!weatherBgEnabled)}
         backDockAnchorRef={backDockAnchorRef}
         articleDocked={backDocked}
+        concealed={galleryPreviewOpen}
       />
 
       {/* Main Content Container */}
@@ -406,7 +408,10 @@ export const App: React.FC = () => {
               </div>
             }
           >
-            <GalleryView theme={theme} />
+            <GalleryView
+              theme={theme}
+              onPreviewOpenChange={setGalleryPreviewOpen}
+            />
           </Suspense>
         ) : (
           <TerminalBlogView
@@ -480,7 +485,11 @@ export const App: React.FC = () => {
             ? '切换至终端风格'
             : '切换至普通博客风格'
         }
-        className={`fixed z-40 liquid-pill rounded-full flex items-center gap-2 text-xs font-mono text-slate-600 dark:text-slate-300 opacity-75 hover:opacity-100 transition-all shadow-lg p-2.5 sm:px-3.5 sm:py-2 ${
+        className={`fixed z-40 liquid-pill rounded-full flex items-center gap-2 text-xs font-mono text-slate-600 dark:text-slate-300 transition-all shadow-lg p-2.5 sm:px-3.5 sm:py-2 ${
+          galleryPreviewOpen
+            ? 'opacity-0 translate-y-6 pointer-events-none'
+            : 'opacity-75 hover:opacity-100'
+        } ${
           viewMode === 'terminal'
             ? 'bottom-[5rem] right-3 sm:bottom-5 sm:right-5'
             : 'bottom-3 right-3 sm:bottom-5 sm:right-5'

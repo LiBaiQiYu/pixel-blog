@@ -24,6 +24,8 @@ interface NavbarProps {
   /** Anchor element where the flying back button docks when scrolling down */
   backDockAnchorRef?: React.RefObject<HTMLElement>;
   articleDocked?: boolean;
+  /** Slide the whole navbar out of the screen (gallery photo preview) */
+  concealed?: boolean;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -38,12 +40,17 @@ export const Navbar: React.FC<NavbarProps> = ({
   onWeatherBgToggle,
   backDockAnchorRef,
   articleDocked = false,
+  concealed = false,
 }) => {
   return (
     <header
       className={`${
         viewMode !== 'terminal' ? 'sticky top-4' : 'relative'
-      } mt-4 shrink-0 z-40 px-4 sm:px-6 lg:px-8 max-w-6xl w-full mx-auto`}
+      } mt-4 shrink-0 z-40 px-4 sm:px-6 lg:px-8 max-w-6xl w-full mx-auto transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+        concealed
+          ? '-translate-y-[190%] opacity-0 pointer-events-none'
+          : 'translate-y-0 opacity-100'
+      }`}
     >
       <div className="liquid-glass-strong rounded-2xl px-4 py-2.5 flex items-center justify-between gap-3 relative overflow-hidden">
         {/* Top Iridescent Specular Highlight */}

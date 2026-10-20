@@ -7,6 +7,7 @@ import type { ThemeMode } from '../types/blog';
 
 interface GalleryViewProps {
   theme: ThemeMode;
+  onPreviewOpenChange?: (open: boolean) => void;
 }
 
 const dateFormatter = new Intl.DateTimeFormat('zh-CN', {
@@ -114,9 +115,18 @@ const GalleryCard: React.FC<{ photo: GalleryPhoto; onOpen: () => void }> = ({
   );
 };
 
-export const GalleryView: React.FC<GalleryViewProps> = ({ theme }) => {
+export const GalleryView: React.FC<GalleryViewProps> = ({
+  theme,
+  onPreviewOpenChange,
+}) => {
   const [activeArea, setActiveArea] = useState<string>('全部');
   const [activeId, setActiveId] = useState<string | null>(null);
+
+  // Let the app hide the navbar while the fullscreen photo viewer is open
+  React.useEffect(() => {
+    onPreviewOpenChange?.(Boolean(activeId));
+    return () => onPreviewOpenChange?.(false);
+  }, [activeId, onPreviewOpenChange]);
 
   const filtered = useMemo(
     () =>
