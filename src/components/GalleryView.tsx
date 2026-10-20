@@ -1,7 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { Camera, Image, MapPin } from 'lucide-react';
 import { PhotoDetail } from './PhotoDetail';
 import { GALLERY_AREAS, GALLERY_PHOTOS } from '../data/gallery';
+import type { GalleryPhoto } from '../types/gallery';
 import type { ThemeMode } from '../types/blog';
 
 interface GalleryViewProps {
@@ -16,6 +17,102 @@ const dateFormatter = new Intl.DateTimeFormat('zh-CN', {
   minute: '2-digit',
   hour12: false,
 });
+
+/** Photo card: Live Photos play inline while hovered (same behaviour as chronoframe) */
+const GalleryCard: React.FC<{ photo: GalleryPhoto; onOpen: () => void }> = ({
+  photo,
+  onOpen,
+}) => {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [playing, setPlaying] = useState(false);
+  const hasLive = Boolean(photo.meta.liveVideo);
+
+  const startLive = () => {
+    if (!hasLive) return;
+    const video = videoRef.current;
+    if (!video) return;
+    setPlaying(true);
+    video.currentTime = 0;
+    video.play().catch(() => setPlaying(false));
+  };
+
+  const stopLive = () => {
+    if (!hasLive) return;
+    setPlaying(false);
+    const video = videoRef.current;
+    if (video) {
+      video.pause();
+      video.currentTime = 0;
+    }
+  };
+
+  return (
+    <button
+      onMouseEnter={startLive}
+      onMouseLeave={stopLive}
+      onFocus={startLive}
+      onBlur={stopLive}
+      onClick={() => {
+        stopLive();
+        onOpen();
+      }}
+      className="group relative mb-3 sm:mb-4 w-full break-inside-avoid block text-left rounded-xl overflow-hidden border border-slate-300/60 dark:border-white/10 hover:border-sky-400/60 shadow-sm hover:shadow-lg hover:shadow-sky-500/10 transition-all"
+    >
+      {hasLive ? (
+        <video
+          ref={videoRef}
+          src={photo.meta.liveVideo as string}
+          poster={photo.src}
+          muted
+          loop
+          playsInline
+          preload="none"
+          style={{ aspectRatio: String(photo.aspect) }}
+          className="pointer-events-none w-full h-auto object-cover group-hover:scale-[1.02] transition-transform duration-500"
+        />
+      ) : (
+        <img
+          src={photo.src}
+          alt={photo.title}
+          loading="lazy"
+          style={{ aspectRatio: String(photo.aspect) }}
+          className="w-full h-auto object-cover group-hover:scale-[1.03] transition-transform duration-500"
+        />
+      )}
+
+      {/* Top badges */}
+      <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between gap-2">
+        <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-950/75 text-cyan-200 border border-white/15 backdrop-blur-md">
+          {photo.area}
+        </span>
+        {hasLive && (
+          <span
+            className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${
+              playing
+                ? 'bg-pink-500 text-white border-pink-200/70'
+                : 'bg-pink-500/90 text-white border-pink-300/50'
+            }`}
+          >
+            {playing ? 'LIVE · 播放中' : 'LIVE'}
+          </span>
+        )}
+      </div>
+
+      {/* Bottom readable caption */}
+      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950 via-slate-950/70 to-transparent p-3 pt-10 pointer-events-none">
+        <div className="text-xs sm:text-sm font-semibold text-white truncate">
+          {photo.title}
+        </div>
+        <div className="mt-0.5 flex items-center justify-between gap-2 text-[10px] font-mono text-slate-300">
+          <span className="truncate">{photo.place}</span>
+          <span className="shrink-0">
+            {dateFormatter.format(new Date(photo.date))}
+          </span>
+        </div>
+      </div>
+    </button>
+  );
+};
 
 export const GalleryView: React.FC<GalleryViewProps> = ({ theme }) => {
   const [activeArea, setActiveArea] = useState<string>('全部');
@@ -56,7 +153,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ theme }) => {
             </h2>
             <p className="text-[11px] font-mono text-slate-500 dark:text-slate-400 flex items-center gap-1">
               <MapPin className="w-3 h-3 text-pink-500" />
-              点击照片查看地图、EXIF 参数与 RGB 直方图
+              点击照片查看地图、EXIF 与直方图 · 悬停 LIVE 照片可播放实况
             </p>
           </div>
           <span className="ml-1 px-2 py-0.5 rounded text-[10px] font-mono bg-sky-500/10 dark:bg-white/5 text-sky-700 dark:text-cyan-300 border border-sky-400/20 dark:border-white/10">
@@ -84,45 +181,11 @@ export const GalleryView: React.FC<GalleryViewProps> = ({ theme }) => {
       {/* Photo-only masonry gallery */}
       <div className="columns-1 sm:columns-2 lg:columns-3 gap-3 sm:gap-4">
         {filtered.map((photo) => (
-          <button
+          <GalleryCard
             key={photo.id}
-            onClick={() => setActiveId(photo.id)}
-            className="group relative mb-3 sm:mb-4 w-full break-inside-avoid block text-left rounded-xl overflow-hidden border border-slate-300/60 dark:border-white/10 hover:border-sky-400/60 shadow-sm hover:shadow-lg hover:shadow-sky-500/10 transition-all"
-          >
-            <img
-              src={photo.src}
-              alt={photo.title}
-              loading="lazy"
-              style={{ aspectRatio: String(photo.aspect) }}
-              className="w-full h-auto object-cover group-hover:scale-[1.03] transition-transform duration-500"
-            />
-
-            {/* Top badges */}
-            <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between gap-2">
-              <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-950/75 text-cyan-200 border border-white/15 backdrop-blur-md">
-                {photo.area}
-              </span>
-              {photo.meta.liveVideo && (
-                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-pink-500/90 text-white border border-pink-300/50">
-                  LIVE
-                </span>
-              )}
-            </div>
-
-            {/* Pixel corner notch */}
-            <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-sky-400 shadow-[3px_0_0_0_rgba(244,114,182,0.8),0_3px_0_0_rgba(244,114,182,0.8)] opacity-80 group-hover:opacity-100 transition-opacity" />
-
-            {/* Bottom readable caption */}
-            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950 via-slate-950/70 to-transparent p-3 pt-10">
-              <div className="text-xs sm:text-sm font-semibold text-white truncate">
-                {photo.title}
-              </div>
-              <div className="mt-0.5 flex items-center justify-between gap-2 text-[10px] font-mono text-slate-300">
-                <span className="truncate">{photo.place}</span>
-                <span className="shrink-0">{dateFormatter.format(new Date(photo.date))}</span>
-              </div>
-            </div>
-          </button>
+            photo={photo}
+            onOpen={() => setActiveId(photo.id)}
+          />
         ))}
       </div>
 
