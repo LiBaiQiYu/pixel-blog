@@ -60,8 +60,14 @@ export default async function handler(req, res) {
     );
     res.end(JSON.stringify(data));
   } catch (err) {
+    console.error('[weather] upstream error:', err?.message);
     res.statusCode = 502;
-    res.end(JSON.stringify({ error: 'Failed to fetch weather data.' }));
+    res.end(
+      JSON.stringify({
+        error: 'Failed to fetch weather data.',
+        detail: err?.message || 'unknown error',
+      })
+    );
   }
 }
 

@@ -53,8 +53,15 @@ export default async function handler(req) {
   try {
     const data = await fetchWeatherForLocation(config, lat, lon);
     return json(data, 200, { 'Cache-Control': 'public, max-age=300' });
-  } catch {
-    return json({ error: 'Failed to fetch weather data.' }, 502);
+  } catch (err) {
+    console.error('[weather] upstream error:', err?.message);
+    return json(
+      {
+        error: 'Failed to fetch weather data.',
+        detail: err?.message || 'unknown error',
+      },
+      502
+    );
   }
 }
 
