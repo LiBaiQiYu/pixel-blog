@@ -268,6 +268,9 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
     viewX: number;
     viewY: number;
   } | null>(null);
+  const viewRef = useRef({ scale: 1, x: 0, y: 0 });
+  const targetViewRef = useRef({ scale: 1, x: 0, y: 0 });
+  const animationRef = useRef<number | null>(null);
 
   const index = useMemo(
     () => photos.findIndex((item) => item.id === photo.id),
@@ -278,6 +281,13 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
 
   // Reset everything when switching photos
   useEffect(() => {
+    if (animationRef.current !== null) {
+      cancelAnimationFrame(animationRef.current);
+      animationRef.current = null;
+    }
+    const resetView = { scale: 1, x: 0, y: 0 };
+    viewRef.current = resetView;
+    targetViewRef.current = resetView;
     setImageError(false);
     setLivePlaying(false);
     setVideoFailed(false);
@@ -288,6 +298,17 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
     pinchRef.current = null;
     panStartRef.current = null;
   }, [photo.id]);
+
+  // Cancel any pending zoom animation on unmount
+  useEffect(
+    () => () => {
+      if (animationRef.current !== null) {
+        cancelAnimationFrame(animationRef.current);
+        animationRef.current = null;
+      }
+    },
+    []
+  );
 
   // Lock background scrolling while preview is open
   useEffect(() => {
@@ -403,6 +424,61 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
     [fit, viewport]
   );
 
+  const stopZoomAnimation = useCallback(() => {
+    if (animationRef.current !== null) {
+      cancelAnimationFrame(animationRef.current);
+      animationRef.current = null;
+    }
+  }, []);
+
+  const syncView = useCallback(
+    (next: { scale: number; x: number; y: number }) => {
+      viewRef.current = next;
+      targetViewRef.current = next;
+      setScale(next.scale);
+      setPan({ x: next.x, y: next.y });
+    },
+    []
+  );
+
+  // Smoothly animate towards a target view (used by wheel / buttons / reset)
+  const animateView = useCallback(
+    (target: { scale: number; x: number; y: number }) => {
+      targetViewRef.current = target;
+      if (animationRef.current !== null) return;
+
+      const tick = () => {
+        const current = viewRef.current;
+        const goal = targetViewRef.current;
+        const next = {
+          scale: current.scale + (goal.scale - current.scale) * 0.28,
+          x: current.x + (goal.x - current.x) * 0.28,
+          y: current.y + (goal.y - current.y) * 0.28,
+        };
+
+        if (
+          Math.abs(goal.scale - next.scale) < 0.002 &&
+          Math.abs(goal.x - next.x) < 0.3 &&
+          Math.abs(goal.y - next.y) < 0.3
+        ) {
+          viewRef.current = goal;
+          setScale(goal.scale);
+          setPan({ x: goal.x, y: goal.y });
+          animationRef.current = null;
+          return;
+        }
+
+        viewRef.current = next;
+        setScale(next.scale);
+        setPan({ x: next.x, y: next.y });
+        animationRef.current = requestAnimationFrame(tick);
+      };
+
+      animationRef.current = requestAnimationFrame(tick);
+    },
+    []
+  );
+
   const zoomAt = useCallback(
     (clientX: number, clientY: number, factor: number) => {
       const el = viewportRef.current;
@@ -410,27 +486,23 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
       const rect = el.getBoundingClientRect();
       const cx = clientX - rect.left - rect.width / 2;
       const cy = clientY - rect.top - rect.height / 2;
-      setScale((currentScale) => {
-        const nextScale = clamp(currentScale * factor, 1, 8);
-        setPan((currentPan) => {
-          const ratio = nextScale / currentScale;
-          const next = clampPan(
-            cx - (cx - currentPan.x) * ratio,
-            cy - (cy - currentPan.y) * ratio,
-            nextScale
-          );
-          return next;
-        });
-        return nextScale;
-      });
+
+      const base = targetViewRef.current;
+      const nextScale = clamp(base.scale * factor, 1, 8);
+      const ratio = nextScale / base.scale;
+      const next = clampPan(
+        cx - (cx - base.x) * ratio,
+        cy - (cy - base.y) * ratio,
+        nextScale
+      );
+      animateView({ scale: nextScale, x: next.x, y: next.y });
     },
-    [clampPan]
+    [animateView, clampPan]
   );
 
   const resetZoom = useCallback(() => {
-    setScale(1);
-    setPan({ x: 0, y: 0 });
-  }, []);
+    animateView({ scale: 1, x: 0, y: 0 });
+  }, [animateView]);
 
   // Desktop wheel: zoom under the cursor
   useEffect(() => {
@@ -491,20 +563,24 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
     });
     event.currentTarget.setPointerCapture(event.pointerId);
 
+    stopZoomAnimation();
+    const current = viewRef.current;
+    targetViewRef.current = current;
+
     if (pointersRef.current.size === 1) {
       panStartRef.current = {
         x: event.clientX,
         y: event.clientY,
-        viewX: pan.x,
-        viewY: pan.y,
+        viewX: current.x,
+        viewY: current.y,
       };
       draggedRef.current = false;
     } else if (pointersRef.current.size === 2) {
       pinchRef.current = {
         distance: pointerDistance(),
-        scale,
-        x: pan.x,
-        y: pan.y,
+        scale: current.scale,
+        x: current.x,
+        y: current.y,
       };
       panStartRef.current = null;
     }
@@ -536,27 +612,29 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
         cy - (cy - pinchRef.current.y) * ratio,
         nextScale
       );
-      setScale(nextScale);
-      setPan(next);
+      syncView({ scale: nextScale, x: next.x, y: next.y });
       setDragging(true);
       draggedRef.current = true;
       return;
     }
 
-    if (pointersRef.current.size === 1 && panStartRef.current && scale > 1) {
+    if (
+      pointersRef.current.size === 1 &&
+      panStartRef.current &&
+      viewRef.current.scale > 1
+    ) {
       const dx = event.clientX - panStartRef.current.x;
       const dy = event.clientY - panStartRef.current.y;
       if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
         draggedRef.current = true;
         setDragging(true);
       }
-      setPan(
-        clampPan(
-          panStartRef.current.viewX + dx,
-          panStartRef.current.viewY + dy,
-          scale
-        )
+      const next = clampPan(
+        panStartRef.current.viewX + dx,
+        panStartRef.current.viewY + dy,
+        viewRef.current.scale
       );
+      syncView({ scale: viewRef.current.scale, x: next.x, y: next.y });
     }
   };
 
@@ -570,8 +648,8 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
       panStartRef.current = {
         x: remaining.x,
         y: remaining.y,
-        viewX: pan.x,
-        viewY: pan.y,
+        viewX: viewRef.current.x,
+        viewY: viewRef.current.y,
       };
     } else if (pointersRef.current.size === 0) {
       panStartRef.current = null;

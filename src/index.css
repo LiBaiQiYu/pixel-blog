@@ -358,10 +358,16 @@ button:disabled {
   padding: 0;
   border: 0;
   background: transparent;
-  cursor: pointer;
+  cursor: var(--cursor-pixel-pointer, pointer) !important;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* Keep the pixel cursor when Mapbox wraps the marker element */
+.mapboxgl-marker,
+.mapboxgl-marker * {
+  cursor: var(--cursor-pixel-pointer, pointer) !important;
 }
 
 .gallery-pin span {
