@@ -240,7 +240,8 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
   onClose,
   onNavigate,
 }) => {
-  const [loaded, setLoaded] = useState(false);
+  const [bitmap, setBitmap] = useState<ImageBitmap | null>(null);
+  const [imageError, setImageError] = useState(false);
   const [livePlaying, setLivePlaying] = useState(false);
   const [videoFailed, setVideoFailed] = useState(false);
   const [scale, setScale] = useState(1);
@@ -253,7 +254,7 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
   const [fit, setFit] = useState({ w: 1, h: 1 });
 
   const viewportRef = useRef<HTMLDivElement | null>(null);
-  const imageRef = useRef<HTMLImageElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const pointersRef = useRef(new Map<number, { x: number; y: number }>());
   const pinchRef = useRef<{
     distance: number;
@@ -277,7 +278,7 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
 
   // Reset everything when switching photos
   useEffect(() => {
-    setLoaded(false);
+    setImageError(false);
     setLivePlaying(false);
     setVideoFailed(false);
     setScale(1);
@@ -311,13 +312,84 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
 
   // Compute the object-contain display size for clamping
   useEffect(() => {
-    if (!viewport.w || !viewport.h) return;
+    if (!bitmap || !viewport.w || !viewport.h) return;
     const ratio = Math.min(
-      viewport.w / photo.width,
-      viewport.h / photo.height
+      viewport.w / bitmap.width,
+      viewport.h / bitmap.height
     );
-    setFit({ w: photo.width * ratio, h: photo.height * ratio });
-  }, [viewport, photo.width, photo.height]);
+    setFit({ w: bitmap.width * ratio, h: bitmap.height * ratio });
+  }, [bitmap, viewport]);
+
+  // Load the original image as an ImageBitmap (honours EXIF orientation)
+  useEffect(() => {
+    let cancelled = false;
+    setBitmap(null);
+    setImageError(false);
+
+    (async () => {
+      try {
+        const response = await fetch(photo.original);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const blob = await response.blob();
+        const nextBitmap = await createImageBitmap(blob, {
+          imageOrientation: 'from-image',
+        });
+        if (cancelled) {
+          nextBitmap.close();
+          return;
+        }
+        setBitmap(nextBitmap);
+      } catch {
+        if (!cancelled) setImageError(true);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [photo.original]);
+
+  // Release the bitmap when it is replaced or the viewer closes
+  useEffect(
+    () => () => {
+      bitmap?.close();
+    },
+    [bitmap]
+  );
+
+  // Draw the photo on a canvas: CSS transform scaling of very large images
+  // produces GPU tiling seams (visible grid lines), while canvas stays seamless.
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !bitmap || !viewport.w || !viewport.h || livePlaying) return;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.round(viewport.w * dpr);
+    canvas.height = Math.round(viewport.h * dpr);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, viewport.w, viewport.h);
+
+    const ratio = Math.min(
+      viewport.w / bitmap.width,
+      viewport.h / bitmap.height
+    );
+    const drawWidth = bitmap.width * ratio;
+    const drawHeight = bitmap.height * ratio;
+
+    ctx.translate(viewport.w / 2 + pan.x, viewport.h / 2 + pan.y);
+    ctx.scale(scale, scale);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(
+      bitmap,
+      -drawWidth / 2,
+      -drawHeight / 2,
+      drawWidth,
+      drawHeight
+    );
+  }, [bitmap, scale, pan, viewport, livePlaying]);
 
   const clampPan = useCallback(
     (x: number, y: number, nextScale: number) => {
@@ -765,24 +837,26 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
                 aria-hidden="true"
                 draggable={false}
                 className={`pointer-events-none absolute inset-0 m-auto max-h-full max-w-full object-contain blur-lg scale-105 transition-opacity duration-500 ${
-                  loaded ? 'opacity-0' : 'opacity-60'
+                  bitmap ? 'opacity-0' : 'opacity-60'
                 }`}
               />
-              <img
-                ref={imageRef}
-                src={photo.original}
-                alt={photo.title}
-                draggable={false}
-                onLoad={() => setLoaded(true)}
-                className={`relative max-h-full max-w-full object-contain transition-opacity duration-500 pointer-events-none ${
-                  loaded ? 'opacity-100' : 'opacity-0'
-                }`}
-                style={mediaStyle}
+              {/* Canvas avoids GPU tiling seams from CSS-scaling huge photos */}
+              <canvas
+                ref={canvasRef}
+                aria-label={photo.title}
+                className="absolute inset-0 w-full h-full pointer-events-none"
               />
-              {!loaded && (
+              {!bitmap && !imageError && (
                 <div className="absolute inset-x-0 bottom-4 flex justify-center pointer-events-none">
                   <span className="px-3 py-1.5 rounded-lg bg-slate-950/80 text-cyan-300 text-[11px] font-mono border border-cyan-400/30">
                     LOADING ORIGINAL…
+                  </span>
+                </div>
+              )}
+              {imageError && (
+                <div className="absolute inset-x-0 bottom-4 flex justify-center pointer-events-none">
+                  <span className="px-3 py-1.5 rounded-lg bg-rose-950/80 text-rose-200 text-[11px] font-mono border border-rose-400/30">
+                    原图加载失败，请检查网络后重试
                   </span>
                 </div>
               )}
