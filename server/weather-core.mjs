@@ -50,6 +50,21 @@ export function getWeatherConfig() {
   let privateKey = (env.QWEATHER_PRIVATE_KEY || '')
     .replace(/\\n/g, '\n')
     .trim();
+
+  // Plain base64 of the PEM file: avoids env-var UIs that strip or mangle newlines
+  if (!privateKey && env.QWEATHER_PRIVATE_KEY_BASE64) {
+    try {
+      privateKey = Buffer.from(
+        env.QWEATHER_PRIVATE_KEY_BASE64.trim(),
+        'base64'
+      )
+        .toString('utf8')
+        .trim();
+    } catch {
+      privateKey = '';
+    }
+  }
+
   if (!privateKey && env.QWEATHER_PRIVATE_KEY_PATH) {
     const keyPath = resolve(ROOT, env.QWEATHER_PRIVATE_KEY_PATH.trim());
     if (existsSync(keyPath)) {
@@ -88,6 +103,9 @@ export function getMissingWeatherEnv() {
     missing.push('QWEATHER_DEVELOPER_ID');
 
   let privateKey = (env.QWEATHER_PRIVATE_KEY || '').trim();
+  if (!privateKey && (env.QWEATHER_PRIVATE_KEY_BASE64 || '').trim()) {
+    privateKey = 'found';
+  }
   if (!privateKey && env.QWEATHER_PRIVATE_KEY_PATH) {
     const keyPath = resolve(ROOT, env.QWEATHER_PRIVATE_KEY_PATH.trim());
     if (existsSync(keyPath)) privateKey = 'found';
