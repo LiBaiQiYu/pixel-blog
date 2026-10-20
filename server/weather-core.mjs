@@ -74,6 +74,29 @@ export function getWeatherConfig() {
   };
 }
 
+/** 返回缺失的环境变量名（仅名称，不泄露值），用于部署排障 */
+export function getMissingWeatherEnv() {
+  ensureEnvLoaded();
+  const env = process.env;
+  const missing = [];
+
+  if (!(env.QWEATHER_API_HOST || '').trim()) missing.push('QWEATHER_API_HOST');
+  if (!(env.QWEATHER_KID || '').trim()) missing.push('QWEATHER_KID');
+  if (!(env.QWEATHER_PROJECT_ID || '').trim())
+    missing.push('QWEATHER_PROJECT_ID');
+  if (!(env.QWEATHER_DEVELOPER_ID || '').trim())
+    missing.push('QWEATHER_DEVELOPER_ID');
+
+  let privateKey = (env.QWEATHER_PRIVATE_KEY || '').trim();
+  if (!privateKey && env.QWEATHER_PRIVATE_KEY_PATH) {
+    const keyPath = resolve(ROOT, env.QWEATHER_PRIVATE_KEY_PATH.trim());
+    if (existsSync(keyPath)) privateKey = 'found';
+  }
+  if (!privateKey) missing.push('QWEATHER_PRIVATE_KEY');
+
+  return missing;
+}
+
 function base64Url(input) {
   return Buffer.from(input).toString('base64url');
 }

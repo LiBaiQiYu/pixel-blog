@@ -45,9 +45,18 @@ export function useWeather(): UseWeatherResult {
             `${WEATHER_ENDPOINT}?lat=${latitude.toFixed(2)}&lon=${longitude.toFixed(2)}`
           );
           if (!res.ok) {
+            let missing: string[] = [];
+            try {
+              const body = await res.json();
+              missing = Array.isArray(body?.missing) ? body.missing : [];
+            } catch {
+              // ignore non-JSON error bodies
+            }
             setHint(
               res.status === 503
-                ? '服务端未配置和风 API Host，显示默认城市'
+                ? missing.length > 0
+                  ? `服务端缺少环境变量：${missing.join(' / ')}`
+                  : '服务端未配置和风 API Host，显示默认城市'
                 : `天气服务暂不可用 (HTTP ${res.status})，显示默认城市`
             );
             setStatus('fallback');

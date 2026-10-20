@@ -1,5 +1,6 @@
 import {
   getWeatherConfig,
+  getMissingWeatherEnv,
   fetchWeatherForLocation,
 } from '../server/weather-core.mjs';
 
@@ -27,7 +28,10 @@ export default async function handler(req, res) {
   if (!config) {
     res.statusCode = 503;
     res.end(
-      JSON.stringify({ error: 'Weather service is not configured on the server.' })
+      JSON.stringify({
+        error: 'Weather service is not configured on the server.',
+        missing: getMissingWeatherEnv(),
+      })
     );
     return;
   }

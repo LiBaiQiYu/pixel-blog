@@ -1,5 +1,6 @@
 import {
   getWeatherConfig,
+  getMissingWeatherEnv,
   fetchWeatherForLocation,
 } from '../../server/weather-core.mjs';
 
@@ -27,7 +28,13 @@ export default async function handler(req) {
 
   const config = getWeatherConfig();
   if (!config) {
-    return json({ error: 'Weather service is not configured.' }, 503);
+    return json(
+      {
+        error: 'Weather service is not configured.',
+        missing: getMissingWeatherEnv(),
+      },
+      503
+    );
   }
 
   const url = new URL(req.url);
