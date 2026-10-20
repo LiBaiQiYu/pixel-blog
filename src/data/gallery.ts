@@ -1,7 +1,10 @@
-import type { GalleryPhoto } from '../types/gallery';
+import type { GalleryMeta, GalleryPhoto } from '../types/gallery';
+import galleryMetaJson from './gallery-meta.json';
+
+const galleryMeta = galleryMetaJson as Record<string, GalleryMeta>;
 
 // 由 chronoframe 的照片库（data/app.sqlite3）导出，缩略图位于 public/gallery/
-export const GALLERY_PHOTOS: GalleryPhoto[] = [
+const BASE_PHOTOS: Omit<GalleryPhoto, 'meta'>[] = [
   {
     id: 'IMG_1746',
     title: '白哈巴 · 阿克哈巴南村',
@@ -203,5 +206,10 @@ export const GALLERY_PHOTOS: GalleryPhoto[] = [
     accent: 'violet',
   },
 ];
+
+export const GALLERY_PHOTOS: GalleryPhoto[] = BASE_PHOTOS.map((photo) => ({
+  ...photo,
+  meta: galleryMeta[photo.id],
+}));
 
 export const GALLERY_AREAS = ['全部', '白哈巴', '喀纳斯', '禾木'] as const;

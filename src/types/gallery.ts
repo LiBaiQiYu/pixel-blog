@@ -1,3 +1,23 @@
+export interface GalleryParam {
+  label: string;
+  value: string;
+}
+
+export interface GalleryHistogram {
+  r: number[];
+  g: number[];
+  b: number[];
+}
+
+export interface GalleryMeta {
+  params: GalleryParam[];
+  histogram: GalleryHistogram;
+  fileSize: number;
+  isLivePhoto: boolean;
+  liveVideo: string | null;
+  altitude: number | null;
+}
+
 export interface GalleryPhoto {
   id: string;
   title: string;
@@ -16,4 +36,5 @@ export interface GalleryPhoto {
   country: string;
   locationName: string;
   accent: 'cyan' | 'magenta' | 'emerald' | 'amber' | 'violet';
+  meta: GalleryMeta;
 }

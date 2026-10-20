@@ -1,6 +1,6 @@
 {
   "city": "上海",
-  "updatedAt": "10-20 14:13",
+  "updatedAt": "10-20 15:43",
   "source": "和风天气 QWeather",
   "attribution": "https://www.qweather.com",
   "lat": 31.23,
@@ -11,9 +11,9 @@
     "feelsLike": 29,
     "text": "小雨",
     "code": 305,
-    "humidity": 70,
-    "windDir": "西南风",
-    "windScale": 2
+    "humidity": 72,
+    "windDir": "西风",
+    "windScale": 1
   },
   "daily": [
     {
