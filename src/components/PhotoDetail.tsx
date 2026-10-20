@@ -7,6 +7,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Camera,
   ChevronLeft,
@@ -595,10 +596,10 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
     </div>
   );
 
-  return (
+  return createPortal(
     <div
-      className={`fixed inset-0 z-50 flex flex-col animate-fadeIn ${
-        isDark ? 'bg-slate-950/95' : 'bg-slate-50/96'
+      className={`fixed inset-0 z-[70] flex flex-col animate-fadeIn backdrop-blur-2xl ${
+        isDark ? 'bg-slate-950/95' : 'bg-slate-50/95'
       }`}
     >
       {/* Viewer toolbar (never covers the image) */}
@@ -836,6 +837,7 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
           {InfoContent}
         </div>
       )}
-    </div>
+    </div>,
+    document.body
   );
 };
