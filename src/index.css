@@ -228,6 +228,15 @@ html:not(.dark) .crt-scanlines {
 
     /* 5. Disabled / Not-Allowed: Crimson Pixel Circle with Slash (Hotspot: 12 12) */
     --cursor-pixel-not-allowed: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' shape-rendering='crispEdges'%3E%3Cg fill='%230F172A' fill-opacity='0.8'%3E%3Crect x='8' y='4' width='8' height='4'/%3E%3Crect x='8' y='16' width='8' height='4'/%3E%3Crect x='4' y='8' width='4' height='8'/%3E%3Crect x='16' y='8' width='4' height='8'/%3E%3C/g%3E%3Cg fill='%23F43F5E'%3E%3Crect x='9' y='5' width='6' height='2'/%3E%3Crect x='9' y='17' width='6' height='2'/%3E%3Crect x='5' y='9' width='2' height='6'/%3E%3Crect x='17' y='9' width='2' height='6'/%3E%3Crect x='7' y='7' width='2' height='2'/%3E%3Crect x='15' y='7' width='2' height='2'/%3E%3Crect x='7' y='15' width='2' height='2'/%3E%3Crect x='15' y='15' width='2' height='2'/%3E%3Crect x='9' y='9' width='2' height='2'/%3E%3Crect x='11' y='11' width='2' height='2'/%3E%3Crect x='13' y='13' width='2' height='2'/%3E%3C/g%3E%3C/svg%3E") 12 12, not-allowed;
+
+    /* 6. Photo viewer: zoom in (pixel ring + plus) */
+    --cursor-pixel-zoom-in: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' shape-rendering='crispEdges'%3E%3Cg fill='%230F172A' fill-opacity='0.75'%3E%3Crect x='8' y='4' width='8' height='4'/%3E%3Crect x='8' y='16' width='8' height='4'/%3E%3Crect x='4' y='8' width='4' height='8'/%3E%3Crect x='16' y='8' width='4' height='8'/%3E%3Crect x='6' y='6' width='4' height='4'/%3E%3Crect x='14' y='6' width='4' height='4'/%3E%3Crect x='6' y='14' width='4' height='4'/%3E%3Crect x='14' y='14' width='4' height='4'/%3E%3C/g%3E%3Cg fill='%23F8FAFC'%3E%3Crect x='9' y='5' width='6' height='2'/%3E%3Crect x='9' y='17' width='6' height='2'/%3E%3Crect x='5' y='9' width='2' height='6'/%3E%3Crect x='17' y='9' width='2' height='6'/%3E%3Crect x='7' y='7' width='2' height='2'/%3E%3Crect x='15' y='7' width='2' height='2'/%3E%3Crect x='7' y='15' width='2' height='2'/%3E%3Crect x='15' y='15' width='2' height='2'/%3E%3C/g%3E%3Crect x='11' y='8' width='2' height='8' fill='%2338BDF8'/%3E%3Crect x='8' y='11' width='8' height='2' fill='%2338BDF8'/%3E%3C/svg%3E") 12 12, zoom-in;
+
+    /* 7. Photo viewer: grab (pixel ring + move arrows) */
+    --cursor-pixel-grab: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' shape-rendering='crispEdges'%3E%3Cg fill='%230F172A' fill-opacity='0.75'%3E%3Crect x='8' y='4' width='8' height='4'/%3E%3Crect x='8' y='16' width='8' height='4'/%3E%3Crect x='4' y='8' width='4' height='8'/%3E%3Crect x='16' y='8' width='4' height='8'/%3E%3Crect x='6' y='6' width='4' height='4'/%3E%3Crect x='14' y='6' width='4' height='4'/%3E%3Crect x='6' y='14' width='4' height='4'/%3E%3Crect x='14' y='14' width='4' height='4'/%3E%3C/g%3E%3Cg fill='%23F8FAFC'%3E%3Crect x='9' y='5' width='6' height='2'/%3E%3Crect x='9' y='17' width='6' height='2'/%3E%3Crect x='5' y='9' width='2' height='6'/%3E%3Crect x='17' y='9' width='2' height='6'/%3E%3Crect x='11' y='6' width='2' height='3'/%3E%3Crect x='11' y='15' width='2' height='3'/%3E%3Crect x='6' y='11' width='3' height='2'/%3E%3Crect x='15' y='11' width='3' height='2'/%3E%3C/g%3E%3Crect x='11' y='11' width='2' height='2' fill='%2338BDF8'/%3E%3C/svg%3E") 12 12, grab;
+
+    /* 8. Photo viewer: grabbing (pixel ring + pink move arrows) */
+    --cursor-pixel-grabbing: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' shape-rendering='crispEdges'%3E%3Cg fill='%230F172A' fill-opacity='0.75'%3E%3Crect x='8' y='4' width='8' height='4'/%3E%3Crect x='8' y='16' width='8' height='4'/%3E%3Crect x='4' y='8' width='4' height='8'/%3E%3Crect x='16' y='8' width='4' height='8'/%3E%3Crect x='6' y='6' width='4' height='4'/%3E%3Crect x='14' y='6' width='4' height='4'/%3E%3Crect x='6' y='14' width='4' height='4'/%3E%3Crect x='14' y='14' width='4' height='4'/%3E%3C/g%3E%3Cg fill='%23F472B6'%3E%3Crect x='9' y='5' width='6' height='2'/%3E%3Crect x='9' y='17' width='6' height='2'/%3E%3Crect x='5' y='9' width='2' height='6'/%3E%3Crect x='17' y='9' width='2' height='6'/%3E%3Crect x='11' y='6' width='2' height='3'/%3E%3Crect x='11' y='15' width='2' height='3'/%3E%3Crect x='6' y='11' width='3' height='2'/%3E%3Crect x='15' y='11' width='3' height='2'/%3E%3C/g%3E%3Crect x='11' y='11' width='2' height='2' fill='%23FFFFFF'/%3E%3C/svg%3E") 12 12, grabbing;
   }
 
   html,
@@ -270,6 +279,18 @@ html:not(.dark) .crt-scanlines {
   input:disabled,
   .cursor-not-allowed {
     cursor: var(--cursor-pixel-not-allowed) !important;
+  }
+
+  .cursor-zoom-pixel {
+    cursor: var(--cursor-pixel-zoom-in) !important;
+  }
+
+  .cursor-grab-pixel {
+    cursor: var(--cursor-pixel-grab) !important;
+  }
+
+  .cursor-grabbing-pixel {
+    cursor: var(--cursor-pixel-grabbing) !important;
   }
 }
 

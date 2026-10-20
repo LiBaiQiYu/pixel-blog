@@ -734,7 +734,11 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
           onContextMenu={(event) => event.preventDefault()}
           onDragStart={(event) => event.preventDefault()}
           className={`relative flex-1 min-h-0 overflow-hidden touch-none select-none flex items-center justify-center ${
-            scale > 1 ? (dragging ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-zoom-in'
+            scale > 1
+              ? dragging
+                ? 'cursor-grabbing-pixel'
+                : 'cursor-grab-pixel'
+              : 'cursor-zoom-pixel'
           }`}
         >
           {livePlaying && hasLiveVideo ? (

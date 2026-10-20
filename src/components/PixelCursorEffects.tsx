@@ -47,6 +47,19 @@ function applyResolutionAdaptedPixelCursors() {
   root.style.setProperty('--cursor-pixel-text', textSvg);
   root.style.setProperty('--cursor-pixel-wait', waitSvg);
   root.style.setProperty('--cursor-pixel-not-allowed', notAllowedSvg);
+
+  // 6. Photo viewer: zoom-in (pixel ring + plus)
+  const zoomInSvg = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='${size}' height='${size}' viewBox='0 0 24 24' shape-rendering='crispEdges'%3E%3Cg fill='%230F172A' fill-opacity='0.75'%3E%3Crect x='8' y='4' width='8' height='4'/%3E%3Crect x='8' y='16' width='8' height='4'/%3E%3Crect x='4' y='8' width='4' height='8'/%3E%3Crect x='16' y='8' width='4' height='8'/%3E%3Crect x='6' y='6' width='4' height='4'/%3E%3Crect x='14' y='6' width='4' height='4'/%3E%3Crect x='6' y='14' width='4' height='4'/%3E%3Crect x='14' y='14' width='4' height='4'/%3E%3C/g%3E%3Cg fill='%23F8FAFC'%3E%3Crect x='9' y='5' width='6' height='2'/%3E%3Crect x='9' y='17' width='6' height='2'/%3E%3Crect x='5' y='9' width='2' height='6'/%3E%3Crect x='17' y='9' width='2' height='6'/%3E%3Crect x='7' y='7' width='2' height='2'/%3E%3Crect x='15' y='7' width='2' height='2'/%3E%3Crect x='7' y='15' width='2' height='2'/%3E%3Crect x='15' y='15' width='2' height='2'/%3E%3C/g%3E%3Crect x='11' y='8' width='2' height='8' fill='%2338BDF8'/%3E%3Crect x='8' y='11' width='8' height='2' fill='%2338BDF8'/%3E%3C/svg%3E") ${center} ${center}, zoom-in`;
+
+  // 7. Photo viewer: grab (pixel ring + move arrows)
+  const grabSvg = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='${size}' height='${size}' viewBox='0 0 24 24' shape-rendering='crispEdges'%3E%3Cg fill='%230F172A' fill-opacity='0.75'%3E%3Crect x='8' y='4' width='8' height='4'/%3E%3Crect x='8' y='16' width='8' height='4'/%3E%3Crect x='4' y='8' width='4' height='8'/%3E%3Crect x='16' y='8' width='4' height='8'/%3E%3Crect x='6' y='6' width='4' height='4'/%3E%3Crect x='14' y='6' width='4' height='4'/%3E%3Crect x='6' y='14' width='4' height='4'/%3E%3Crect x='14' y='14' width='4' height='4'/%3E%3C/g%3E%3Cg fill='%23F8FAFC'%3E%3Crect x='9' y='5' width='6' height='2'/%3E%3Crect x='9' y='17' width='6' height='2'/%3E%3Crect x='5' y='9' width='2' height='6'/%3E%3Crect x='17' y='9' width='2' height='6'/%3E%3Crect x='11' y='6' width='2' height='3'/%3E%3Crect x='11' y='15' width='2' height='3'/%3E%3Crect x='6' y='11' width='3' height='2'/%3E%3Crect x='15' y='11' width='3' height='2'/%3E%3C/g%3E%3Crect x='11' y='11' width='2' height='2' fill='%2338BDF8'/%3E%3C/svg%3E") ${center} ${center}, grab`;
+
+  // 8. Photo viewer: grabbing (pixel ring + pink move arrows)
+  const grabbingSvg = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='${size}' height='${size}' viewBox='0 0 24 24' shape-rendering='crispEdges'%3E%3Cg fill='%230F172A' fill-opacity='0.75'%3E%3Crect x='8' y='4' width='8' height='4'/%3E%3Crect x='8' y='16' width='8' height='4'/%3E%3Crect x='4' y='8' width='4' height='8'/%3E%3Crect x='16' y='8' width='4' height='8'/%3E%3Crect x='6' y='6' width='4' height='4'/%3E%3Crect x='14' y='6' width='4' height='4'/%3E%3Crect x='6' y='14' width='4' height='4'/%3E%3Crect x='14' y='14' width='4' height='4'/%3E%3C/g%3E%3Cg fill='%23F472B6'%3E%3Crect x='9' y='5' width='6' height='2'/%3E%3Crect x='9' y='17' width='6' height='2'/%3E%3Crect x='5' y='9' width='2' height='6'/%3E%3Crect x='17' y='9' width='2' height='6'/%3E%3Crect x='11' y='6' width='2' height='3'/%3E%3Crect x='11' y='15' width='2' height='3'/%3E%3Crect x='6' y='11' width='3' height='2'/%3E%3Crect x='15' y='11' width='3' height='2'/%3E%3C/g%3E%3Crect x='11' y='11' width='2' height='2' fill='%23FFFFFF'/%3E%3C/svg%3E") ${center} ${center}, grabbing`;
+
+  root.style.setProperty('--cursor-pixel-zoom-in', zoomInSvg);
+  root.style.setProperty('--cursor-pixel-grab', grabSvg);
+  root.style.setProperty('--cursor-pixel-grabbing', grabbingSvg);
 }
 
 const SHARD_COLORS = [
