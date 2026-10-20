@@ -732,6 +732,7 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
           onPointerCancel={handlePointerUp}
           onDoubleClick={handleDoubleClick}
           onContextMenu={(event) => event.preventDefault()}
+          onDragStart={(event) => event.preventDefault()}
           className={`relative flex-1 min-h-0 overflow-hidden touch-none select-none flex items-center justify-center ${
             scale > 1 ? (dragging ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-zoom-in'
           }`}
@@ -758,7 +759,8 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
                 src={photo.src}
                 alt=""
                 aria-hidden="true"
-                className={`absolute inset-0 m-auto max-h-full max-w-full object-contain blur-lg scale-105 transition-opacity duration-500 ${
+                draggable={false}
+                className={`pointer-events-none absolute inset-0 m-auto max-h-full max-w-full object-contain blur-lg scale-105 transition-opacity duration-500 ${
                   loaded ? 'opacity-0' : 'opacity-60'
                 }`}
               />
