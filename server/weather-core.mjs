@@ -35,6 +35,21 @@ function ensureEnvLoaded() {
   loadEnvFile('.env');
 }
 
+// Repair PEM strings whose newlines were flattened into spaces by env-var UIs
+function normalizePem(pem) {
+  let value = (pem || '').trim();
+  if (!value) return '';
+  if (!/-----BEGIN [^-]+-----/.test(value)) return value;
+
+  const match = /-----BEGIN ([^-]+)-----([\s\S]*?)-----END \1-----/.exec(value);
+  if (!match) return value;
+  const label = match[1].trim();
+  const body = match[2].replace(/\s+/g, '');
+  if (!body) return value;
+  const lines = body.match(/.{1,64}/g) || [];
+  return `-----BEGIN ${label}-----\n${lines.join('\n')}\n-----END ${label}-----`;
+}
+
 export function getWeatherConfig() {
   ensureEnvLoaded();
   const env = process.env;
@@ -47,19 +62,24 @@ export function getWeatherConfig() {
   const projectId = (env.QWEATHER_PROJECT_ID || '').trim();
   const developerId = (env.QWEATHER_DEVELOPER_ID || '').trim();
 
+  let keySource = 'none';
   let privateKey = (env.QWEATHER_PRIVATE_KEY || '')
     .replace(/\\n/g, '\n')
     .trim();
+  if (privateKey) {
+    keySource = 'QWEATHER_PRIVATE_KEY';
+  }
 
   // Plain base64 of the PEM file: avoids env-var UIs that strip or mangle newlines
   if (!privateKey && env.QWEATHER_PRIVATE_KEY_BASE64) {
     try {
       privateKey = Buffer.from(
-        env.QWEATHER_PRIVATE_KEY_BASE64.trim(),
+        env.QWEATHER_PRIVATE_KEY_BASE64.trim().replace(/^["']|["']$/g, ''),
         'base64'
       )
         .toString('utf8')
         .trim();
+      keySource = 'QWEATHER_PRIVATE_KEY_BASE64';
     } catch {
       privateKey = '';
     }
@@ -69,8 +89,11 @@ export function getWeatherConfig() {
     const keyPath = resolve(ROOT, env.QWEATHER_PRIVATE_KEY_PATH.trim());
     if (existsSync(keyPath)) {
       privateKey = readFileSync(keyPath, 'utf8').trim();
+      keySource = 'QWEATHER_PRIVATE_KEY_PATH';
     }
   }
+
+  privateKey = normalizePem(privateKey);
 
   if (!host || !kid || !projectId || !developerId || !privateKey) {
     return null;
@@ -82,6 +105,7 @@ export function getWeatherConfig() {
     projectId,
     developerId,
     privateKey,
+    keySource,
     city: (env.QWEATHER_CITY || '本地').trim(),
     lat: Number(env.QWEATHER_LAT || '31.23'),
     lon: Number(env.QWEATHER_LON || '121.47'),
@@ -131,7 +155,18 @@ export function createJwt(config, ttlSeconds = 900) {
   const unsigned = `${base64Url(JSON.stringify(header))}.${base64Url(
     JSON.stringify(payload)
   )}`;
-  const privateKeyObject = createPrivateKey(config.privateKey);
+  let privateKeyObject;
+  try {
+    privateKeyObject = createPrivateKey(config.privateKey);
+  } catch (err) {
+    const key = config.privateKey || '';
+    const preview = key.slice(0, 30).replace(/\n/g, '⏎');
+    throw new Error(
+      `密钥解析失败 [来源: ${config.keySource || 'unknown'}, 长度: ${
+        key.length
+      }, 开头: ${preview}]`
+    );
+  }
   const signature = sign(null, Buffer.from(unsigned), privateKeyObject);
   return `${unsigned}.${signature.toString('base64url')}`;
 }
