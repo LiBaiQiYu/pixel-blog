@@ -24,6 +24,7 @@ import {
 import type { GalleryPhoto } from '../types/gallery';
 import type { ThemeMode } from '../types/blog';
 import { convertHeicToJpeg, isHeicBlob, isHeicUrl } from '../lib/heic';
+import { useLiveVideo } from '../hooks/useLiveVideo';
 import { LiveProgressRing } from './LiveProgressRing';
 
 const PhotoMiniMap = lazy(() =>
@@ -279,7 +280,6 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
   const partialProgressRef = useRef(false);
   const [loadedMediumId, setLoadedMediumId] = useState<string | null>(null);
   const [livePlaying, setLivePlaying] = useState(false);
-  const [liveProgress, setLiveProgress] = useState(0);
   const [videoFailed, setVideoFailed] = useState(false);
   const [scale, setScale] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -292,7 +292,7 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
 
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const liveVideoRef = useRef<HTMLVideoElement | null>(null);
+  const pendingLivePlayRef = useRef(false);
   const pointersRef = useRef(new Map<number, { x: number; y: number }>());
   const pinchRef = useRef<{
     distance: number;
@@ -314,7 +314,12 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
     () => photos.findIndex((item) => item.id === photo.id),
     [photos, photo.id]
   );
-  const hasLiveVideo = Boolean(photo.meta.liveVideo) && !videoFailed;
+  const liveAsset = useLiveVideo(
+    photo.meta.liveVideo,
+    Boolean(photo.meta.liveVideo)
+  );
+  const hasLiveVideo =
+    Boolean(photo.meta.liveVideo) && !videoFailed && !liveAsset.error;
   const isDark = theme === 'dark';
 
   const isLoading = !bitmap && !imageError;
@@ -383,8 +388,8 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
     setHudPhase('hidden');
     setHasPartialProgress(false);
     partialProgressRef.current = false;
+    pendingLivePlayRef.current = false;
     setLivePlaying(false);
-    setLiveProgress(0);
     setVideoFailed(false);
     setScale(1);
     setPan({ x: 0, y: 0 });
@@ -886,18 +891,31 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
     });
   }, [photo]);
 
-  const updateLiveProgress = () => {
-    const video = liveVideoRef.current;
-    if (!video) return;
-    const duration = video.duration;
-    if (!Number.isFinite(duration) || duration <= 0) return;
-
-    let bufferedEnd = 0;
-    for (let index = 0; index < video.buffered.length; index += 1) {
-      bufferedEnd = Math.max(bufferedEnd, video.buffered.end(index));
+  const toggleLivePlayback = () => {
+    if (livePlaying) {
+      pendingLivePlayRef.current = false;
+      setLivePlaying(false);
+      return;
     }
-    setLiveProgress(Math.min(1, bufferedEnd / duration));
+    if (!liveAsset.objectUrl) {
+      pendingLivePlayRef.current = true;
+      return;
+    }
+    pendingLivePlayRef.current = false;
+    setLivePlaying(true);
   };
+
+  useEffect(() => {
+    if (!pendingLivePlayRef.current || !liveAsset.objectUrl) return;
+    pendingLivePlayRef.current = false;
+    setLivePlaying(true);
+  }, [liveAsset.objectUrl]);
+
+  useEffect(() => {
+    if (!liveAsset.error) return;
+    pendingLivePlayRef.current = false;
+    setLivePlaying(false);
+  }, [liveAsset.error]);
 
   const InfoContent = (
     <div className="space-y-4 text-slate-700 dark:text-slate-200">
@@ -1112,16 +1130,12 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
           {livePlaying && hasLiveVideo ? (
             <video
               key={photo.id}
-              ref={liveVideoRef}
-              src={photo.meta.liveVideo as string}
+              src={liveAsset.objectUrl ?? undefined}
               poster={photo.src}
               autoPlay
               muted
               loop
               playsInline
-              onLoadedMetadata={updateLiveProgress}
-              onProgress={updateLiveProgress}
-              onCanPlayThrough={updateLiveProgress}
               onError={() => {
                 setVideoFailed(true);
                 setLivePlaying(false);
@@ -1288,7 +1302,7 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
           {hasLiveVideo && (
             <button
               type="button"
-              onClick={() => setLivePlaying((prev) => !prev)}
+              onClick={toggleLivePlayback}
               onPointerDown={(event) => event.stopPropagation()}
               onDoubleClick={(event) => event.stopPropagation()}
               className="absolute top-3 left-3 z-10 rounded-full shadow-lg shadow-slate-950/30 focus:outline-none"
@@ -1296,8 +1310,8 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
               aria-label={livePlaying ? '暂停实况' : '播放实况照片'}
             >
               <LiveProgressRing
-                progress={liveProgress}
-                loaded={liveProgress >= 0.995}
+                progress={liveAsset.progress}
+                loaded={liveAsset.loaded}
                 playing={livePlaying}
                 size={34}
               />

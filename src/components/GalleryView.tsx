@@ -7,6 +7,7 @@ import React, {
   useState,
 } from 'react';
 import { Camera, Image, LayoutGrid, Map as MapIcon } from 'lucide-react';
+import { useLiveVideo } from '../hooks/useLiveVideo';
 import { LiveProgressRing } from './LiveProgressRing';
 import { PhotoDetail } from './PhotoDetail';
 import { GALLERY_CATEGORIES, GALLERY_PHOTOS } from '../data/gallery';
@@ -73,8 +74,13 @@ const GalleryCard: React.FC<{
   const [thumbActive, setThumbActive] = useState(cardDelay === 0);
   const [playing, setPlaying] = useState(false);
   const [thumbnailLoaded, setThumbnailLoaded] = useState(false);
-  const [liveProgress, setLiveProgress] = useState(0);
-  const hasLive = Boolean(photo.meta.liveVideo);
+  const pendingLiveRef = useRef(false);
+  const hasLiveSource = Boolean(photo.meta.liveVideo);
+  const liveAsset = useLiveVideo(
+    photo.meta.liveVideo,
+    hasLiveSource && thumbnailLoaded
+  );
+  const hasLive = hasLiveSource && !liveAsset.error;
 
   useEffect(() => {
     if (thumbActive) return;
@@ -90,16 +96,25 @@ const GalleryCard: React.FC<{
     image.src = photo.medium;
   };
 
-  const startLive = () => {
-    if (!hasLive) return;
+  const playLive = () => {
     const video = videoRef.current;
-    if (!video) return;
+    if (!video || !liveAsset.objectUrl) return;
     setPlaying(true);
     video.currentTime = 0;
     video.play().catch(() => setPlaying(false));
   };
 
+  const startLive = () => {
+    if (!hasLive) return;
+    if (!liveAsset.objectUrl) {
+      pendingLiveRef.current = true;
+      return;
+    }
+    playLive();
+  };
+
   const stopLive = () => {
+    pendingLiveRef.current = false;
     if (!hasLive) return;
     setPlaying(false);
     const video = videoRef.current;
@@ -109,21 +124,15 @@ const GalleryCard: React.FC<{
     }
   };
 
-  const updateLiveProgress = () => {
-    const video = videoRef.current;
-    if (!video) return;
-    const duration = video.duration;
-    if (!Number.isFinite(duration) || duration <= 0) return;
-
-    let bufferedEnd = 0;
-    for (let index = 0; index < video.buffered.length; index += 1) {
-      bufferedEnd = Math.max(bufferedEnd, video.buffered.end(index));
-    }
-    setLiveProgress(Math.min(1, bufferedEnd / duration));
-  };
+  useEffect(() => {
+    if (!pendingLiveRef.current || !liveAsset.objectUrl) return;
+    pendingLiveRef.current = false;
+    playLive();
+  }, [liveAsset.objectUrl]);
 
   useEffect(
     () => () => {
+      pendingLiveRef.current = false;
       if (longPressTimerRef.current !== null) {
         window.clearTimeout(longPressTimerRef.current);
       }
@@ -245,15 +254,12 @@ const GalleryCard: React.FC<{
         {hasLive && (
           <video
             ref={videoRef}
-            src={photo.meta.liveVideo as string}
+            src={liveAsset.objectUrl ?? undefined}
             poster={thumbActive ? photo.src : undefined}
             muted
             loop
             playsInline
-            preload="none"
-            onLoadedMetadata={updateLiveProgress}
-            onProgress={updateLiveProgress}
-            onCanPlayThrough={updateLiveProgress}
+            preload={liveAsset.objectUrl ? 'auto' : 'none'}
             className={`pointer-events-none absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${
               playing ? 'opacity-100' : 'opacity-0'
             }`}
@@ -268,8 +274,8 @@ const GalleryCard: React.FC<{
         </span>
         {hasLive && (
           <LiveProgressRing
-            progress={liveProgress}
-            loaded={liveProgress >= 0.995}
+            progress={liveAsset.progress}
+            loaded={liveAsset.loaded}
             playing={playing}
             size={30}
             className="shadow-lg shadow-slate-950/30"
