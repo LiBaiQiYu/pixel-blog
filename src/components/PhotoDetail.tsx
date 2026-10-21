@@ -17,8 +17,6 @@ import {
   MapPin,
   Maximize,
   Minus,
-  Pause,
-  Play,
   Plus,
   RefreshCw,
   X,
@@ -26,6 +24,7 @@ import {
 import type { GalleryPhoto } from '../types/gallery';
 import type { ThemeMode } from '../types/blog';
 import { convertHeicToJpeg, isHeicBlob, isHeicUrl } from '../lib/heic';
+import { LiveProgressRing } from './LiveProgressRing';
 
 const PhotoMiniMap = lazy(() =>
   import('./PhotoMiniMap').then((module) => ({
@@ -280,6 +279,7 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
   const partialProgressRef = useRef(false);
   const [loadedMediumId, setLoadedMediumId] = useState<string | null>(null);
   const [livePlaying, setLivePlaying] = useState(false);
+  const [liveProgress, setLiveProgress] = useState(0);
   const [videoFailed, setVideoFailed] = useState(false);
   const [scale, setScale] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -292,6 +292,7 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
 
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const liveVideoRef = useRef<HTMLVideoElement | null>(null);
   const pointersRef = useRef(new Map<number, { x: number; y: number }>());
   const pinchRef = useRef<{
     distance: number;
@@ -383,6 +384,7 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
     setHasPartialProgress(false);
     partialProgressRef.current = false;
     setLivePlaying(false);
+    setLiveProgress(0);
     setVideoFailed(false);
     setScale(1);
     setPan({ x: 0, y: 0 });
@@ -884,6 +886,19 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
     });
   }, [photo]);
 
+  const updateLiveProgress = () => {
+    const video = liveVideoRef.current;
+    if (!video) return;
+    const duration = video.duration;
+    if (!Number.isFinite(duration) || duration <= 0) return;
+
+    let bufferedEnd = 0;
+    for (let index = 0; index < video.buffered.length; index += 1) {
+      bufferedEnd = Math.max(bufferedEnd, video.buffered.end(index));
+    }
+    setLiveProgress(Math.min(1, bufferedEnd / duration));
+  };
+
   const InfoContent = (
     <div className="space-y-4 text-slate-700 dark:text-slate-200">
       <div className="space-y-1.5">
@@ -971,7 +986,6 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
 
       <div className="pt-1 border-t border-slate-300/50 dark:border-white/10 text-[10px] font-mono text-slate-400 dark:text-slate-500 flex items-center justify-between">
         <span>SOURCE: chronoframe</span>
-        <span>{photo.meta.isLivePhoto ? 'LIVE PHOTO' : 'STILL PHOTO'}</span>
       </div>
     </div>
   );
@@ -1002,11 +1016,6 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
           <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-sky-500/10 dark:bg-white/5 text-sky-700 dark:text-cyan-300 border border-sky-400/20 dark:border-white/10 whitespace-nowrap">
             {index + 1} / {photos.length}
           </span>
-          {hasLiveVideo && (
-            <span className="hidden sm:inline px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-pink-500/90 text-white border border-pink-300/60">
-              LIVE
-            </span>
-          )}
           <span className="hidden md:block text-xs font-mono text-slate-600 dark:text-slate-300 truncate">
             {photo.title}
           </span>
@@ -1048,27 +1057,6 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
           >
             <Plus className="w-4 h-4" />
           </button>
-
-          {hasLiveVideo && (
-            <button
-              type="button"
-              onClick={() => setLivePlaying((prev) => !prev)}
-              className="px-2.5 py-1.5 rounded-lg bg-pink-500/15 text-pink-600 dark:text-pink-300 border border-pink-400/40 hover:bg-pink-500/25 flex items-center gap-1 text-[11px] font-mono font-semibold"
-              title={livePlaying ? '暂停实况' : '播放实况照片'}
-            >
-              {livePlaying ? (
-                <>
-                  <Pause className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">暂停</span>
-                </>
-              ) : (
-                <>
-                  <Play className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">实况</span>
-                </>
-              )}
-            </button>
-          )}
 
           <button
             type="button"
@@ -1124,12 +1112,16 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
           {livePlaying && hasLiveVideo ? (
             <video
               key={photo.id}
+              ref={liveVideoRef}
               src={photo.meta.liveVideo as string}
               poster={photo.src}
               autoPlay
               muted
               loop
               playsInline
+              onLoadedMetadata={updateLiveProgress}
+              onProgress={updateLiveProgress}
+              onCanPlayThrough={updateLiveProgress}
               onError={() => {
                 setVideoFailed(true);
                 setLivePlaying(false);
@@ -1293,10 +1285,23 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
             </>
           )}
 
-          {livePlaying && (
-            <div className="absolute top-3 left-3 px-2 py-0.5 rounded text-[10px] font-mono bg-pink-500/90 text-white border border-pink-300/60 pointer-events-none">
-              LIVE PHOTO
-            </div>
+          {hasLiveVideo && (
+            <button
+              type="button"
+              onClick={() => setLivePlaying((prev) => !prev)}
+              onPointerDown={(event) => event.stopPropagation()}
+              onDoubleClick={(event) => event.stopPropagation()}
+              className="absolute top-3 left-3 z-10 rounded-full shadow-lg shadow-slate-950/30 focus:outline-none"
+              title={livePlaying ? '暂停实况' : '播放实况照片'}
+              aria-label={livePlaying ? '暂停实况' : '播放实况照片'}
+            >
+              <LiveProgressRing
+                progress={liveProgress}
+                loaded={liveProgress >= 0.995}
+                playing={livePlaying}
+                size={34}
+              />
+            </button>
           )}
 
           {/* Interaction hint */}

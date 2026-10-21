@@ -1,5 +1,13 @@
-import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { Camera, Image, LayoutGrid, Map as MapIcon } from 'lucide-react';
+import { LiveProgressRing } from './LiveProgressRing';
 import { PhotoDetail } from './PhotoDetail';
 import { GALLERY_CATEGORIES, GALLERY_PHOTOS } from '../data/gallery';
 import type { GalleryPhoto } from '../types/gallery';
@@ -30,8 +38,15 @@ const CARD_STAGGER_MS = 80;
 function getColumnCount() {
   if (typeof window === 'undefined') return 3;
   if (window.innerWidth >= 1024) return 3;
-  if (window.innerWidth >= 640) return 2;
+  if (window.innerWidth >= 430) return 2;
   return 1;
+}
+
+function supportsHover() {
+  return (
+    typeof window !== 'undefined' &&
+    window.matchMedia('(hover: hover) and (pointer: fine)').matches
+  );
 }
 
 /** Life photo card: LQIP → thumbnail fade-in, Live Photos play inline on hover */
@@ -42,6 +57,10 @@ const GalleryCard: React.FC<{
 }> = ({ photo, onOpen, loadDelay }) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const mediumPreloadedRef = useRef(false);
+  const longPressTimerRef = useRef<number | null>(null);
+  const longPressActiveRef = useRef(false);
+  const suppressClickRef = useRef(false);
+  const pressStartRef = useRef<{ x: number; y: number } | null>(null);
   const [cardDelay] = useState(() => {
     if (
       typeof window !== 'undefined' &&
@@ -54,6 +73,7 @@ const GalleryCard: React.FC<{
   const [thumbActive, setThumbActive] = useState(cardDelay === 0);
   const [playing, setPlaying] = useState(false);
   const [thumbnailLoaded, setThumbnailLoaded] = useState(false);
+  const [liveProgress, setLiveProgress] = useState(0);
   const hasLive = Boolean(photo.meta.liveVideo);
 
   useEffect(() => {
@@ -89,25 +109,107 @@ const GalleryCard: React.FC<{
     }
   };
 
+  const updateLiveProgress = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    const duration = video.duration;
+    if (!Number.isFinite(duration) || duration <= 0) return;
+
+    let bufferedEnd = 0;
+    for (let index = 0; index < video.buffered.length; index += 1) {
+      bufferedEnd = Math.max(bufferedEnd, video.buffered.end(index));
+    }
+    setLiveProgress(Math.min(1, bufferedEnd / duration));
+  };
+
+  useEffect(
+    () => () => {
+      if (longPressTimerRef.current !== null) {
+        window.clearTimeout(longPressTimerRef.current);
+      }
+    },
+    []
+  );
+
+  const cancelLongPress = () => {
+    if (longPressTimerRef.current !== null) {
+      window.clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
+
+  const handlePointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {
+    preloadMedium();
+    if (!hasLive || event.pointerType === 'mouse') return;
+
+    cancelLongPress();
+    pressStartRef.current = { x: event.clientX, y: event.clientY };
+    longPressTimerRef.current = window.setTimeout(() => {
+      longPressTimerRef.current = null;
+      longPressActiveRef.current = true;
+      startLive();
+    }, 450);
+  };
+
+  const handlePointerMove = (event: React.PointerEvent<HTMLButtonElement>) => {
+    if (!pressStartRef.current) return;
+    const dx = event.clientX - pressStartRef.current.x;
+    const dy = event.clientY - pressStartRef.current.y;
+    if (dx * dx + dy * dy <= 100) return;
+
+    pressStartRef.current = null;
+    cancelLongPress();
+    if (longPressActiveRef.current) {
+      longPressActiveRef.current = false;
+      stopLive();
+    }
+  };
+
+  const stopLongPress = (suppressClick: boolean) => {
+    pressStartRef.current = null;
+    cancelLongPress();
+    if (!longPressActiveRef.current) return;
+
+    longPressActiveRef.current = false;
+    suppressClickRef.current = suppressClick;
+    stopLive();
+    if (suppressClick) {
+      window.setTimeout(() => {
+        suppressClickRef.current = false;
+      }, 700);
+    }
+  };
+
   return (
     <button
       onMouseEnter={() => {
         preloadMedium();
-        startLive();
+        if (supportsHover()) startLive();
       }}
       onMouseLeave={stopLive}
       onFocus={() => {
         preloadMedium();
-        startLive();
+        if (supportsHover()) startLive();
       }}
       onBlur={stopLive}
-      onPointerDown={preloadMedium}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={() => stopLongPress(true)}
+      onPointerCancel={() => stopLongPress(false)}
+      onPointerLeave={() => stopLongPress(false)}
+      onContextMenu={(event) => {
+        if (hasLive) event.preventDefault();
+      }}
       onClick={() => {
+        if (suppressClickRef.current) {
+          suppressClickRef.current = false;
+          return;
+        }
         preloadMedium();
         stopLive();
         onOpen();
       }}
-      className="gallery-card-reveal group relative w-full block text-left rounded-xl overflow-hidden border border-slate-300/60 dark:border-white/10 hover:border-sky-400/60 shadow-sm hover:shadow-lg hover:shadow-sky-500/10 transition-all"
+      className="gallery-card-reveal group relative w-full block text-left rounded-xl overflow-hidden border border-slate-300/60 dark:border-white/10 hover:border-sky-400/60 shadow-sm hover:shadow-lg hover:shadow-sky-500/10 transition-all select-none touch-pan-y [-webkit-touch-callout:none]"
       style={{ animationDelay: `${cardDelay}ms` }}
     >
       <div
@@ -149,6 +251,9 @@ const GalleryCard: React.FC<{
             loop
             playsInline
             preload="none"
+            onLoadedMetadata={updateLiveProgress}
+            onProgress={updateLiveProgress}
+            onCanPlayThrough={updateLiveProgress}
             className={`pointer-events-none absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${
               playing ? 'opacity-100' : 'opacity-0'
             }`}
@@ -162,15 +267,13 @@ const GalleryCard: React.FC<{
           {photo.category}
         </span>
         {hasLive && (
-          <span
-            className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${
-              playing
-                ? 'bg-pink-500 text-white border-pink-200/70'
-                : 'bg-pink-500/90 text-white border-pink-300/50'
-            }`}
-          >
-            {playing ? 'LIVE · 播放中' : 'LIVE'}
-          </span>
+          <LiveProgressRing
+            progress={liveProgress}
+            loaded={liveProgress >= 0.995}
+            playing={playing}
+            size={30}
+            className="shadow-lg shadow-slate-950/30"
+          />
         )}
       </div>
 
@@ -203,6 +306,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
   const [batchStart, setBatchStart] = useState(0);
   const [columnCount, setColumnCount] = useState(getColumnCount);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const loadingMoreRef = useRef(false);
 
   useEffect(() => {
     const onResize = () => setColumnCount(getColumnCount());
@@ -280,22 +384,61 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
     return Number.isFinite(minimum) ? minimum : 0;
   }, [columns, batchStart, columnCount]);
 
-  useEffect(() => {
+  const loadMore = useCallback(() => {
+    if (loadingMoreRef.current) return;
     if (visibleCount >= filtered.length) return;
+
+    loadingMoreRef.current = true;
+    setBatchStart(visibleCount);
+    setVisibleCount((current) =>
+      Math.min(current + LOAD_BATCH, filtered.length)
+    );
+  }, [visibleCount, filtered.length]);
+
+  useEffect(() => {
+    loadingMoreRef.current = false;
+    if (displayMode !== 'grid' || visibleCount >= filtered.length) return;
+
     const node = loadMoreRef.current;
     if (!node) return;
 
+    let frame = 0;
+    const checkPosition = () => {
+      frame = 0;
+      const target = loadMoreRef.current;
+      if (!target) return;
+      if (
+        target.getBoundingClientRect().top <=
+        window.innerHeight + 360
+      ) {
+        loadMore();
+      }
+    };
+    const requestCheck = () => {
+      if (frame !== 0) return;
+      frame = window.requestAnimationFrame(checkPosition);
+    };
     const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry?.isIntersecting) return;
-        setBatchStart(visibleCount);
-        setVisibleCount(Math.min(visibleCount + LOAD_BATCH, filtered.length));
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          loadMore();
+        }
       },
-      { rootMargin: '160px 0px' }
+      { rootMargin: '360px 0px' }
     );
+
     observer.observe(node);
-    return () => observer.disconnect();
-  }, [visibleCount, filtered.length]);
+    window.addEventListener('scroll', requestCheck, { passive: true });
+    window.addEventListener('resize', requestCheck);
+    requestCheck();
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('scroll', requestCheck);
+      window.removeEventListener('resize', requestCheck);
+      if (frame !== 0) window.cancelAnimationFrame(frame);
+    };
+  }, [displayMode, loadMore, visibleCount, filtered.length]);
 
   const changeCategory = (category: string) => {
     if (category === activeCategory) return;
