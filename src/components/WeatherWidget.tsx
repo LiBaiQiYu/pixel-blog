@@ -291,21 +291,23 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({
       </div>
 
       {/* Attribution & Location Actions */}
-      <div className="mt-3 pt-2 border-t border-slate-200/50 dark:border-white/10 flex flex-wrap items-center justify-between gap-2 text-[10px] font-mono text-slate-400 dark:text-slate-500">
+      <div className="mt-3 pt-2 border-t border-slate-200/50 dark:border-white/10 flex flex-col gap-2 text-[10px] font-mono text-slate-400 dark:text-slate-500 sm:flex-row sm:items-center sm:justify-between">
         <a
           href={weather.attribution}
           target="_blank"
           rel="noreferrer"
-          className="hover:text-sky-500 dark:hover:text-cyan-300 transition-colors"
+          className="truncate transition-colors hover:text-sky-500 dark:hover:text-cyan-300"
         >
           天气数据由 {weather.source} 提供
         </a>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 sm:justify-end">
           {hint && (
-            <span className="text-amber-500 dark:text-amber-400">{hint}</span>
+            <span className="basis-full text-amber-500 sm:basis-auto dark:text-amber-400">
+              {hint}
+            </span>
           )}
           {previewKind && (
-            <span className="text-pink-500 dark:text-pink-400">
+            <span className="basis-full text-pink-500 sm:basis-auto dark:text-pink-400">
               背景预览中（
               {WEATHER_KIND_OPTIONS.find((o) => o.kind === previewKind)?.label}
               {previewIntensity !== null
@@ -314,11 +316,11 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({
               ）
             </span>
           )}
-          <span>更新于 {weather.updatedAt}</span>
+          <span className="whitespace-nowrap">更新于 {weather.updatedAt}</span>
           <button
             type="button"
             onClick={onRequestLocation}
-            className="inline-flex items-center gap-1 hover:text-sky-500 dark:hover:text-cyan-300 transition-colors"
+            className="inline-flex items-center gap-1 whitespace-nowrap transition-colors hover:text-sky-500 dark:hover:text-cyan-300"
             title="使用浏览器定位获取本地天气"
           >
             <Crosshair className="w-3 h-3" />
@@ -327,7 +329,7 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({
           <button
             type="button"
             onClick={() => setShowPreview((prev) => !prev)}
-            className={`inline-flex items-center gap-1 transition-colors ${
+            className={`inline-flex items-center gap-1 whitespace-nowrap transition-colors ${
               showPreview || previewKind
                 ? 'text-sky-500 dark:text-cyan-300'
                 : 'hover:text-sky-500 dark:hover:text-cyan-300'

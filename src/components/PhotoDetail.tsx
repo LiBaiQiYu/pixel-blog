@@ -1329,13 +1329,13 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
       {/* Mobile/tablet info sheet */}
       {infoOpen && (
         <div
-          className={`lg:hidden absolute inset-x-0 bottom-0 max-h-[64dvh] overflow-y-auto rounded-t-2xl border-t p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] backdrop-blur-2xl ${
+          className={`lg:hidden absolute inset-x-0 top-14 bottom-0 z-20 flex flex-col rounded-t-2xl border-t backdrop-blur-2xl animate-fadeIn ${
             isDark
-              ? 'border-white/15 bg-slate-950/90'
-              : 'border-slate-300/70 bg-white/90'
+              ? 'border-white/15 bg-slate-950/95'
+              : 'border-slate-300/70 bg-white/95'
           }`}
         >
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex shrink-0 items-center justify-between border-b border-slate-200/70 px-4 py-3 dark:border-white/10">
             <span className="font-pixel text-[10px] text-sky-600 dark:text-cyan-300">
               PHOTO INFO // 照片信息
             </span>
@@ -1348,7 +1348,9 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
               <ChevronLeft className="w-4 h-4 -rotate-90" />
             </button>
           </div>
-          {InfoContent}
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+            {InfoContent}
+          </div>
         </div>
       )}
     </div>,

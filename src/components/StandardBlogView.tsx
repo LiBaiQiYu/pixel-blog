@@ -404,7 +404,7 @@ export const StandardBlogView: React.FC<StandardBlogViewProps> = ({
         </div>
 
         {/* Year-Month Archive Pills Row */}
-        <div className="pt-2.5 border-t border-slate-200/40 dark:border-white/5 flex items-center gap-2 overflow-x-auto">
+        <div className="pt-2.5 border-t border-slate-200/40 dark:border-white/5 flex flex-wrap items-center gap-x-2 gap-y-1.5">
           <span className="text-[11px] font-mono text-slate-400 flex items-center gap-1 shrink-0">
             <Calendar className="w-3 h-3 text-sky-500" />
             <span>年月归档:</span>

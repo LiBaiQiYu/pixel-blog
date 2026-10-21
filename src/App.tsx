@@ -473,7 +473,9 @@ export const App: React.FC = () => {
           href="?admin=1"
           title="开发环境图库后台"
           aria-label="打开开发环境图库后台"
-          className="fixed z-40 bottom-3 left-3 sm:bottom-5 sm:left-5 liquid-pill rounded-full flex items-center gap-1.5 text-[10px] font-mono font-bold text-amber-700 dark:text-amber-300 border border-dashed border-amber-500/50 transition-all shadow-lg p-2.5 sm:px-3 sm:py-2 opacity-75 hover:opacity-100"
+          className={`fixed z-40 left-3 liquid-pill rounded-full flex items-center gap-1.5 text-[10px] font-mono font-bold text-amber-700 dark:text-amber-300 border border-dashed border-amber-500/50 transition-all shadow-lg p-2.5 sm:bottom-5 sm:left-5 sm:px-3 sm:py-2 opacity-75 hover:opacity-100 ${
+            viewMode === 'terminal' ? 'bottom-[5rem]' : 'bottom-3'
+          }`}
         >
           <Settings className="w-3.5 h-3.5 text-amber-500" />
           ADMIN
