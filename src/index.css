@@ -1,4 +1,4 @@
-@tailwind base;
+﻿@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
@@ -297,7 +297,7 @@ html:not(.dark) .crt-scanlines {
 /* Randomized Pixel Shard Burst Animation on Mouse Click */
 @keyframes pixelShardBurst {
   0% {
-    transform: translate3d(0, 0, 0) scale(1);
+    transform: translateY(0) scale(1);
     opacity: 1;
   }
   65% {
@@ -370,6 +370,18 @@ button:disabled {
   cursor: var(--cursor-pixel-pointer, pointer) !important;
 }
 
+.mapboxgl-canvas-container.mapboxgl-interactive {
+  cursor: var(--cursor-pixel-grab, grab) !important;
+}
+
+.mapboxgl-canvas-container.mapboxgl-interactive:active {
+  cursor: var(--cursor-pixel-grabbing, grabbing) !important;
+}
+
+.mapboxgl-canvas-container.mapboxgl-interactive.mapboxgl-track-pointer {
+  cursor: var(--cursor-pixel-pointer, pointer) !important;
+}
+
 .gallery-pin span {
   display: block;
   width: 10px;
@@ -394,6 +406,152 @@ button:disabled {
     0 0 14px rgba(244, 114, 182, 0.9);
 }
 
+.gallery-map-marker {
+  line-height: 0;
+}
+
+.gallery-map-pin {
+  display: block;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  border-radius: 9999px;
+  background-color: #0f172a;
+  background-position: center;
+  background-size: cover;
+  box-shadow:
+    0 3px 10px rgba(2, 6, 23, 0.45),
+    0 0 0 1px rgba(2, 6, 23, 0.35);
+  cursor: var(--cursor-pixel-pointer, pointer) !important;
+  transform: none !important;
+  transition: box-shadow 0.18s ease, filter 0.18s ease;
+}
+
+.gallery-map-pin:hover {
+  transform: none !important;
+  filter: brightness(1.08);
+  box-shadow:
+    0 5px 18px rgba(2, 6, 23, 0.55),
+    0 0 0 2px rgba(56, 189, 248, 0.75);
+}
+
+.gallery-map-pin:active {
+  transform: none !important;
+}
+
+.gallery-map-cluster {
+  position: relative;
+  display: flex;
+  width: 50px;
+  height: 50px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  border-radius: 9999px;
+  background-color: #0f172a;
+  background-position: center;
+  background-size: cover;
+  box-shadow:
+    0 3px 12px rgba(2, 6, 23, 0.5),
+    0 0 0 1px rgba(2, 6, 23, 0.35);
+  cursor: var(--cursor-pixel-pointer, pointer) !important;
+  transform: none !important;
+  transition: box-shadow 0.18s ease, filter 0.18s ease;
+}
+
+.gallery-map-cluster::after {
+  position: absolute;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.38);
+  content: '';
+}
+
+.gallery-map-cluster span {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  min-width: 24px;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 9999px;
+  background: rgba(2, 6, 23, 0.78);
+  color: #fff;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.gallery-map-cluster:hover {
+  transform: none !important;
+  filter: brightness(1.08);
+  box-shadow:
+    0 6px 20px rgba(2, 6, 23, 0.6),
+    0 0 0 2px rgba(244, 114, 182, 0.75);
+}
+
+.gallery-map-cluster:active {
+  transform: none !important;
+}
+
+@keyframes gallery-map-hover-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.gallery-map-hover-card {
+  animation: gallery-map-hover-in 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes gallery-map-grid-in {
+  from {
+    opacity: 0;
+    transform: scale(0.62) translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.gallery-map-grid-item {
+  animation: gallery-map-grid-in 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes gallery-map-modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.gallery-map-modal-panel {
+  animation: gallery-map-modal-in 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gallery-map-hover-card,
+  .gallery-map-grid-item,
+  .gallery-map-modal-panel {
+    animation: none;
+  }
+}
+
 html.dark .mapboxgl-ctrl-attrib {
   background: rgba(2, 6, 23, 0.75);
   color: #94a3b8;
@@ -415,3 +573,33 @@ html.dark .mapboxgl-ctrl-group button + button {
 html.dark .mapboxgl-ctrl-icon {
   filter: invert(1) brightness(1.4);
 }
+
+/* Gallery cards reveal one by one: fade in, travel up, then settle with a slight rebound. */
+@keyframes gallery-card-reveal {
+  0% {
+    opacity: 0;
+    transform: translateY(26px) scale(0.985);
+  }
+  58% {
+    opacity: 1;
+    transform: translateY(-5px) scale(1);
+  }
+  76% {
+    transform: translateY(2px) scale(1);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.gallery-card-reveal {
+  animation: gallery-card-reveal 640ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gallery-card-reveal {
+    animation: none;
+  }
+}
+

@@ -44,7 +44,7 @@ interface StandardBlogViewProps {
   onSetWeatherPreview: (kind: WeatherKind | null) => void;
   weatherPreviewIntensity: number | null;
   onSetWeatherPreviewIntensity: (intensity: number | null) => void;
-  backOriginRef?: React.RefObject<HTMLButtonElement>;
+  backOriginRef?: React.RefObject<HTMLButtonElement | null>;
 }
 
 function formatYearMonthLabel(ym: string): string {

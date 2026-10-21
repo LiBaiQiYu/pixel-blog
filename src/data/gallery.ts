@@ -1,215 +1,45 @@
-import type { GalleryMeta, GalleryPhoto } from '../types/gallery';
+import type {
+  GalleryEntry,
+  GalleryMeta,
+  GalleryPhoto,
+} from '../types/gallery';
+import type { GalleryManifest } from '../types/gallery-manifest';
+import { galleryAsset } from '../lib/gallery-assets';
+import galleryEntriesJson from './gallery-entries.json';
+import galleryManifestJson from './gallery-manifest.json';
 import galleryMetaJson from './gallery-meta.json';
+import galleryPlaceholdersJson from './gallery-placeholders.json';
 
-const galleryMeta = galleryMetaJson as Record<string, GalleryMeta>;
+const entries = galleryEntriesJson as GalleryEntry[];
+const metaById = galleryMetaJson as Record<string, GalleryMeta>;
+const placeholders = galleryPlaceholdersJson as Record<string, string>;
+const manifest = galleryManifestJson as GalleryManifest;
 
-// 由 chronoframe 的照片库（data/app.sqlite3）导出，缩略图位于 public/gallery/
-const BASE_PHOTOS: Omit<GalleryPhoto, 'meta'>[] = [
-  {
-    id: 'IMG_1746',
-    title: '白哈巴 · 阿克哈巴南村',
-    area: '白哈巴',
-    place: '阿克哈巴南村',
-    description: '黄昏前的村落，光落在坡地与屋顶之间。',
-    date: '2026-09-25T11:58:19.188Z',
-    width: 5712,
-    height: 4284,
-    aspect: 4 / 3,
-    src: '/gallery/IMG_1746.webp',
-    original: '/gallery/original/IMG_1746.jpeg',
-    lat: 48.690467,
-    lon: 86.779397,
-    city: 'Terekti Township',
-    country: 'China',
-    locationName:
-      '阿克哈巴南村, Terekti Township, Habahe County, Altay Prefecture, Xinjiang, China',
-    accent: 'cyan',
-  },
-  {
-    id: 'IMG_1731',
-    title: '白哈巴 · 村口小径',
-    area: '白哈巴',
-    place: '阿克哈巴南村',
-    description: '沿着村口的小路慢慢走，风把草坡吹出细密的纹路。',
-    date: '2026-09-25T11:48:42.635Z',
-    width: 4284,
-    height: 5712,
-    aspect: 3 / 4,
-    src: '/gallery/IMG_1731.webp',
-    original: '/gallery/original/IMG_1731.jpeg',
-    lat: 48.68975,
-    lon: 86.778136,
-    city: 'Terekti Township',
-    country: 'China',
-    locationName:
-      '阿克哈巴南村, Terekti Township, Habahe County, Altay Prefecture, Xinjiang, China',
-    accent: 'magenta',
-  },
-  {
-    id: 'IMG_1728',
-    title: '白哈巴 · 午后村落',
-    area: '白哈巴',
-    place: '阿克哈巴南村',
-    description: '午后的白哈巴安静得只剩下风声。',
-    date: '2026-09-25T10:02:37.327Z',
-    width: 5712,
-    height: 4284,
-    aspect: 4 / 3,
-    src: '/gallery/IMG_1728.webp',
-    original: '/gallery/original/IMG_1728.jpeg',
-    lat: 48.690353,
-    lon: 86.779419,
-    city: 'Terekti Township',
-    country: 'China',
-    locationName:
-      '阿克哈巴南村, Terekti Township, Habahe County, Altay Prefecture, Xinjiang, China',
-    accent: 'emerald',
-  },
-  {
-    id: 'IMG_1723',
-    title: '喀纳斯 · 湖岸',
-    area: '喀纳斯',
-    place: '喀纳斯',
-    description: '湖水与松林交叠的颜色。',
-    date: '2026-09-25T06:51:13.979Z',
-    width: 4032,
-    height: 3024,
-    aspect: 4 / 3,
-    src: '/gallery/IMG_1723.webp',
-    original: '/gallery/original/IMG_1723.jpeg',
-    lat: 48.620872,
-    lon: 87.050819,
-    city: 'Kom-Kanas Mongolian Ethnic Township',
-    country: 'China',
-    locationName:
-      '铁喀段, Kanas, Kom-Kanas Mongolian Ethnic Township, Burqin County, Altay Prefecture, Xinjiang, China',
-    accent: 'amber',
-  },
-  {
-    id: 'IMG_1565',
-    title: '喀纳斯 · 林间',
-    area: '喀纳斯',
-    place: '喀纳斯',
-    description: '沿着栈道往林子里走。',
-    date: '2026-09-25T05:04:00.307Z',
-    width: 5712,
-    height: 4284,
-    aspect: 4 / 3,
-    src: '/gallery/IMG_1565.webp',
-    original: '/gallery/original/IMG_1565.jpeg',
-    lat: 48.658536,
-    lon: 87.036392,
-    city: 'Kom-Kanas Mongolian Ethnic Township',
-    country: 'China',
-    locationName:
-      '铁喀段, Kanas, Kom-Kanas Mongolian Ethnic Township, Burqin County, Altay Prefecture, Xinjiang, China',
-    accent: 'violet',
-  },
-  {
-    id: 'IMG_1502',
-    title: '喀纳斯新村 · 夜色',
-    area: '喀纳斯',
-    place: '喀纳斯新村',
-    description: '夜里的小木屋与灯光。',
-    date: '2026-09-24T17:09:30.400Z',
-    width: 4032,
-    height: 3024,
-    aspect: 4 / 3,
-    src: '/gallery/IMG_1502.webp',
-    original: '/gallery/original/IMG_1502.jpeg',
-    lat: 48.696592,
-    lon: 87.006058,
-    city: 'Kom-Kanas Mongolian Ethnic Township',
-    country: 'China',
-    locationName:
-      '喀纳斯新村, Kom-Kanas Mongolian Ethnic Township, Burqin County, Altay Prefecture, Xinjiang, China',
-    accent: 'cyan',
-  },
-  {
-    id: 'IMG_1494',
-    title: '喀纳斯新村 · 清晨',
-    area: '喀纳斯',
-    place: '喀纳斯新村',
-    description: '清晨的村子还没完全醒来。',
-    date: '2026-09-24T11:59:57.068Z',
-    width: 4032,
-    height: 3024,
-    aspect: 4 / 3,
-    src: '/gallery/IMG_1494.webp',
-    original: '/gallery/original/IMG_1494.jpeg',
-    lat: 48.690189,
-    lon: 87.004792,
-    city: 'Kom-Kanas Mongolian Ethnic Township',
-    country: 'China',
-    locationName:
-      '喀纳斯新村, Kom-Kanas Mongolian Ethnic Township, Burqin County, Altay Prefecture, Xinjiang, China',
-    accent: 'magenta',
-  },
-  {
-    id: 'IMG_1488',
-    title: '禾木 · 山谷',
-    area: '禾木',
-    place: '禾木',
-    description: '山谷里的房子和散落的树。',
-    date: '2026-09-24T04:56:18.150Z',
-    width: 3024,
-    height: 4032,
-    aspect: 3 / 4,
-    src: '/gallery/IMG_1488.webp',
-    original: '/gallery/original/IMG_1488.jpeg',
-    lat: 48.568242,
-    lon: 87.437308,
-    city: 'Kom-Kanas Mongolian Ethnic Township',
-    country: 'China',
-    locationName:
-      'Kom, Kom-Kanas Mongolian Ethnic Township, Burqin County, Altay Prefecture, Xinjiang, China',
-    accent: 'emerald',
-  },
-  {
-    id: 'IMG_1412',
-    title: '禾木桥 · 河岸',
-    area: '禾木',
-    place: '禾木桥',
-    description: '河水穿过禾木桥。',
-    date: '2026-09-24T00:10:17.769Z',
-    width: 4032,
-    height: 3024,
-    aspect: 4 / 3,
-    src: '/gallery/IMG_1412.webp',
-    original: '/gallery/original/IMG_1412.jpeg',
-    lat: 48.577278,
-    lon: 87.4282,
-    city: 'Kom-Kanas Mongolian Ethnic Township',
-    country: 'China',
-    locationName:
-      'Hemu Bridge, Kom, Kom-Kanas Mongolian Ethnic Township, Burqin County, Altay Prefecture, Xinjiang, China',
-    accent: 'amber',
-  },
-  {
-    id: 'IMG_1384',
-    title: '禾木 · 喀纳斯',
-    area: '禾木',
-    place: '禾木',
-    description: '从禾木回望喀纳斯的方向。',
-    date: '2026-09-23T10:31:24.346Z',
-    width: 5712,
-    height: 4284,
-    aspect: 4 / 3,
-    src: '/gallery/IMG_1384.webp',
-    original: '/gallery/original/IMG_1384.jpeg',
-    lat: 48.576039,
-    lon: 87.431908,
-    city: 'Kom-Kanas Mongolian Ethnic Township',
-    country: 'China',
-    locationName:
-      'Kom-Kanas, Kom-Kanas Mongolian Ethnic Township, Burqin County, Altay Prefecture, Xinjiang, China',
-    accent: 'violet',
-  },
+export const GALLERY_PHOTOS: GalleryPhoto[] = entries
+  .map((entry) => {
+    const assets = manifest.objects[entry.id];
+    const meta = metaById[entry.id];
+    const original = galleryAsset(assets?.original);
+
+    if (!meta || !original) return null;
+
+    return {
+      ...entry,
+      src: galleryAsset(assets?.thumbnail) ?? `/gallery/${entry.id}.webp`,
+      medium:
+        galleryAsset(assets?.medium) ??
+        `/gallery/medium/${entry.id}.webp`,
+      original,
+      placeholder: placeholders[entry.id] ?? '',
+      meta: {
+        ...meta,
+        liveVideo: galleryAsset(assets?.live) ?? null,
+      },
+    } satisfies GalleryPhoto;
+  })
+  .filter((photo): photo is GalleryPhoto => photo !== null);
+
+export const GALLERY_CATEGORIES = [
+  '全部',
+  ...Array.from(new Set(GALLERY_PHOTOS.map((photo) => photo.category))),
 ];
-
-export const GALLERY_PHOTOS: GalleryPhoto[] = BASE_PHOTOS.map((photo) => ({
-  ...photo,
-  meta: galleryMeta[photo.id],
-}));
-
-export const GALLERY_AREAS = ['全部', '白哈巴', '喀纳斯', '禾木'] as const;

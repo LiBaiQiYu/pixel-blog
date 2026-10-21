@@ -1,0 +1,899 @@
+{
+  "version": 1,
+  "generatedAt": "2026-10-21T08:57:43.305Z",
+  "prefix": "gallery",
+  "objects": {
+    "IMG_1273": {
+      "thumbnail": {
+        "key": "gallery/IMG_1273.webp",
+        "sha256": "f8b00e5aef9effe0fee37a9645b1a025fa669a55d2a989dacc52eb4f75e189cf",
+        "size": 21274,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:36:02.303Z",
+        "provider": "r2"
+      },
+      "medium": {
+        "key": "gallery/medium/IMG_1273.webp",
+        "sha256": "f1dd6d09880db41cab2cfef22b10c92331cf15b45e85748c8ff368fca7735a62",
+        "size": 94958,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:36:02.303Z",
+        "provider": "r2"
+      },
+      "original": {
+        "key": "gallery/original/IMG_1273.jpeg",
+        "sha256": "78407514b2a7f074b97b45e77c2d145d9cffe89a6654dba584798710ea5d4c12",
+        "size": 1735589,
+        "contentType": "image/jpeg",
+        "uploadedAt": "2026-10-21T08:36:02.303Z",
+        "provider": "r2"
+      }
+    },
+    "IMG_1284": {
+      "thumbnail": {
+        "key": "gallery/IMG_1284.webp",
+        "sha256": "ce3059ebd8f8c83e580550999a76fec93e70db61a0799492fbd6a5bfb4416883",
+        "size": 136904,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:36:18.579Z",
+        "provider": "r2"
+      },
+      "medium": {
+        "key": "gallery/medium/IMG_1284.webp",
+        "sha256": "f0289c4e013d0857ed38702af7caed4fdf632bd01362e75a46b1ab7578947b27",
+        "size": 1028658,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:36:18.579Z",
+        "provider": "r2"
+      },
+      "original": {
+        "key": "gallery/original/IMG_1284.jpeg",
+        "sha256": "e217139a5138ec2f77eec9d4ee1c86d17746f851b0fae106c25858aff9a7f5a9",
+        "size": 4901351,
+        "contentType": "image/jpeg",
+        "uploadedAt": "2026-10-21T08:36:18.579Z",
+        "provider": "r2"
+      }
+    },
+    "IMG_1294": {
+      "thumbnail": {
+        "key": "gallery/IMG_1294.webp",
+        "sha256": "744e77a3ffab627f398c0e0d1ff287b9516bd31a34ec66a4a59a7a0caf70f8c3",
+        "size": 152702,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:36:29.459Z",
+        "provider": "r2"
+      },
+      "medium": {
+        "key": "gallery/medium/IMG_1294.webp",
+        "sha256": "b38fef03756454484572bf7d72942941ed1d166ccd065b5dd63a5af6190fc3cc",
+        "size": 1218632,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:36:29.459Z",
+        "provider": "r2"
+      },
+      "original": {
+        "key": "gallery/original/IMG_1294.jpeg",
+        "sha256": "67dc2507bb7a60c9470493a4cdbeb15d86c79cf0157a659cf653a5f2bdf5bdc2",
+        "size": 9515441,
+        "contentType": "image/jpeg",
+        "uploadedAt": "2026-10-21T08:36:29.459Z",
+        "provider": "r2"
+      }
+    },
+    "IMG_1350": {
+      "thumbnail": {
+        "key": "gallery/IMG_1350.webp",
+        "sha256": "0768a58d3670f94935145a34096ed799ea5aaf1c97caf49cc442f0206d7565ad",
+        "size": 71352,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:36:39.061Z",
+        "provider": "r2"
+      },
+      "medium": {
+        "key": "gallery/medium/IMG_1350.webp",
+        "sha256": "035a5f1e27e303a78f2a843320bb9a5e6974c65b64c64885b71f1938b1fee767",
+        "size": 565874,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:36:39.061Z",
+        "provider": "r2"
+      },
+      "original": {
+        "key": "gallery/original/IMG_1350.jpeg",
+        "sha256": "7f7106838404bd221e38b14e504e32fb27fea5ebc05ceb3f0eec039b10b8c976",
+        "size": 7484813,
+        "contentType": "image/jpeg",
+        "uploadedAt": "2026-10-21T08:36:39.061Z",
+        "provider": "r2"
+      }
+    },
+    "IMG_1352": {
+      "thumbnail": {
+        "key": "gallery/IMG_1352.webp",
+        "sha256": "15cff9d18c01a936567a31c690b67028a0c67e97167277034e714f1ac382d07a",
+        "size": 260590,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:36:55.873Z",
+        "provider": "r2"
+      },
+      "medium": {
+        "key": "gallery/medium/IMG_1352.webp",
+        "sha256": "cfc77e5e06d482d7e03b789453736b5237912e33d89b0ab2536a9c99eebd0565",
+        "size": 2058952,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:36:55.873Z",
+        "provider": "r2"
+      },
+      "original": {
+        "key": "gallery/original/IMG_1352.jpeg",
+        "sha256": "2a2872f5231cf6ab6350b873fef505a99f457150e27c9691975e7742e3de3bb1",
+        "size": 13445260,
+        "contentType": "image/jpeg",
+        "uploadedAt": "2026-10-21T08:36:55.873Z",
+        "provider": "r2"
+      }
+    },
+    "IMG_1354": {
+      "thumbnail": {
+        "key": "gallery/IMG_1354.webp",
+        "sha256": "fa3fc2f9a01f1d24604dcd90d35b1219a455a103811d075bba163624175e204a",
+        "size": 130628,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:37:07.052Z",
+        "provider": "r2"
+      },
+      "medium": {
+        "key": "gallery/medium/IMG_1354.webp",
+        "sha256": "da2e2efc720692aef7afe2544c1d44c54caa3a292cfe60e213e4dc9000c4c330",
+        "size": 1115816,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:37:07.052Z",
+        "provider": "r2"
+      },
+      "original": {
+        "key": "gallery/original/IMG_1354.jpeg",
+        "sha256": "66a0d9af4d787634e2d2a012fc9de9378330c0d5529b5a1be37f4932241d69ce",
+        "size": 12373207,
+        "contentType": "image/jpeg",
+        "uploadedAt": "2026-10-21T08:37:07.052Z",
+        "provider": "r2"
+      }
+    },
+    "IMG_1223": {
+      "thumbnail": {
+        "key": "gallery/IMG_1223.webp",
+        "sha256": "b3734a9e1f86063ef93d07d684136c52ab9c0872c41c6f0c0e99505076f043d7",
+        "size": 78780,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:43:18.625Z",
+        "provider": "r2"
+      },
+      "medium": {
+        "key": "gallery/medium/IMG_1223.webp",
+        "sha256": "f56eec643ba186d4eeff9fd9b58cda27fe5e045bb08c6e37836860b75941d3c7",
+        "size": 457378,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:43:18.625Z",
+        "provider": "r2"
+      },
+      "original": {
+        "key": "gallery/original/IMG_1223.jpeg",
+        "sha256": "e8776e5b95d01a25567b8171f819899080663f32289e2a0534193fdab7ba1ae8",
+        "size": 6112622,
+        "contentType": "image/jpeg",
+        "uploadedAt": "2026-10-21T08:43:18.625Z",
+        "provider": "r2"
+      },
+      "live": {
+        "key": "gallery/live/IMG_1223.mov",
+        "sha256": "4faaf64f6625184a1ef01906a5f5d01216cd41a9853de9f47811c683a101a980",
+        "size": 3563451,
+        "contentType": "video/quicktime",
+        "uploadedAt": "2026-10-21T08:43:18.625Z",
+        "provider": "r2"
+      }
+    },
+    "IMG_1374": {
+      "thumbnail": {
+        "key": "gallery/IMG_1374.webp",
+        "sha256": "71eaf772800f2606983209580f789582b8d96b247cc498d5184ed180be1efe57",
+        "size": 123618,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:52:51.652Z",
+        "provider": "r2"
+      },
+      "medium": {
+        "key": "gallery/medium/IMG_1374.webp",
+        "sha256": "4110108c25033b8758da757af75e09efbb7b2254ebe3a952f5d93accbcd7204a",
+        "size": 1192140,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:52:51.652Z",
+        "provider": "r2"
+      },
+      "original": {
+        "key": "gallery/original/IMG_1374.jpeg",
+        "sha256": "6ff5d2835611ad9d20045f56c62fdf7e2a901225386131247eb0fb48cf7fe6f0",
+        "size": 12955794,
+        "contentType": "image/jpeg",
+        "uploadedAt": "2026-10-21T08:52:51.652Z",
+        "provider": "r2"
+      }
+    },
+    "IMG_1384": {
+      "thumbnail": {
+        "key": "gallery/IMG_1384.webp",
+        "sha256": "8e91ba805fcb62f49ffff40b08895a8968d40c478548e35e8d077500eb56b751",
+        "size": 118610,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:53:02.000Z",
+        "provider": "r2"
+      },
+      "medium": {
+        "key": "gallery/medium/IMG_1384.webp",
+        "sha256": "eac8d69cbdcab522cb843744c9c9e222f652136333e043c2f169ed66f19d98c1",
+        "size": 1068994,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:53:02.000Z",
+        "provider": "r2"
+      },
+      "original": {
+        "key": "gallery/original/IMG_1384.jpeg",
+        "sha256": "ace0d6d8924f95b94e38e9e1ea320c69d7e6107dd026212ab1485ec13e2183d9",
+        "size": 11939477,
+        "contentType": "image/jpeg",
+        "uploadedAt": "2026-10-21T08:53:02.000Z",
+        "provider": "r2"
+      }
+    },
+    "IMG_1386": {
+      "thumbnail": {
+        "key": "gallery/IMG_1386.webp",
+        "sha256": "6051514d354432891e0ec919e8d797e20006bd87f2e607c3ed8218712eba6685",
+        "size": 84774,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:53:21.142Z",
+        "provider": "r2"
+      },
+      "medium": {
+        "key": "gallery/medium/IMG_1386.webp",
+        "sha256": "f7f591208fac26951bdfafd4f9bc6ba0b7938e39e84fff0cb16093b4b8dd45f1",
+        "size": 673990,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:53:21.142Z",
+        "provider": "r2"
+      },
+      "original": {
+        "key": "gallery/original/IMG_1386.jpeg",
+        "sha256": "3264c6daa4802dbc15e450cddf7de1bc7624b05e069f4a69b54b57a7d091125b",
+        "size": 5140659,
+        "contentType": "image/jpeg",
+        "uploadedAt": "2026-10-21T08:53:21.142Z",
+        "provider": "r2"
+      }
+    },
+    "IMG_1392": {
+      "thumbnail": {
+        "key": "gallery/IMG_1392.webp",
+        "sha256": "02ce4afeabee4c05b617dc6c7169d785fe1b4a6f3076ff39f4b57a4ecafe4bc5",
+        "size": 94888,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:53:45.413Z",
+        "provider": "r2"
+      },
+      "medium": {
+        "key": "gallery/medium/IMG_1392.webp",
+        "sha256": "11008451a01f40859079181d8e20b51a2137a191e7481068175284c8f5844f67",
+        "size": 873378,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:53:45.413Z",
+        "provider": "r2"
+      },
+      "original": {
+        "key": "gallery/original/IMG_1392.jpeg",
+        "sha256": "c04c0dff655c2386621bf901eddcce08384be3e2945870ec689c723de4dd0302",
+        "size": 11051233,
+        "contentType": "image/jpeg",
+        "uploadedAt": "2026-10-21T08:53:45.413Z",
+        "provider": "r2"
+      }
+    },
+    "IMG_1414": {
+      "thumbnail": {
+        "key": "gallery/IMG_1414.webp",
+        "sha256": "7b4a9ac1b716602af71baeaac4932406b66f5effd8b5c8da37a5fea310727772",
+        "size": 52014,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:53:53.876Z",
+        "provider": "r2"
+      },
+      "medium": {
+        "key": "gallery/medium/IMG_1414.webp",
+        "sha256": "d2978a7f78f11bb7e0d3a48911ef58cb67d6d154a71d5c98e6b0b53893816e0e",
+        "size": 392164,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:53:53.876Z",
+        "provider": "r2"
+      },
+      "original": {
+        "key": "gallery/original/IMG_1414.jpeg",
+        "sha256": "0d591a08c28db3a622d2071d78da254ef691008b7aa4eb74b827353f1907ca86",
+        "size": 6264341,
+        "contentType": "image/jpeg",
+        "uploadedAt": "2026-10-21T08:53:53.876Z",
+        "provider": "r2"
+      }
+    },
+    "IMG_1412": {
+      "thumbnail": {
+        "key": "gallery/IMG_1412.webp",
+        "sha256": "fb2cb613963a4c896c516674d077a838e9d1c2242db393a38cc243091dca39e0",
+        "size": 26464,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:54:01.617Z",
+        "provider": "r2"
+      },
+      "medium": {
+        "key": "gallery/medium/IMG_1412.webp",
+        "sha256": "31e6c6fd419f95cf37e5ce47888810863963e4d5b13712388cd615716df271b9",
+        "size": 104100,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:54:01.617Z",
+        "provider": "r2"
+      },
+      "original": {
+        "key": "gallery/original/IMG_1412.jpeg",
+        "sha256": "2d1be4a7001303f2a55c0aaed731de2b5bad7451bc0861cf9dbef4d53d3b9888",
+        "size": 1777746,
+        "contentType": "image/jpeg",
+        "uploadedAt": "2026-10-21T08:54:01.617Z",
+        "provider": "r2"
+      }
+    },
+    "IMG_1425": {
+      "thumbnail": {
+        "key": "gallery/IMG_1425.webp",
+        "sha256": "6205fbb6b17d86f8618dd0fe9cad957958368362164701044261fa18ae359a7a",
+        "size": 18254,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:54:15.619Z",
+        "provider": "r2"
+      },
+      "medium": {
+        "key": "gallery/medium/IMG_1425.webp",
+        "sha256": "428ad4d1482114555dd614ffd335dcd5650a0d76680b1174fb5280e609bcfee0",
+        "size": 62170,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:54:15.619Z",
+        "provider": "r2"
+      },
+      "original": {
+        "key": "gallery/original/IMG_1425.jpeg",
+        "sha256": "706f2a3e107246e83333f3b579cfff90f72e0558b26b0758ec9913fccc1639a5",
+        "size": 3012023,
+        "contentType": "image/jpeg",
+        "uploadedAt": "2026-10-21T08:54:15.619Z",
+        "provider": "r2"
+      }
+    },
+    "IMG_1426": {
+      "thumbnail": {
+        "key": "gallery/IMG_1426.webp",
+        "sha256": "d32ff73d6269f4de62079c29afb5d7ed2afffc164fdb72c70bc1f99368c07faa",
+        "size": 17220,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:54:33.629Z",
+        "provider": "r2"
+      },
+      "medium": {
+        "key": "gallery/medium/IMG_1426.webp",
+        "sha256": "374c740f511e428fbdc1eb41e5dd8ec6f4c603666341a15f70d85e74fb80b464",
+        "size": 73498,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:54:33.629Z",
+        "provider": "r2"
+      },
+      "original": {
+        "key": "gallery/original/IMG_1426.jpeg",
+        "sha256": "e910271ea2740d1eb04ac8ea433546631a2964ea7678f5aa00bde12a4ce04db9",
+        "size": 1509361,
+        "contentType": "image/jpeg",
+        "uploadedAt": "2026-10-21T08:54:33.629Z",
+        "provider": "r2"
+      }
+    },
+    "IMG_1427": {
+      "thumbnail": {
+        "key": "gallery/IMG_1427.webp",
+        "sha256": "e054c6474cc4ef696608623694fa1e47c0bfd305e5601b7216dd19d33e5b4219",
+        "size": 21474,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:54:52.614Z",
+        "provider": "r2"
+      },
+      "medium": {
+        "key": "gallery/medium/IMG_1427.webp",
+        "sha256": "3f43bf2803352ef5b5d87ef4308beacbc7d9d89caad8b5e441c035034111fcff",
+        "size": 71828,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:54:52.614Z",
+        "provider": "r2"
+      },
+      "original": {
+        "key": "gallery/original/IMG_1427.jpeg",
+        "sha256": "efe1f34f4faee35a5f1bd8b811ddc768bd84fc690de1fd57a844b9862d2f814f",
+        "size": 3146809,
+        "contentType": "image/jpeg",
+        "uploadedAt": "2026-10-21T08:54:52.614Z",
+        "provider": "r2"
+      }
+    },
+    "IMG_1446": {
+      "thumbnail": {
+        "key": "gallery/IMG_1446.webp",
+        "sha256": "c8173f6e8241611e53d7879f48b730352a418a006de2f37ed4441c98046828a5",
+        "size": 114574,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:55:06.768Z",
+        "provider": "r2"
+      },
+      "medium": {
+        "key": "gallery/medium/IMG_1446.webp",
+        "sha256": "a08b31cb3382c1aeb5647e705919efddf983de655cc1cb2b0450414ffd7377d6",
+        "size": 1131220,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:55:06.768Z",
+        "provider": "r2"
+      },
+      "original": {
+        "key": "gallery/original/IMG_1446.jpeg",
+        "sha256": "f958db6dc533f03aae823f25513a7ed97e978db67f5de3f9ce904683238c946e",
+        "size": 13573597,
+        "contentType": "image/jpeg",
+        "uploadedAt": "2026-10-21T08:55:06.768Z",
+        "provider": "r2"
+      }
+    },
+    "IMG_1458": {
+      "thumbnail": {
+        "key": "gallery/IMG_1458.webp",
+        "sha256": "12b9391cf338f9ee246ccb67b2a296a668cc6429beb8723bfd56c53baa9ca2df",
+        "size": 82102,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:55:14.140Z",
+        "provider": "r2"
+      },
+      "medium": {
+        "key": "gallery/medium/IMG_1458.webp",
+        "sha256": "9d3a136d31dbba240622073db0e0340ca4e69aa533de91a613c609023f15b793",
+        "size": 622250,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:55:14.140Z",
+        "provider": "r2"
+      },
+      "original": {
+        "key": "gallery/original/IMG_1458.jpeg",
+        "sha256": "47b19dbaed03b223f449aefe2c981ee8516acfa0471d08a09a2629213420b85b",
+        "size": 4716975,
+        "contentType": "image/jpeg",
+        "uploadedAt": "2026-10-21T08:55:14.140Z",
+        "provider": "r2"
+      }
+    },
+    "IMG_1488": {
+      "thumbnail": {
+        "key": "gallery/IMG_1488.webp",
+        "sha256": "f7fe70a097ca3bf34912fa21360d2e59f4fe10e3cc4450b0c4ab0af134005de9",
+        "size": 36946,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:55:19.766Z",
+        "provider": "r2"
+      },
+      "medium": {
+        "key": "gallery/medium/IMG_1488.webp",
+        "sha256": "aa0272a2b4c8c0ed451b41247b30d7e6b708905f2d57e99b80f478180cf7afe9",
+        "size": 132428,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:55:19.766Z",
+        "provider": "r2"
+      },
+      "original": {
+        "key": "gallery/original/IMG_1488.jpeg",
+        "sha256": "7489f8e7c32a6efd5e0a108fc4f827113649803aa2e5297bdf16c0720ac7f33a",
+        "size": 1679353,
+        "contentType": "image/jpeg",
+        "uploadedAt": "2026-10-21T08:55:19.766Z",
+        "provider": "r2"
+      }
+    },
+    "IMG_1494": {
+      "thumbnail": {
+        "key": "gallery/IMG_1494.webp",
+        "sha256": "caf73c5d97f558e2ec582e94f25b5c670b2c33757ff74858f2f44511c57f57b2",
+        "size": 2566,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:55:25.126Z",
+        "provider": "r2"
+      },
+      "medium": {
+        "key": "gallery/medium/IMG_1494.webp",
+        "sha256": "4efd36fb08f44142239fadc4b6aefd04b983cdf37789a2eea7c5d6d7f8826288",
+        "size": 14328,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:55:25.126Z",
+        "provider": "r2"
+      },
+      "original": {
+        "key": "gallery/original/IMG_1494.jpeg",
+        "sha256": "b9f56053543f20520e59ee2e98899ec3f192d95b7109d031c6320ff4bed4001c",
+        "size": 920288,
+        "contentType": "image/jpeg",
+        "uploadedAt": "2026-10-21T08:55:25.126Z",
+        "provider": "r2"
+      }
+    },
+    "IMG_1502": {
+      "thumbnail": {
+        "key": "gallery/IMG_1502.webp",
+        "sha256": "a77a73017a5e286f22650b3be34070c52ec9269b5014116ba1fab41370a5bb24",
+        "size": 36918,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:55:35.186Z",
+        "provider": "r2"
+      },
+      "medium": {
+        "key": "gallery/medium/IMG_1502.webp",
+        "sha256": "eda582c5d7121ecd121f4c7e82ab1429581e62b7a3bde90b83613c81e659bd39",
+        "size": 167714,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:55:35.186Z",
+        "provider": "r2"
+      },
+      "original": {
+        "key": "gallery/original/IMG_1502.jpeg",
+        "sha256": "c679057c108175110971f78375f0eb5fca907daf6ccc2b62ae18d754fff607af",
+        "size": 2401674,
+        "contentType": "image/jpeg",
+        "uploadedAt": "2026-10-21T08:55:35.186Z",
+        "provider": "r2"
+      }
+    },
+    "IMG_1602": {
+      "thumbnail": {
+        "key": "gallery/IMG_1602.webp",
+        "sha256": "79f434e44e04108d7cc6bf5e28efa42515a27e640c37cfd1ce39228329d8102f",
+        "size": 123064,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:55:43.386Z",
+        "provider": "r2"
+      },
+      "medium": {
+        "key": "gallery/medium/IMG_1602.webp",
+        "sha256": "7209784c4db3afee9516e5fccccd856d92a9c6b28fdab8be52cbf231d7d8afa8",
+        "size": 861588,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:55:43.386Z",
+        "provider": "r2"
+      },
+      "original": {
+        "key": "gallery/original/IMG_1602.jpeg",
+        "sha256": "b1f498aa7af880abf48ae54902d3f675adcaaf198091ef2eb9bedf23dd08eac9",
+        "size": 4870543,
+        "contentType": "image/jpeg",
+        "uploadedAt": "2026-10-21T08:55:43.386Z",
+        "provider": "r2"
+      }
+    },
+    "IMG_1624": {
+      "thumbnail": {
+        "key": "gallery/IMG_1624.webp",
+        "sha256": "2b73d8383e8ec359a5248e9fc4d62a93d4e273df93d44da6f4b785da1325fb31",
+        "size": 98396,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:55:51.679Z",
+        "provider": "r2"
+      },
+      "medium": {
+        "key": "gallery/medium/IMG_1624.webp",
+        "sha256": "c778847fc9b314563afcbe8b579205b9db5e100d57df4f656792c49b0181db6c",
+        "size": 862226,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:55:51.679Z",
+        "provider": "r2"
+      },
+      "original": {
+        "key": "gallery/original/IMG_1624.jpeg",
+        "sha256": "0ae4a3f652dfa56b374e6dde5104ba8bfa469f4e84894c9676a8f9ed8d983668",
+        "size": 5667406,
+        "contentType": "image/jpeg",
+        "uploadedAt": "2026-10-21T08:55:51.679Z",
+        "provider": "r2"
+      }
+    },
+    "IMG_1639": {
+      "thumbnail": {
+        "key": "gallery/IMG_1639.webp",
+        "sha256": "4a0f440926b532157d5c1145b2b011ab95546103fd4f8c64073f60248c8eea20",
+        "size": 75498,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:56:02.026Z",
+        "provider": "r2"
+      },
+      "medium": {
+        "key": "gallery/medium/IMG_1639.webp",
+        "sha256": "82392f0a840739707ca4b14ae8cb4d1a915bb74592cf294420ee4deb297db4cd",
+        "size": 632032,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:56:02.026Z",
+        "provider": "r2"
+      },
+      "original": {
+        "key": "gallery/original/IMG_1639.jpeg",
+        "sha256": "e11c174a912716972883034dfd554eac8ba8bcff5a47e48a11d9cf809e53878e",
+        "size": 7700822,
+        "contentType": "image/jpeg",
+        "uploadedAt": "2026-10-21T08:56:02.026Z",
+        "provider": "r2"
+      }
+    },
+    "IMG_1671": {
+      "thumbnail": {
+        "key": "gallery/IMG_1671.webp",
+        "sha256": "ae49e3f0574c56c04cdd0b31704e4ff7c7c72cce515fd4510ea92919e172fc9e",
+        "size": 216558,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:56:10.810Z",
+        "provider": "r2"
+      },
+      "medium": {
+        "key": "gallery/medium/IMG_1671.webp",
+        "sha256": "09cdfb90a717095e812e3c6d0055539c47b1e8031af07502fcc8b61c886cb834",
+        "size": 1314652,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:56:10.810Z",
+        "provider": "r2"
+      },
+      "original": {
+        "key": "gallery/original/IMG_1671.jpeg",
+        "sha256": "4907eaa2889a35801f454ceee41f2256d73c0615bb78aaf3091c71f1318384ff",
+        "size": 4108445,
+        "contentType": "image/jpeg",
+        "uploadedAt": "2026-10-21T08:56:10.810Z",
+        "provider": "r2"
+      }
+    },
+    "IMG_1673": {
+      "thumbnail": {
+        "key": "gallery/IMG_1673.webp",
+        "sha256": "e5b79f30a8893bd9d6cec1b2e92b61375caf4eab59622c5ca4b0a0fb40761705",
+        "size": 276276,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:56:19.450Z",
+        "provider": "r2"
+      },
+      "medium": {
+        "key": "gallery/medium/IMG_1673.webp",
+        "sha256": "4f90723f8a99d17f2f0a98b0555ef4b48afb3d2094443b4a285344be8a936489",
+        "size": 1692094,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:56:19.450Z",
+        "provider": "r2"
+      },
+      "original": {
+        "key": "gallery/original/IMG_1673.jpeg",
+        "sha256": "9558de5066172acc3d6c6042cd9626097721b7453b95d8bfe6df4c0368524eb1",
+        "size": 5053826,
+        "contentType": "image/jpeg",
+        "uploadedAt": "2026-10-21T08:56:19.450Z",
+        "provider": "r2"
+      }
+    },
+    "IMG_1688": {
+      "thumbnail": {
+        "key": "gallery/IMG_1688.webp",
+        "sha256": "d19b53e64b0ec935af5aa9f1b139c475853361619da4e7016fd2288a5ba1eeb7",
+        "size": 203364,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:56:27.629Z",
+        "provider": "r2"
+      },
+      "medium": {
+        "key": "gallery/medium/IMG_1688.webp",
+        "sha256": "1dc41d89b2428d0fb13a4c397f187fa5225e5b3e3da97f47b8dbffa60fecc82f",
+        "size": 1516986,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:56:27.629Z",
+        "provider": "r2"
+      },
+      "original": {
+        "key": "gallery/original/IMG_1688.jpeg",
+        "sha256": "63bf05e33b0cc7cd4b9d4b3e1cdfa6565d1d3cf42aff54680607bbcd9e429183",
+        "size": 6959598,
+        "contentType": "image/jpeg",
+        "uploadedAt": "2026-10-21T08:56:27.629Z",
+        "provider": "r2"
+      }
+    },
+    "IMG_1728": {
+      "thumbnail": {
+        "key": "gallery/IMG_1728.webp",
+        "sha256": "2336679daa90c7b198396f8109022239fa4b796103dd31e9aba30125045604e1",
+        "size": 47348,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:56:35.837Z",
+        "provider": "r2"
+      },
+      "medium": {
+        "key": "gallery/medium/IMG_1728.webp",
+        "sha256": "0d1800f6a46c65b862ebb8775cc20b4aeb1d17e69a2e1819d7c33bb36888d9bd",
+        "size": 291854,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:56:35.837Z",
+        "provider": "r2"
+      },
+      "original": {
+        "key": "gallery/original/IMG_1728.jpeg",
+        "sha256": "15edd4c130eedd709ad6d2b907233d73e51d432a880c58b8ef28f470596907f7",
+        "size": 6363243,
+        "contentType": "image/jpeg",
+        "uploadedAt": "2026-10-21T08:56:35.837Z",
+        "provider": "r2"
+      }
+    },
+    "IMG_1731": {
+      "thumbnail": {
+        "key": "gallery/IMG_1731.webp",
+        "sha256": "f8952f4a8c22105a6ad79aef71c2978abc567a45717f4057408a7f15552897de",
+        "size": 183002,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:56:46.804Z",
+        "provider": "r2"
+      },
+      "medium": {
+        "key": "gallery/medium/IMG_1731.webp",
+        "sha256": "b7af75a6481af6fefe63f43d28fa979322759bc14be44d57d564a37c48c7f8f5",
+        "size": 1780852,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:56:46.804Z",
+        "provider": "r2"
+      },
+      "original": {
+        "key": "gallery/original/IMG_1731.jpeg",
+        "sha256": "ece9996abf7920db6ae3fb9d76413f90a642519d44ca4324f773698b9e35d71a",
+        "size": 13726417,
+        "contentType": "image/jpeg",
+        "uploadedAt": "2026-10-21T08:56:46.804Z",
+        "provider": "r2"
+      }
+    },
+    "IMG_1737": {
+      "thumbnail": {
+        "key": "gallery/IMG_1737.webp",
+        "sha256": "edf43417d128b90598b8d9052540d6d34468a622f97f94dd028a70a965245095",
+        "size": 12412,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:56:51.940Z",
+        "provider": "r2"
+      },
+      "medium": {
+        "key": "gallery/medium/IMG_1737.webp",
+        "sha256": "eb47e2f4d08a4161c73640c3e40fcdcc44fa4396d264003eab951a236d382336",
+        "size": 65510,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:56:51.940Z",
+        "provider": "r2"
+      },
+      "original": {
+        "key": "gallery/original/IMG_1737.jpeg",
+        "sha256": "ccdbeb19384b6e04f2acdf411995ee96a35881c6614dce2adf6c4362643fc2c5",
+        "size": 1537989,
+        "contentType": "image/jpeg",
+        "uploadedAt": "2026-10-21T08:56:51.940Z",
+        "provider": "r2"
+      }
+    },
+    "IMG_1746": {
+      "thumbnail": {
+        "key": "gallery/IMG_1746.webp",
+        "sha256": "13a8aace0bd73bc5d72611594db75fe55d36dab032b3c9aeb2c8a22553f858a0",
+        "size": 25280,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:57:00.712Z",
+        "provider": "r2"
+      },
+      "medium": {
+        "key": "gallery/medium/IMG_1746.webp",
+        "sha256": "3949c9b2c76c18a1ccbc80b7a01f1b69e865f0bb75e9bad1251c82c371c8e2f2",
+        "size": 137208,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:57:00.712Z",
+        "provider": "r2"
+      },
+      "original": {
+        "key": "gallery/original/IMG_1746.jpeg",
+        "sha256": "990f1382364c7fab2c14756140df23f45475b3e058f94b691a87e8b7eb14a9bc",
+        "size": 4934802,
+        "contentType": "image/jpeg",
+        "uploadedAt": "2026-10-21T08:57:00.712Z",
+        "provider": "r2"
+      }
+    },
+    "IMG_1751": {
+      "thumbnail": {
+        "key": "gallery/IMG_1751.webp",
+        "sha256": "91965a8504c1e6c1c52b7a2d0c173faab013e16566655e149cca57c34e8648f2",
+        "size": 49764,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:57:06.745Z",
+        "provider": "r2"
+      },
+      "medium": {
+        "key": "gallery/medium/IMG_1751.webp",
+        "sha256": "298eb23ee2cbe417dd2699b85d90f24110afc4c3d365941fea0b6b530c27a018",
+        "size": 371698,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:57:06.745Z",
+        "provider": "r2"
+      },
+      "original": {
+        "key": "gallery/original/IMG_1751.jpeg",
+        "sha256": "28e4654bc1195ce41ee9d9d61b579d4c1549a3c5d662a468dd7d97de84ccb8fe",
+        "size": 3045752,
+        "contentType": "image/jpeg",
+        "uploadedAt": "2026-10-21T08:57:06.745Z",
+        "provider": "r2"
+      }
+    },
+    "IMG_1755": {
+      "thumbnail": {
+        "key": "gallery/IMG_1755.webp",
+        "sha256": "073dbf1f16afb5ed6158099ae0619c8b2e0662926caad55b733f955b6253e157",
+        "size": 33206,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:57:13.581Z",
+        "provider": "r2"
+      },
+      "medium": {
+        "key": "gallery/medium/IMG_1755.webp",
+        "sha256": "a38af826e7d03de981b5e12a9c0d32a487f1f1fcfa5c968a5c549a64d29c34ce",
+        "size": 262466,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:57:13.581Z",
+        "provider": "r2"
+      },
+      "original": {
+        "key": "gallery/original/IMG_1755.jpeg",
+        "sha256": "235dc243080690f681fd8f809c2d4938369f51fc39f7627f0337abd8aff2e0ef",
+        "size": 4391777,
+        "contentType": "image/jpeg",
+        "uploadedAt": "2026-10-21T08:57:13.581Z",
+        "provider": "r2"
+      }
+    },
+    "IMG_1782": {
+      "thumbnail": {
+        "key": "gallery/IMG_1782.webp",
+        "sha256": "d7703261fd82f9303508bcaa844523d053d51c7ba2617347e4c6f2a2d68580cb",
+        "size": 9584,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:57:18.536Z",
+        "provider": "r2"
+      },
+      "medium": {
+        "key": "gallery/medium/IMG_1782.webp",
+        "sha256": "102f372556436d8e6c0bce6daa8434f719d82b6975a81e9e76be616f2ff213ae",
+        "size": 39750,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-10-21T08:57:18.536Z",
+        "provider": "r2"
+      },
+      "original": {
+        "key": "gallery/original/IMG_1782.jpeg",
+        "sha256": "48b28e22e1aef08b798f670bc910e1cc5206efdf8bfd7512f7fc05be3a6c6d69",
+        "size": 1442922,
+        "contentType": "image/jpeg",
+        "uploadedAt": "2026-10-21T08:57:18.536Z",
+        "provider": "r2"
+      }
+    }
+  }
+}

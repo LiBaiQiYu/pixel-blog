@@ -22,7 +22,7 @@ interface NavbarProps {
   weatherBgEnabled: boolean;
   onWeatherBgToggle: () => void;
   /** Anchor element where the flying back button docks when scrolling down */
-  backDockAnchorRef?: React.RefObject<HTMLElement>;
+  backDockAnchorRef?: React.RefObject<HTMLElement | null>;
   articleDocked?: boolean;
   /** Slide the whole navbar out of the screen (gallery photo preview) */
   concealed?: boolean;

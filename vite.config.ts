@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { galleryAdminPlugin } from './server/gallery/admin-plugin';
 
 export default defineConfig({
   server: {
@@ -15,6 +16,7 @@ export default defineConfig({
   },
   plugins: [
     react(),
+    galleryAdminPlugin(),
     {
       name: 'qweather-dev-api',
       configureServer(server) {

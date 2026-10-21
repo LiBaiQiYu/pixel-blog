@@ -363,7 +363,7 @@ export const TerminalBlogView: React.FC<TerminalBlogViewProps> = ({
               <code className="text-emerald-600 dark:text-emerald-400 font-bold">weather demo &lt;类型&gt;</code> — 预览任意天气背景 (auto 恢复实况)
             </div>
             <div>
-              <code className="text-emerald-600 dark:text-emerald-400 font-bold">gallery</code> — 打开旅行画廊（照片 + 地图）
+              <code className="text-emerald-600 dark:text-emerald-400 font-bold">gallery</code> — 打开生活画廊（照片 + 地图）
             </div>
             <div>
               <code className="text-emerald-600 dark:text-emerald-400 font-bold">seed &lt;id&gt; [序号]</code> — 随机或指定序号生成封面
@@ -710,7 +710,7 @@ export const TerminalBlogView: React.FC<TerminalBlogViewProps> = ({
         onOpenGallery();
         return (
           <div className="text-xs font-mono text-pink-500 dark:text-pink-400">
-            正在打开「旅行画廊」…
+            正在打开「生活画廊」…
           </div>
         );
 

@@ -1,0 +1,6 @@
+{
+  "provider": "r2",
+  "publicBaseUrl": "https://img.cwa1e.top",
+  "bucket": "gallary",
+  "prefix": "gallery"
+}

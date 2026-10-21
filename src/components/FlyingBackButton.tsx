@@ -4,8 +4,8 @@ import { ArrowLeft } from 'lucide-react';
 interface FlyingBackButtonProps {
   visible: boolean;
   docked: boolean;
-  originRef: React.RefObject<HTMLElement>;
-  dockRef: React.RefObject<HTMLElement>;
+  originRef: React.RefObject<HTMLElement | null>;
+  dockRef: React.RefObject<HTMLElement | null>;
   onClick: () => void;
 }
 

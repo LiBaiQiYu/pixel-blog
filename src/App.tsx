@@ -11,7 +11,7 @@ import { useWeather } from './hooks/useWeather';
 import { isWeatherKind, resolveWeatherVisual } from './utils/weather';
 import type { WeatherKind } from './types/weather';
 import { pixelAudio } from './utils/sound';
-import { Terminal, LayoutGrid, Camera } from 'lucide-react';
+import { Terminal, LayoutGrid, Camera, Settings } from 'lucide-react';
 import { generateRandomSeed } from './components/PixelArtwork';
 import {
   PixelCursorEffects,
@@ -400,10 +400,10 @@ export const App: React.FC = () => {
             fallback={
               <div className="liquid-glass rounded-2xl p-10 text-center space-y-2">
                 <div className="font-pixel text-xs text-sky-500 dark:text-cyan-300">
-                  LOADING GALLERY // 正在加载画廊与地图…
+                  LOADING GALLERY // 正在加载生活画廊与地图…
                 </div>
                 <div className="text-xs font-mono text-slate-500 dark:text-slate-400">
-                  MapLibre 引擎按需加载中
+                  Mapbox 地图引擎按需加载中
                 </div>
               </div>
             }
@@ -467,6 +467,19 @@ export const App: React.FC = () => {
         }}
       />
 
+      {/* Dev-only gallery admin entry. Removed from production builds. */}
+      {import.meta.env.DEV && !galleryPreviewOpen && (
+        <a
+          href="?admin=1"
+          title="开发环境图库后台"
+          aria-label="打开开发环境图库后台"
+          className="fixed z-40 bottom-3 left-3 sm:bottom-5 sm:left-5 liquid-pill rounded-full flex items-center gap-1.5 text-[10px] font-mono font-bold text-amber-700 dark:text-amber-300 border border-dashed border-amber-500/50 transition-all shadow-lg p-2.5 sm:px-3 sm:py-2 opacity-75 hover:opacity-100"
+        >
+          <Settings className="w-3.5 h-3.5 text-amber-500" />
+          ADMIN
+        </a>
+      )}
+
       {/* Subtle Floating Mode Toggle Button (cycles blog → gallery → terminal) */}
       <button
         onClick={() =>
@@ -480,7 +493,7 @@ export const App: React.FC = () => {
         }
         title={
           viewMode === 'standard'
-            ? '切换至旅行画廊'
+            ? '切换至生活画廊'
             : viewMode === 'gallery'
             ? '切换至终端风格'
             : '切换至普通博客风格'
@@ -498,7 +511,7 @@ export const App: React.FC = () => {
         {viewMode === 'standard' ? (
           <>
             <Camera className="w-3.5 h-3.5 text-pink-500" />
-            <span className="hidden sm:inline">旅行画廊</span>
+            <span className="hidden sm:inline">生活画廊</span>
           </>
         ) : viewMode === 'gallery' ? (
           <>

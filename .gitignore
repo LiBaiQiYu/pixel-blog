@@ -7,3 +7,4 @@ dist
 *.pem
 *.tsbuildinfo
 .DS_Store
+.gallery-admin.env

@@ -37,7 +37,7 @@ interface ArticleModalProps {
   onOpenInTerminal: (post: BlogPost) => void;
   onSelectPost: (post: BlogPost) => void;
   relatedPosts: BlogPost[];
-  backOriginRef?: React.RefObject<HTMLButtonElement>;
+  backOriginRef?: React.RefObject<HTMLButtonElement | null>;
 }
 
 export const ArticleModal: React.FC<ArticleModalProps> = ({

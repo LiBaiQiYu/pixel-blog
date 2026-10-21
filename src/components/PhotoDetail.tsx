@@ -10,6 +10,7 @@ import React, {
 import { createPortal } from 'react-dom';
 import {
   Camera,
+  Check,
   ChevronLeft,
   ChevronRight,
   Info,
@@ -19,10 +20,12 @@ import {
   Pause,
   Play,
   Plus,
+  RefreshCw,
   X,
 } from 'lucide-react';
 import type { GalleryPhoto } from '../types/gallery';
 import type { ThemeMode } from '../types/blog';
+import { convertHeicToJpeg, isHeicBlob, isHeicUrl } from '../lib/heic';
 
 const PhotoMiniMap = lazy(() =>
   import('./PhotoMiniMap').then((module) => ({
@@ -56,6 +59,25 @@ function formatCoords(lat: number, lon: number) {
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
+}
+
+interface ImageLoadState {
+  loaded: number;
+  total: number;
+  phase: 'download' | 'convert' | 'decode';
+}
+
+type HudPhase = 'hidden' | 'loading' | 'complete' | 'leaving';
+
+function formatBytes(bytes: number) {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  const exponent = Math.min(
+    units.length - 1,
+    Math.floor(Math.log(bytes) / Math.log(1024))
+  );
+  const value = bytes / 1024 ** exponent;
+  return `${value.toFixed(exponent === 0 ? 0 : 1)} ${units[exponent]}`;
 }
 
 // Catmull-Rom -> cubic Bézier, for a smooth professional histogram curve
@@ -242,6 +264,21 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
 }) => {
   const [bitmap, setBitmap] = useState<ImageBitmap | null>(null);
   const [imageError, setImageError] = useState(false);
+  const [retryRequest, setRetryRequest] = useState<{
+    photoId: string;
+    nonce: number;
+  } | null>(null);
+  const retryNonce =
+    retryRequest?.photoId === photo.id ? retryRequest.nonce : 0;
+  const [loadState, setLoadState] = useState<ImageLoadState>({
+    loaded: 0,
+    total: 0,
+    phase: 'download',
+  });
+  const [hudPhase, setHudPhase] = useState<HudPhase>('hidden');
+  const [hasPartialProgress, setHasPartialProgress] = useState(false);
+  const partialProgressRef = useRef(false);
+  const [loadedMediumId, setLoadedMediumId] = useState<string | null>(null);
   const [livePlaying, setLivePlaying] = useState(false);
   const [videoFailed, setVideoFailed] = useState(false);
   const [scale, setScale] = useState(1);
@@ -279,6 +316,57 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
   const hasLiveVideo = Boolean(photo.meta.liveVideo) && !videoFailed;
   const isDark = theme === 'dark';
 
+  const isLoading = !bitmap && !imageError;
+  const isConverting = loadState.phase === 'convert' && isLoading;
+  const isDecoding = loadState.phase === 'decode' && isLoading;
+  const mediumReady = loadedMediumId === photo.id;
+  const hudComplete = hudPhase === 'complete' || hudPhase === 'leaving';
+  const downloadRatio =
+    loadState.total > 0
+      ? clamp(loadState.loaded / loadState.total, 0, 1)
+      : 0;
+  const loadingPercent =
+    loadState.phase === 'download' && loadState.total > 0
+      ? Math.min(100, Math.round(downloadRatio * 100))
+      : null;
+
+  // Keep the 600px thumbnail crisp while the 2048px preview / original arrive.
+  const placeholderStyle: React.CSSProperties = {
+    opacity: bitmap || mediumReady ? 0 : 1,
+  };
+
+  // Show the HUD only after real partial download progress is observed, so a
+  // cache hit does not flash a completed 100% bar.
+  useEffect(() => {
+    if (!isLoading || !hasPartialProgress || hudPhase !== 'hidden') return;
+    const timer = window.setTimeout(() => {
+      setHudPhase((phase) => (phase === 'hidden' ? 'loading' : phase));
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [isLoading, hasPartialProgress, hudPhase]);
+
+  // Keep a completed HUD on screen briefly, then drop it away elastically.
+  useEffect(() => {
+    if (!bitmap) return;
+    setHudPhase((phase) => (phase === 'loading' ? 'complete' : phase));
+  }, [bitmap]);
+
+  useEffect(() => {
+    if (hudPhase !== 'complete') return;
+    const timer = window.setTimeout(() => setHudPhase('leaving'), 1500);
+    return () => window.clearTimeout(timer);
+  }, [hudPhase]);
+
+  useEffect(() => {
+    if (hudPhase !== 'leaving') return;
+    const timer = window.setTimeout(() => setHudPhase('hidden'), 550);
+    return () => window.clearTimeout(timer);
+  }, [hudPhase]);
+
+  useEffect(() => {
+    if (imageError) setHudPhase('hidden');
+  }, [imageError]);
+
   // Reset everything when switching photos
   useEffect(() => {
     if (animationRef.current !== null) {
@@ -289,6 +377,11 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
     viewRef.current = resetView;
     targetViewRef.current = resetView;
     setImageError(false);
+    setRetryRequest(null);
+    setLoadState({ loaded: 0, total: 0, phase: 'download' });
+    setHudPhase('hidden');
+    setHasPartialProgress(false);
+    partialProgressRef.current = false;
     setLivePlaying(false);
     setVideoFailed(false);
     setScale(1);
@@ -344,31 +437,115 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
   // Load the original image as an ImageBitmap (honours EXIF orientation)
   useEffect(() => {
     let cancelled = false;
+    let xhr: XMLHttpRequest | null = null;
+    let sendTimer: number | null = null;
+
     setBitmap(null);
     setImageError(false);
+    setLoadState({ loaded: 0, total: 0, phase: 'download' });
+    setHasPartialProgress(false);
+    partialProgressRef.current = false;
+    const requestUrl =
+      retryNonce > 0
+        ? `${photo.original}${photo.original.includes('?') ? '&' : '?'}retry=${retryNonce}`
+        : photo.original;
+
+    const loadBlob = () =>
+      new Promise<Blob>((resolve, reject) => {
+        const request = new XMLHttpRequest();
+        xhr = request;
+        request.open('GET', requestUrl);
+        request.responseType = 'blob';
+
+        request.onprogress = (event) => {
+          if (cancelled) return;
+          if (
+            !partialProgressRef.current &&
+            event.loaded > 0 &&
+            (!event.lengthComputable || event.loaded < event.total)
+          ) {
+            partialProgressRef.current = true;
+            setHasPartialProgress(true);
+          }
+          setLoadState({
+            loaded: event.loaded,
+            total: event.lengthComputable ? event.total : 0,
+            phase: 'download',
+          });
+        };
+
+        request.onload = () => {
+          if (request.status < 200 || request.status >= 300) {
+            reject(new Error(`HTTP ${request.status}`));
+            return;
+          }
+          const blob = request.response as Blob | null;
+          if (!blob) {
+            reject(new Error('Empty image response'));
+            return;
+          }
+          setLoadState({
+            loaded: blob.size,
+            total: blob.size,
+            phase: 'decode',
+          });
+          resolve(blob);
+        };
+
+        request.onerror = () => reject(new Error('Network error'));
+        request.onabort = () =>
+          reject(new DOMException('Aborted', 'AbortError'));
+        // Defer the send by one task so React StrictMode's immediate
+        // mount/unmount in development cannot start two downloads.
+        sendTimer = window.setTimeout(() => request.send(), 0);
+      });
 
     (async () => {
       try {
-        const response = await fetch(photo.original);
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const blob = await response.blob();
-        const nextBitmap = await createImageBitmap(blob, {
-          imageOrientation: 'from-image',
-        });
+        const blob = await loadBlob();
+        if (cancelled) return;
+
+        const heic =
+          isHeicUrl(photo.original) || (await isHeicBlob(blob));
+        let nextBitmap: ImageBitmap;
+
+        try {
+          nextBitmap = await createImageBitmap(blob, {
+            imageOrientation: 'from-image',
+          });
+        } catch (error) {
+          if (!heic) throw error;
+          if (cancelled) return;
+          setLoadState((state) => ({ ...state, phase: 'convert' }));
+          const jpeg = await convertHeicToJpeg(blob, photo.original);
+          if (cancelled) return;
+          setLoadState((state) => ({ ...state, phase: 'decode' }));
+          nextBitmap = await createImageBitmap(jpeg, {
+            imageOrientation: 'from-image',
+          });
+        }
+
         if (cancelled) {
           nextBitmap.close();
           return;
         }
         setBitmap(nextBitmap);
-      } catch {
-        if (!cancelled) setImageError(true);
+      } catch (error) {
+        if (
+          !cancelled &&
+          !(error instanceof DOMException && error.name === 'AbortError')
+        ) {
+          setImageError(true);
+        }
       }
     })();
 
     return () => {
       cancelled = true;
+      if (sendTimer !== null) window.clearTimeout(sendTimer);
+      xhr?.abort();
     };
-  }, [photo.original]);
+  }, [photo.original, retryNonce]);
 
   // Release the bitmap when it is replaced or the viewer closes
   useEffect(
@@ -670,12 +847,50 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
     transition: dragging || pointersRef.current.size > 1 ? 'none' : 'transform 120ms ease-out',
   };
 
+  const coords =
+    typeof photo.lat === 'number' && typeof photo.lon === 'number'
+      ? { lat: photo.lat, lon: photo.lon }
+      : null;
+
+  const sections = useMemo(() => {
+    const base = photo.meta.sections?.length
+      ? photo.meta.sections
+      : [
+          {
+            id: 'exif',
+            title: 'EXIF // 拍摄参数',
+            params: photo.meta.params,
+          },
+        ];
+
+    return base.map((section) => {
+      if (section.id !== 'basic') return section;
+
+      const params = [...section.params];
+      const add = (label: string, value: string) => {
+        if (!params.some((param) => param.label === label)) {
+          params.push({ label, value });
+        }
+      };
+
+      add('拍摄时间', dateFormatter.format(new Date(photo.date)));
+      add('相册', photo.category);
+      add(
+        '标签',
+        photo.meta.tags?.length ? photo.meta.tags.join(' · ') : '—'
+      );
+
+      return { ...section, params };
+    });
+  }, [photo]);
+
   const InfoContent = (
     <div className="space-y-4 text-slate-700 dark:text-slate-200">
       <div className="space-y-1.5">
         <div className="flex items-center gap-1.5 text-[10px] font-mono text-sky-600 dark:text-cyan-300">
           <Camera className="w-3 h-3" />
-          {photo.area} · {photo.place}
+          {photo.category}
+          {photo.place ? ` · ${photo.place}` : ''}
         </div>
         <h2 className="text-lg font-bold leading-snug text-slate-900 dark:text-white">
           {photo.title}
@@ -690,54 +905,69 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
         )}
       </div>
 
-      <div className="space-y-2">
-        <Suspense
-          fallback={
-            <div className="h-[150px] rounded-xl border border-slate-300/60 dark:border-white/15 bg-slate-100/60 dark:bg-slate-900/50 flex items-center justify-center text-[10px] font-mono text-slate-400">
-              LOADING MAP…
-            </div>
-          }
-        >
-          <PhotoMiniMap photo={photo} theme={theme} />
-        </Suspense>
-        <div className="flex items-start gap-1.5 text-[11px] font-mono">
-          <MapPin className="w-3 h-3 text-pink-500 shrink-0 mt-0.5" />
-          <div className="min-w-0">
-            <div className="text-sky-700 dark:text-cyan-200">
-              {formatCoords(photo.lat, photo.lon)}
-              {photo.meta.altitude !== null
-                ? ` · 海拔 ${Math.round(photo.meta.altitude)} m`
-                : ''}
-            </div>
-            <div className="text-slate-500 dark:text-slate-400 leading-snug break-words">
-              {photo.locationName}
+      {(coords || photo.locationName) && (
+        <div className="space-y-2">
+          {coords && (
+            <Suspense
+              fallback={
+                <div className="h-[150px] rounded-xl border border-slate-300/60 dark:border-white/15 bg-slate-100/60 dark:bg-slate-900/50 flex items-center justify-center text-[10px] font-mono text-slate-400">
+                  LOADING MAP…
+                </div>
+              }
+            >
+              <PhotoMiniMap photo={photo} theme={theme} />
+            </Suspense>
+          )}
+          <div className="flex items-start gap-1.5 text-[11px] font-mono">
+            <MapPin className="w-3 h-3 text-pink-500 shrink-0 mt-0.5" />
+            <div className="min-w-0">
+              {coords && (
+                <div className="text-sky-700 dark:text-cyan-200">
+                  {formatCoords(coords.lat, coords.lon)}
+                  {photo.meta.altitude !== null
+                    ? ` · 海拔 ${Math.round(photo.meta.altitude)} m`
+                    : ''}
+                </div>
+              )}
+              {photo.locationName && (
+                <div className="text-slate-500 dark:text-slate-400 leading-snug break-words">
+                  {photo.locationName}
+                </div>
+              )}
             </div>
           </div>
         </div>
-      </div>
+      )}
 
-      <div className="space-y-2">
-        <div className="text-[10px] font-mono text-sky-600 dark:text-cyan-300">
-          EXIF // 拍摄参数
-        </div>
-        <div className="grid grid-cols-2 gap-x-3 gap-y-2">
-          {photo.meta.params.map((param) => (
-            <div key={param.label} className="min-w-0">
-              <div className="text-[10px] font-mono text-slate-500 dark:text-slate-400">
-                {param.label}
-              </div>
+      {sections.map((section) => (
+        <div key={section.id} className="space-y-2">
+          <div className="text-[10px] font-mono text-sky-600 dark:text-cyan-300">
+            {section.title}
+          </div>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-2">
+            {section.params.map((param, paramIndex) => (
               <div
-                className="text-[11px] font-mono text-slate-800 dark:text-slate-100 leading-snug break-words"
-                title={param.value}
+                key={`${section.id}-${param.label}-${paramIndex}`}
+                className="min-w-0"
               >
-                {param.value}
+                <div className="text-[10px] font-mono text-slate-500 dark:text-slate-400">
+                  {param.label}
+                </div>
+                <div
+                  className="text-[11px] font-mono text-slate-800 dark:text-slate-100 leading-snug break-words"
+                  title={param.value}
+                >
+                  {param.value}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      ))}
 
-      <RgbHistogram histogram={photo.meta.histogram} theme={theme} />
+      {photo.meta.histogram && (
+        <RgbHistogram histogram={photo.meta.histogram} theme={theme} />
+      )}
 
       <div className="pt-1 border-t border-slate-300/50 dark:border-white/10 text-[10px] font-mono text-slate-400 dark:text-slate-500 flex items-center justify-between">
         <span>SOURCE: chronoframe</span>
@@ -909,33 +1139,155 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
             />
           ) : (
             <>
-              <img
-                src={photo.src}
-                alt=""
-                aria-hidden="true"
-                draggable={false}
-                className={`pointer-events-none absolute inset-0 m-auto max-h-full max-w-full object-contain blur-lg scale-105 transition-opacity duration-500 ${
-                  bitmap ? 'opacity-0' : 'opacity-60'
-                }`}
-              />
+              <div
+                className="pointer-events-none absolute inset-0 flex items-center justify-center"
+                style={mediaStyle}
+              >
+                <img
+                  src={photo.src}
+                  alt=""
+                  aria-hidden="true"
+                  draggable={false}
+                  className="h-full w-full object-contain transition-opacity duration-300"
+                  style={placeholderStyle}
+                />
+              </div>
+              {/* 2048px preview: sharp immediately, follows pan/zoom until the original is ready */}
+              {photo.medium && (
+                <div
+                  className="pointer-events-none absolute inset-0 flex items-center justify-center"
+                  style={mediaStyle}
+                >
+                  <img
+                    key={photo.id}
+                    src={photo.medium}
+                    alt=""
+                    aria-hidden="true"
+                    draggable={false}
+                    decoding="async"
+                    onLoad={() => setLoadedMediumId(photo.id)}
+                    onError={() =>
+                      setLoadedMediumId((current) =>
+                        current === photo.id ? null : current
+                      )
+                    }
+                    className={`h-full w-full object-contain transition-opacity duration-300 ${
+                      mediumReady ? 'opacity-100' : 'opacity-0'
+                    }`}
+                  />
+                </div>
+              )}
               {/* Canvas avoids GPU tiling seams from CSS-scaling huge photos */}
               <canvas
                 ref={canvasRef}
                 aria-label={photo.title}
-                className="absolute inset-0 w-full h-full pointer-events-none"
+                className={`absolute inset-0 w-full h-full pointer-events-none transition-opacity duration-500 ${
+                  bitmap ? 'opacity-100' : 'opacity-0'
+                }`}
               />
-              {!bitmap && !imageError && (
-                <div className="absolute inset-x-0 bottom-4 flex justify-center pointer-events-none">
-                  <span className="px-3 py-1.5 rounded-lg bg-slate-950/80 text-cyan-300 text-[11px] font-mono border border-cyan-400/30">
-                    LOADING ORIGINAL…
-                  </span>
+              {hudPhase !== 'hidden' && !livePlaying && (
+                <div
+                  className={`absolute inset-x-0 bottom-4 flex justify-center pointer-events-none px-3 transition-[transform,opacity] duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] will-change-transform ${
+                    hudPhase === 'leaving'
+                      ? 'translate-y-10 opacity-0'
+                      : 'translate-y-0 opacity-100'
+                  }`}
+                >
+                  <div
+                    role="status"
+                    aria-live="polite"
+                    className={`w-full max-w-[300px] rounded-lg border bg-slate-950/85 px-3 py-2 font-mono backdrop-blur-md ${
+                      hudComplete
+                        ? 'border-emerald-400/35 shadow-[0_0_24px_rgba(52,211,153,0.14)]'
+                        : 'border-cyan-400/30 shadow-[0_0_24px_rgba(34,211,238,0.12)]'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-3 text-[10px]">
+                      {hudComplete ? (
+                        <span className="flex items-center gap-1.5 text-emerald-300">
+                          <Check className="h-3 w-3" />
+                          LOAD COMPLETE
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1.5 text-cyan-300">
+                          <span className="inline-block h-1.5 w-1.5 animate-pulse bg-cyan-400" />
+                          {isConverting
+                            ? 'CONVERTING HEIC'
+                            : isDecoding
+                              ? 'DECODING ORIGINAL'
+                              : mediumReady
+                                ? 'LOADING FULL RES'
+                                : 'LOADING PREVIEW'}
+                        </span>
+                      )}
+                      <span
+                        className={`tabular-nums ${
+                          hudComplete ? 'text-emerald-200' : 'text-slate-300'
+                        }`}
+                      >
+                        {hudComplete
+                          ? '100%'
+                          : loadingPercent === null
+                            ? '--'
+                            : `${loadingPercent}%`}
+                      </span>
+                    </div>
+                    <div className="mt-1.5 h-1.5 overflow-hidden rounded-sm border border-white/5 bg-slate-800/90">
+                      {hudComplete ? (
+                        <div className="h-full w-full bg-gradient-to-r from-emerald-400 to-cyan-400" />
+                      ) : loadingPercent === null ? (
+                        <div className="h-full w-1/3 animate-pulse bg-gradient-to-r from-cyan-500/10 via-cyan-300 to-sky-400/10" />
+                      ) : (
+                        <div
+                          className="h-full bg-gradient-to-r from-cyan-400 to-sky-500 transition-[width] duration-300 ease-out"
+                          style={{ width: `${loadingPercent}%` }}
+                        />
+                      )}
+                    </div>
+                    <div className="mt-1 flex items-center justify-between gap-3 text-[10px] tabular-nums text-slate-400">
+                      <span>
+                        {formatBytes(loadState.loaded)}
+                        {loadState.total > 0
+                          ? ` / ${formatBytes(loadState.total)}`
+                          : ''}
+                      </span>
+                      <span className={hudComplete ? 'text-emerald-300/80' : ''}>
+                        {hudComplete
+                          ? '加载完成'
+                          : isConverting
+                            ? 'HEIC 转换中'
+                            : isDecoding
+                              ? '解码中'
+                              : loadState.total > 0
+                                ? '下载中'
+                                : '等待响应'}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               )}
               {imageError && (
-                <div className="absolute inset-x-0 bottom-4 flex justify-center pointer-events-none">
-                  <span className="px-3 py-1.5 rounded-lg bg-rose-950/80 text-rose-200 text-[11px] font-mono border border-rose-400/30">
-                    原图加载失败，请检查网络后重试
-                  </span>
+                <div className="absolute inset-x-0 bottom-4 flex justify-center px-3">
+                  <div className="flex max-w-full items-center gap-2 rounded-lg border border-rose-400/30 bg-rose-950/85 px-3 py-1.5 font-mono text-[11px] text-rose-200 backdrop-blur-md">
+                    <span className="truncate">
+                      {mediumReady
+                        ? '原图加载失败，已显示中图预览'
+                        : '原图加载失败，请检查网络后重试'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setRetryRequest({
+                          photoId: photo.id,
+                          nonce: Date.now(),
+                        })
+                      }
+                      className="flex shrink-0 items-center gap-1 rounded-md border border-rose-300/30 bg-rose-400/15 px-2 py-0.5 text-rose-100 transition-colors hover:bg-rose-400/25"
+                    >
+                      <RefreshCw className="h-3 w-3" />
+                      重新加载
+                    </button>
+                  </div>
                 </div>
               )}
             </>
@@ -948,12 +1300,16 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
           )}
 
           {/* Interaction hint */}
-          <div className="pointer-events-none absolute bottom-3 left-3 text-[10px] font-mono text-slate-500/80 dark:text-slate-400/80 hidden sm:block">
-            滚轮缩放 · 拖动平移 · 双击还原
-          </div>
-          <div className="pointer-events-none absolute bottom-3 left-3 text-[10px] font-mono text-slate-500/80 dark:text-slate-400/80 sm:hidden">
-            双指缩放 · 拖动平移
-          </div>
+          {!isLoading && !livePlaying && (
+            <>
+              <div className="pointer-events-none absolute bottom-3 left-3 text-[10px] font-mono text-slate-500/80 dark:text-slate-400/80 hidden sm:block">
+                滚轮缩放 · 拖动平移 · 双击还原
+              </div>
+              <div className="pointer-events-none absolute bottom-3 left-3 text-[10px] font-mono text-slate-500/80 dark:text-slate-400/80 sm:hidden">
+                双指缩放 · 拖动平移
+              </div>
+            </>
+          )}
         </div>
 
         {/* Desktop info drawer */}
