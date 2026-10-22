@@ -8,3 +8,5 @@ dist
 *.tsbuildinfo
 .DS_Store
 .gallery-admin.env
+.wrangler
+.dev.vars

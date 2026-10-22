@@ -31,6 +31,7 @@ interface TerminalBlogViewProps {
   onSwitchToStandard: (post?: BlogPost) => void;
   likedPostIds: string[];
   onToggleLike: (id: string) => void;
+  onViewPost: (id: string) => void;
   onUpdateSeed: (id: string, newSeed: number) => void;
   onRandomizeAllSeeds: (customBaseSeed?: number) => void;
   weatherBgEnabled: boolean;
@@ -74,6 +75,7 @@ export const TerminalBlogView: React.FC<TerminalBlogViewProps> = ({
   onSwitchToStandard,
   likedPostIds,
   onToggleLike,
+  onViewPost,
   onUpdateSeed,
   onRandomizeAllSeeds,
   weatherBgEnabled,
@@ -787,6 +789,8 @@ export const TerminalBlogView: React.FC<TerminalBlogViewProps> = ({
       );
       if (target) matchedPostId = target.id;
     }
+
+    if (matchedPostId) onViewPost(matchedPostId);
 
     const result = buildCommandOutput(cleaned);
     if (result === 'CLEAR') {

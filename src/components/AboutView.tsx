@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Camera,
   ChevronLeft,
   CornerDownLeft,
-  Cpu,
   ExternalLink,
   Gamepad2,
   MapPin,
@@ -12,7 +10,9 @@ import {
   Terminal,
 } from 'lucide-react';
 import { AvatarVideoModal } from './AvatarVideoModal';
+import { GearShowcase } from './GearShowcase';
 import { LiquidPixelCard } from './LiquidPixelCard';
+import { PhotoStoryShowcase } from './PhotoStoryShowcase';
 import type { ViewMode } from '../types/blog';
 
 interface AboutViewProps {
@@ -42,21 +42,33 @@ const DouyinIcon: React.FC<{ className?: string }> = ({ className }) => (
   </svg>
 );
 
-const SOCIAL_LINKS = [
-  { name: 'Steam', Icon: SteamIcon },
-  { name: '哔哩哔哩', Icon: BilibiliIcon },
-  { name: '抖音', Icon: DouyinIcon },
+const SOCIAL_LINKS: {
+  name: string;
+  Icon: React.FC<{ className?: string }>;
+  href?: string;
+}[] = [
+  {
+    name: 'Steam',
+    Icon: SteamIcon,
+    href: 'https://steamcommunity.com/profiles/76561198070168584',
+  },
+  { name: '哔哩哔哩', Icon: BilibiliIcon, href: 'https://b23.tv/FPpAu5c' },
+  { name: '抖音', Icon: DouyinIcon, href: 'https://v.douyin.com/oE2yERum6bo' },
 ];
 
 const SocialLinks: React.FC<{ terminal?: boolean }> = ({ terminal = false }) => (
   <div className="flex flex-wrap items-center gap-2">
-    {SOCIAL_LINKS.map(({ name, Icon }) => (
+    {SOCIAL_LINKS.map(({ name, Icon, href }) => (
       <a
         key={name}
-        href="#"
-        onClick={(event) => event.preventDefault()}
-        title={`${name}（链接待补充）`}
-        aria-label={`${name}（链接待补充）`}
+        href={href ?? '#'}
+        target={href ? '_blank' : undefined}
+        rel={href ? 'noreferrer' : undefined}
+        onClick={(event) => {
+          if (!href) event.preventDefault();
+        }}
+        title={href ? name : `${name}（链接待补充）`}
+        aria-label={href ? name : `${name}（链接待补充）`}
         className={
           terminal
             ? 'inline-flex items-center gap-1.5 rounded border border-emerald-500/30 bg-white/40 px-2 py-1 font-mono text-[10px] text-emerald-700 transition-colors hover:bg-emerald-500/10 dark:bg-slate-950/40 dark:text-emerald-300'
@@ -68,26 +80,6 @@ const SocialLinks: React.FC<{ terminal?: boolean }> = ({ terminal = false }) => 
       </a>
     ))}
   </div>
-);
-
-const HobbyCard: React.FC<{
-  eyebrow: string;
-  title: string;
-  children: React.ReactNode;
-  className?: string;
-}> = ({ eyebrow, title, children, className = '' }) => (
-  <LiquidPixelCard
-    accent="violet"
-    className={`about-reveal p-4 sm:p-5 space-y-2 transition-transform hover:-translate-y-0.5 ${className}`}
-  >
-    <div className="font-mono text-[9px] tracking-wider text-violet-600 dark:text-violet-300">
-      {eyebrow}
-    </div>
-    <h3 className="text-sm font-bold text-slate-900 dark:text-white">{title}</h3>
-    <div className="text-xs leading-relaxed text-slate-600 dark:text-slate-300">
-      {children}
-    </div>
-  </LiquidPixelCard>
 );
 
 const CountUp: React.FC<{ value: number; suffix?: string }> = ({
@@ -488,7 +480,7 @@ export const AboutView: React.FC<AboutViewProps> = ({
                 前端开发者 · 乌鲁木齐
               </p>
               <p className="max-w-2xl text-sm leading-relaxed text-slate-700 dark:text-slate-200">
-                我是一个前端开发者，现居乌鲁木齐。喜欢把界面、动效和像素细节打磨到刚刚好。
+                我是一名前端开发者，现居乌鲁木齐。
               </p>
               <div className="flex flex-wrap gap-1.5 pt-1">
                 {['前端开发', 'DOTA2', '风景摄影', '电子设备'].map((tag) => (
@@ -550,70 +542,44 @@ export const AboutView: React.FC<AboutViewProps> = ({
           <p className="text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
             游戏群里常用「黑鸟大神」这个昵称，最近沉迷 LOL 的海克斯大乱斗；很喜欢这种灵动飘逸的英雄角色。
           </p>
+          <div className="flex flex-wrap items-center gap-2 rounded-lg border-l-2 border-violet-400/50 bg-violet-500/5 px-3 py-2 font-mono">
+            <span className="text-[9px] font-bold text-violet-600 dark:text-violet-300">
+              MID LANE DREAM
+            </span>
+            <span className="text-[11px] text-slate-600 dark:text-slate-300">
+              希望有一天能匹配到 Topson，来一场真正的中单博弈。
+            </span>
+          </div>
         </LiquidPixelCard>
 
         <div className="grid gap-4 md:grid-cols-2">
-          <HobbyCard eyebrow="PHOTOGRAPHY" title="风景摄影">
-            <span className="mb-2 flex items-center gap-1.5 text-sky-600 dark:text-cyan-300">
-              <Camera className="h-3.5 w-3.5" />
-              LANDSCAPE / LIGHT
-            </span>
-            喜欢风景摄影，收集山川、云层和日落。
-          </HobbyCard>
-          <HobbyCard eyebrow="GEAR / COLLECTION" title="电子设备收藏">
-            <span className="mb-2 flex items-center gap-1.5 text-emerald-600 dark:text-emerald-300">
-              <Cpu className="h-3.5 w-3.5" />
-              GADGETS / HARDWARE
-            </span>
-            喜欢收集各种电子设备，也喜欢研究它们背后的交互与细节。
-          </HobbyCard>
+          <PhotoStoryShowcase />
+          <GearShowcase />
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <LiquidPixelCard
-            accent="violet"
-            className="about-reveal relative overflow-hidden p-5 sm:p-6"
+        <LiquidPixelCard
+          accent="cyan"
+          className="about-reveal p-5 sm:p-6 space-y-2"
+        >
+          <div className="font-mono text-[9px] tracking-wider text-sky-600 dark:text-cyan-300">
+            GALLERY CREDITS
+          </div>
+          <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+            灵感来自 ChronoFrame
+          </h3>
+          <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+            本项目画廊的灵感与理念来源于 ChronoFrame 项目，感谢开源。
+          </p>
+          <a
+            href={CHRONOFRAME_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-sky-400/30 bg-sky-500/10 px-2.5 py-1.5 font-mono text-[10px] text-sky-700 transition-colors hover:bg-sky-500/20 dark:text-cyan-200"
           >
-            <div className="pointer-events-none absolute -right-10 -top-10 font-mono text-[100px] leading-none text-violet-500/10">
-              “
-            </div>
-            <div className="relative space-y-2">
-              <div className="font-mono text-[9px] tracking-wider text-violet-600 dark:text-violet-300">
-                MID LANE DREAM
-              </div>
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                想和 Topson 对一局
-              </h3>
-              <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-300">
-                希望有一天能匹配到 Topson，来一场真正的中单博弈。
-              </p>
-            </div>
-          </LiquidPixelCard>
-
-          <LiquidPixelCard
-            accent="cyan"
-            className="about-reveal p-5 sm:p-6 space-y-2"
-          >
-            <div className="font-mono text-[9px] tracking-wider text-sky-600 dark:text-cyan-300">
-              GALLERY CREDITS
-            </div>
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-              灵感来自 ChronoFrame
-            </h3>
-            <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-300">
-              本项目画廊的灵感与理念来源于 ChronoFrame 项目，感谢开源。
-            </p>
-            <a
-              href={CHRONOFRAME_URL}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-sky-400/30 bg-sky-500/10 px-2.5 py-1.5 font-mono text-[10px] text-sky-700 transition-colors hover:bg-sky-500/20 dark:text-cyan-200"
-            >
-              HoshinoSuzumi/chronoframe
-              <ExternalLink className="h-3 w-3" />
-            </a>
-          </LiquidPixelCard>
-        </div>
+            HoshinoSuzumi/chronoframe
+            <ExternalLink className="h-3 w-3" />
+          </a>
+        </LiquidPixelCard>
 
         <div className="about-reveal flex flex-col gap-3 rounded-2xl border border-slate-300/50 bg-white/30 px-4 py-3 dark:border-white/10 dark:bg-slate-950/30 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-1.5 font-mono text-[10px] text-slate-500 dark:text-slate-400">

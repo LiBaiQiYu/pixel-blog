@@ -17,6 +17,13 @@ import {
   PixelCursorEffects,
   triggerPixelLoadingCursor,
 } from './components/PixelCursorEffects';
+import {
+  fetchLikedPostIds,
+  fetchPostStats,
+  recordPostView,
+  setPostLike,
+} from './lib/post-stats';
+import type { PostStats } from './lib/post-stats';
 
 // MapLibre is heavy: load the gallery (and the map engine) only when needed
 const GalleryView = lazy(() =>
@@ -86,6 +93,7 @@ export const App: React.FC = () => {
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
   const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
   const [galleryPreviewOpen, setGalleryPreviewOpen] = useState(false);
+  const likeRequestSeqRef = useRef<Record<string, number>>({});
   const [weatherBgEnabled, setWeatherBgEnabled] = useState<boolean>(() => {
     return localStorage.getItem('pixel_blog_weather_bg') !== 'off';
   });
@@ -237,6 +245,67 @@ export const App: React.FC = () => {
     localStorage.setItem('pixel_blog_likes', JSON.stringify(likedPostIds));
   }, [likedPostIds]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    fetchPostStats()
+      .then((stats) => {
+        if (cancelled) return;
+        setPosts((prev) =>
+          prev.map((post) => ({
+            ...post,
+            ...(stats[post.id] ?? { views: 0, likes: 0 }),
+          }))
+        );
+        setSelectedPost((prev) =>
+          prev
+            ? {
+                ...prev,
+                ...(stats[prev.id] ?? { views: 0, likes: 0 }),
+              }
+            : null
+        );
+      })
+      .catch(() => {
+        // Keep the static fallback counts when the stats API is unreachable.
+      });
+
+    fetchLikedPostIds()
+      .then((ids) => {
+        if (!cancelled) setLikedPostIds(ids);
+      })
+      .catch(() => {
+        // Keep locally remembered likes until the API is available.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const applyPostStats = (id: string, stats: PostStats) => {
+    setPosts((prev) =>
+      prev.map((post) =>
+        post.id === id
+          ? { ...post, views: stats.views, likes: stats.likes }
+          : post
+      )
+    );
+    setSelectedPost((prev) =>
+      prev && prev.id === id
+        ? { ...prev, views: stats.views, likes: stats.likes }
+        : prev
+    );
+  };
+
+  const handleViewPost = (id: string) => {
+    recordPostView(id)
+      .then((stats) => applyPostStats(id, stats))
+      .catch(() => {
+        // Do not inflate local counts when the API call fails.
+      });
+  };
+
   const handleViewModeChange = (nextMode: ViewMode) => {
     if (nextMode === viewMode) return;
     triggerPixelLoadingCursor(320);
@@ -273,37 +342,61 @@ export const App: React.FC = () => {
 
   const handleToggleLike = (id: string) => {
     pixelAudio.playClick();
-    const alreadyLiked = likedPostIds.includes(id);
+    const nextLiked = !likedPostIds.includes(id);
+    const delta = nextLiked ? 1 : -1;
+    const seq = (likeRequestSeqRef.current[id] ?? 0) + 1;
+    likeRequestSeqRef.current[id] = seq;
+
     setLikedPostIds((prev) =>
-      alreadyLiked ? prev.filter((item) => item !== id) : [...prev, id]
+      nextLiked
+        ? [...prev.filter((item) => item !== id), id]
+        : prev.filter((item) => item !== id)
     );
     setPosts((prev) =>
       prev.map((p) =>
         p.id === id
-          ? { ...p, likes: alreadyLiked ? Math.max(0, p.likes - 1) : p.likes + 1 }
+          ? { ...p, likes: Math.max(0, p.likes + delta) }
           : p
       )
     );
-    if (selectedPost && selectedPost.id === id) {
-      setSelectedPost((prev) =>
-        prev
-          ? {
-              ...prev,
-              likes: alreadyLiked ? Math.max(0, prev.likes - 1) : prev.likes + 1,
-            }
-          : null
-      );
-    }
+    setSelectedPost((prev) =>
+      prev && prev.id === id
+        ? { ...prev, likes: Math.max(0, prev.likes + delta) }
+        : prev
+    );
+
+    setPostLike(id, nextLiked)
+      .then((stats) => {
+        if (likeRequestSeqRef.current[id] === seq) {
+          applyPostStats(id, stats);
+        }
+      })
+      .catch(() => {
+        if (likeRequestSeqRef.current[id] !== seq) return;
+        setLikedPostIds((prev) =>
+          nextLiked
+            ? prev.filter((item) => item !== id)
+            : [...prev.filter((item) => item !== id), id]
+        );
+        setPosts((prev) =>
+          prev.map((p) =>
+            p.id === id
+              ? { ...p, likes: Math.max(0, p.likes - delta) }
+              : p
+          )
+        );
+        setSelectedPost((prev) =>
+          prev && prev.id === id
+            ? { ...prev, likes: Math.max(0, prev.likes - delta) }
+            : prev
+        );
+      });
   };
 
   const handleSelectPost = (post: BlogPost | null) => {
     pixelAudio.playClick();
-    if (post) {
-      setPosts((prev) =>
-        prev.map((p) => (p.id === post.id ? { ...p, views: p.views + 1 } : p))
-      );
-    }
     setSelectedPost(post);
+    if (post) handleViewPost(post.id);
   };
 
   const handleUpdateSeed = (id: string, newSeed: number) => {
@@ -479,6 +572,7 @@ export const App: React.FC = () => {
             }}
             likedPostIds={likedPostIds}
             onToggleLike={handleToggleLike}
+            onViewPost={handleViewPost}
             onUpdateSeed={handleUpdateSeed}
             onRandomizeAllSeeds={handleRandomizeAllSeeds}
             weatherBgEnabled={weatherBgEnabled}

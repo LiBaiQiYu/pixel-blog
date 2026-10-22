@@ -1,0 +1,9 @@
+name = "pixel-blog-stats"
+main = "worker/src/index.ts"
+compatibility_date = "2026-10-22"
+workers_dev = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "pixel-blog-stats"
+database_id = "80d9cd7e-e75f-49ca-9b1b-ee4dec17256a"
