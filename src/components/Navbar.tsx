@@ -8,11 +8,24 @@ import {
   CloudSun,
   CloudOff,
 } from 'lucide-react';
-import { BlogPost, ThemeMode, ViewMode } from '../types/blog';
+import {
+  BlogPost,
+  ContentPage,
+  ThemeMode,
+  ViewMode,
+} from '../types/blog';
 import { PixelLogoMark } from './PixelArtwork';
+
+const CONTENT_PAGES: { id: ContentPage; label: string }[] = [
+  { id: 'home', label: '首页' },
+  { id: 'gallery', label: '画廊' },
+  { id: 'about', label: '关于我' },
+];
 
 interface NavbarProps {
   viewMode: ViewMode;
+  contentPage: ContentPage;
+  onContentPageChange: (page: ContentPage) => void;
   theme: ThemeMode;
   onThemeToggle: () => void;
   soundEnabled: boolean;
@@ -30,6 +43,8 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({
   viewMode,
+  contentPage,
+  onContentPageChange,
   theme,
   onThemeToggle,
   soundEnabled,
@@ -42,6 +57,37 @@ export const Navbar: React.FC<NavbarProps> = ({
   articleDocked = false,
   concealed = false,
 }) => {
+  const renderContentNav = (mobile: boolean) => {
+    if (viewMode === 'terminal') return null;
+
+    return (
+    <nav
+      className={`${
+        mobile ? 'flex w-full md:hidden' : 'hidden md:flex'
+      } items-center gap-0.5 rounded-xl border border-slate-300/50 bg-white/45 p-0.5 font-mono text-[10px] dark:border-white/10 dark:bg-slate-950/50`}
+    >
+      {CONTENT_PAGES.map((page) => {
+        const active = contentPage === page.id;
+        return (
+          <button
+            key={page.id}
+            type="button"
+            onClick={() => onContentPageChange(page.id)}
+            aria-current={active ? 'page' : undefined}
+            className={`${mobile ? 'flex-1' : ''} rounded-lg px-2 py-1 transition-colors ${
+              active
+                ? 'bg-sky-500 font-semibold text-white'
+                : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+            }`}
+          >
+            {page.label}
+          </button>
+        );
+      })}
+    </nav>
+    );
+  };
+
   return (
     <header
       className={`${
@@ -52,12 +98,13 @@ export const Navbar: React.FC<NavbarProps> = ({
           : 'translate-y-0 opacity-100'
       }`}
     >
-      <div className="liquid-glass-strong rounded-2xl px-4 py-2.5 flex items-center justify-between gap-3 relative overflow-hidden">
+      <div className="liquid-glass-strong rounded-2xl px-4 py-2.5 flex flex-col gap-2 relative overflow-hidden">
         {/* Top Iridescent Specular Highlight */}
         <div className="pointer-events-none absolute inset-x-8 top-0 h-[1px] bg-gradient-to-r from-sky-400/40 via-white/60 to-pink-400/40" />
 
-        {/* Left: Brand Identity + Context Breadcrumb */}
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex w-full items-center justify-between gap-3">
+          {/* Left: Brand Identity + Context Breadcrumb */}
+          <div className="flex items-center gap-2 min-w-0 flex-1">
           <button
             onClick={onResetHome}
             className="flex items-center gap-2.5 text-left group focus:outline-none shrink-0"
@@ -94,10 +141,12 @@ export const Navbar: React.FC<NavbarProps> = ({
               </span>
             </div>
           )}
+
+          {renderContentNav(false)}
         </div>
 
         {/* Right: Minimalist Actions (Weather Background, Sound, Theme) */}
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           <button
             onClick={onWeatherBgToggle}
             className={`liquid-pill p-1.5 rounded-xl flex items-center justify-center transition-colors ${
@@ -154,6 +203,9 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
           </button>
         </div>
+        </div>
+
+        {renderContentNav(true)}
       </div>
     </header>
   );

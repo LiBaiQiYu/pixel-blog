@@ -6,7 +6,13 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { Camera, Image, LayoutGrid, Map as MapIcon } from 'lucide-react';
+import {
+  Camera,
+  ChevronLeft,
+  Image,
+  LayoutGrid,
+  Map as MapIcon,
+} from 'lucide-react';
 import { useLiveVideo } from '../hooks/useLiveVideo';
 import { LiveProgressRing } from './LiveProgressRing';
 import { PhotoDetail } from './PhotoDetail';
@@ -21,6 +27,7 @@ const GalleryMap = React.lazy(() =>
 interface GalleryViewProps {
   theme: ThemeMode;
   onPreviewOpenChange?: (open: boolean) => void;
+  onBackHome?: () => void;
 }
 
 const dateFormatter = new Intl.DateTimeFormat('zh-CN', {
@@ -304,6 +311,7 @@ const GalleryCard: React.FC<{
 export const GalleryView: React.FC<GalleryViewProps> = ({
   theme,
   onPreviewOpenChange,
+  onBackHome,
 }) => {
   const [activeCategory, setActiveCategory] = useState<string>('全部');
   const [displayMode, setDisplayMode] = useState<'grid' | 'map'>('grid');
@@ -468,6 +476,21 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
 
   return (
     <div className="space-y-5 pb-20">
+      {onBackHome && (
+        <div className="flex items-center gap-2 px-1 font-mono text-[10px] text-slate-500 dark:text-slate-400">
+          <button
+            type="button"
+            onClick={onBackHome}
+            className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 transition-colors hover:bg-slate-200/60 hover:text-slate-900 dark:hover:bg-white/10 dark:hover:text-white"
+          >
+            <ChevronLeft className="h-3 w-3" />
+            首页
+          </button>
+          <span className="text-slate-400/60">/</span>
+          <span className="text-sky-600 dark:text-cyan-300">生活画廊</span>
+        </div>
+      )}
+
       {/* Gallery toolbar: category filters and grid/map switcher */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 px-1">
         <div className="flex min-w-0 items-center gap-2.5">

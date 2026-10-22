@@ -5,10 +5,9 @@ import {
   CornerDownLeft,
   Trash2,
 } from 'lucide-react';
-import { AuthorProfile, BlogPost, ThemeMode } from '../types/blog';
+import { BlogPost, ThemeMode } from '../types/blog';
 import { LiquidPixelCard } from './LiquidPixelCard';
 import {
-  PixelAvatar,
   PixelHeart,
   PixelPostCover,
   generateRandomSeed,
@@ -27,7 +26,6 @@ import type { WeatherStatus } from '../hooks/useWeather';
 
 interface TerminalBlogViewProps {
   posts: BlogPost[];
-  author: AuthorProfile;
   theme: ThemeMode;
   onToggleTheme: (target?: ThemeMode) => void;
   onSwitchToStandard: (post?: BlogPost) => void;
@@ -46,6 +44,7 @@ interface TerminalBlogViewProps {
   weatherHint: string | null;
   onWeatherRelocate: () => void;
   onOpenGallery: () => void;
+  onOpenAbout: () => void;
   initialCommand?: string | null;
   onConsumeInitialCommand?: () => void;
   onCommandSound: () => void;
@@ -62,14 +61,14 @@ interface HistoryEntry {
 const QUICK_COMMANDS = [
   { cmd: 'tree', label: 'tree (年月时间轴)' },
   { cmd: 'ls', label: 'ls (文件列表)' },
+  { cmd: 'gallery', label: 'gallery (生活画廊)' },
+  { cmd: 'about', label: 'about (关于我)' },
   { cmd: 'weather', label: 'weather (天气)' },
-  { cmd: 'whoami', label: 'whoami (博主)' },
   { cmd: 'help', label: 'help (帮助)' },
 ];
 
 export const TerminalBlogView: React.FC<TerminalBlogViewProps> = ({
   posts,
-  author,
   theme,
   onToggleTheme,
   onSwitchToStandard,
@@ -88,6 +87,7 @@ export const TerminalBlogView: React.FC<TerminalBlogViewProps> = ({
   weatherHint,
   onWeatherRelocate,
   onOpenGallery,
+  onOpenAbout,
   initialCommand,
   onConsumeInitialCommand,
   onCommandSound,
@@ -351,9 +351,6 @@ export const TerminalBlogView: React.FC<TerminalBlogViewProps> = ({
               <code className="text-emerald-600 dark:text-emerald-400 font-bold">search &lt;词&gt;</code> — 搜索文章内容
             </div>
             <div>
-              <code className="text-emerald-600 dark:text-emerald-400 font-bold">whoami</code> — 查看博主 CarlosWhite 介绍
-            </div>
-            <div>
               <code className="text-emerald-600 dark:text-emerald-400 font-bold">weather [locate]</code> — 当前位置实时天气详情 / 重新定位
             </div>
             <div>
@@ -364,6 +361,9 @@ export const TerminalBlogView: React.FC<TerminalBlogViewProps> = ({
             </div>
             <div>
               <code className="text-emerald-600 dark:text-emerald-400 font-bold">gallery</code> — 打开生活画廊（照片 + 地图）
+            </div>
+            <div>
+              <code className="text-emerald-600 dark:text-emerald-400 font-bold">about</code> — 打开关于我页面
             </div>
             <div>
               <code className="text-emerald-600 dark:text-emerald-400 font-bold">seed &lt;id&gt; [序号]</code> — 随机或指定序号生成封面
@@ -456,22 +456,6 @@ export const TerminalBlogView: React.FC<TerminalBlogViewProps> = ({
         }
         return renderTimelineTree(matches, `搜索结果: "${argStr}"`);
       }
-
-      case 'whoami':
-      case 'neofetch':
-        return (
-          <div className="p-4 rounded-xl bg-white/40 dark:bg-slate-950/60 border border-slate-300/50 dark:border-white/10 text-xs font-mono flex items-center gap-4 my-1">
-            <div className="p-1 rounded-xl bg-slate-950 border border-amber-400/40 shrink-0">
-              <PixelAvatar size={52} />
-            </div>
-            <div className="space-y-1">
-              <div className="font-bold text-slate-900 dark:text-white">
-                {author.name} · 前端工程师 (LV.{author.level})
-              </div>
-              <p className="text-slate-600 dark:text-slate-300">{author.bio}</p>
-            </div>
-          </div>
-        );
 
       case 'weather': {
         const sub = (args[0] || '').toLowerCase();
@@ -714,6 +698,15 @@ export const TerminalBlogView: React.FC<TerminalBlogViewProps> = ({
           </div>
         );
 
+      case 'about':
+      case 'me':
+        onOpenAbout();
+        return (
+          <div className="text-xs font-mono text-violet-500 dark:text-violet-300">
+            正在打开「关于我」…
+          </div>
+        );
+
       case 'seed': {
         const targetArg = (args[0] || 'all').toLowerCase();
         const seedValArg = args[1];
@@ -875,7 +868,7 @@ export const TerminalBlogView: React.FC<TerminalBlogViewProps> = ({
         'cat 03',
         'weather',
         'gallery',
-        'whoami',
+        'about',
         'seed 01',
         'theme',
         'clear',
@@ -986,7 +979,7 @@ export const TerminalBlogView: React.FC<TerminalBlogViewProps> = ({
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="输入 tree, ls, cat 01, search, whoami..."
+            placeholder="输入 tree, ls, cat 01, search, about..."
             className="flex-1 min-w-0 bg-transparent font-mono text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none"
           />
           <button

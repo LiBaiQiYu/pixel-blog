@@ -1,6 +1,6 @@
 import React, { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { AUTHOR_PROFILE, INITIAL_POSTS, ensurePostMarkdown } from './data/posts';
-import { BlogPost, ThemeMode, ViewMode } from './types/blog';
+import { BlogPost, ContentPage, ThemeMode, ViewMode } from './types/blog';
 import { AmbientPixelBackground } from './components/AmbientPixelBackground';
 import { Navbar } from './components/Navbar';
 import { StandardBlogView } from './components/StandardBlogView';
@@ -11,7 +11,7 @@ import { useWeather } from './hooks/useWeather';
 import { isWeatherKind, resolveWeatherVisual } from './utils/weather';
 import type { WeatherKind } from './types/weather';
 import { pixelAudio } from './utils/sound';
-import { Terminal, LayoutGrid, Camera, Settings } from 'lucide-react';
+import { Terminal, LayoutGrid, Settings } from 'lucide-react';
 import { generateRandomSeed } from './components/PixelArtwork';
 import {
   PixelCursorEffects,
@@ -25,11 +25,24 @@ const GalleryView = lazy(() =>
   }))
 );
 
+const TerminalGalleryView = lazy(() =>
+  import('./components/TerminalGalleryView').then((module) => ({
+    default: module.TerminalGalleryView,
+  }))
+);
+
+const AboutView = lazy(() =>
+  import('./components/AboutView').then((module) => ({
+    default: module.AboutView,
+  }))
+);
+
 export const App: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     const saved = localStorage.getItem('pixel_blog_view_mode');
     return saved === 'terminal' || saved === 'standard' ? saved : 'standard';
   });
+  const [contentPage, setContentPage] = useState<ContentPage>('home');
 
   const [theme, setTheme] = useState<ThemeMode>(() => {
     const saved = localStorage.getItem('pixel_blog_theme');
@@ -231,6 +244,15 @@ export const App: React.FC = () => {
     setViewMode(nextMode);
   };
 
+  const handleContentPageChange = (nextPage: ContentPage) => {
+    if (nextPage === contentPage) return;
+    pixelAudio.playClick();
+    setContentPage(nextPage);
+    setSelectedPost(null);
+    setGalleryPreviewOpen(false);
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  };
+
   const handleThemeToggle = (explicitTheme?: ThemeMode) => {
     triggerPixelLoadingCursor(240);
     pixelAudio.playThemeSwitch();
@@ -349,6 +371,8 @@ export const App: React.FC = () => {
       {/* Top Sticky Liquid Glass Navigation Bar */}
       <Navbar
         viewMode={viewMode}
+        contentPage={contentPage}
+        onContentPageChange={handleContentPageChange}
         theme={theme}
         onThemeToggle={() => handleThemeToggle()}
         soundEnabled={soundEnabled}
@@ -356,6 +380,7 @@ export const App: React.FC = () => {
         onResetHome={() => {
           pixelAudio.playClick();
           setSelectedPost(null);
+          handleContentPageChange('home');
         }}
         selectedPost={selectedPost}
         weatherBgEnabled={weatherBgEnabled}
@@ -371,7 +396,55 @@ export const App: React.FC = () => {
           viewMode === 'terminal' ? 'pt-4 sm:pt-5 min-h-0 flex flex-col' : 'pt-4'
         }`}
       >
-        {viewMode === 'standard' ? (
+        {contentPage === 'about' ? (
+          <Suspense
+            fallback={
+              <div className="liquid-glass flex min-h-48 items-center justify-center rounded-2xl p-10 font-mono text-xs text-violet-600 dark:text-violet-300">
+                LOADING ABOUT…
+              </div>
+            }
+          >
+            <AboutView
+              viewMode={viewMode}
+              onBackHome={() => handleContentPageChange('home')}
+            />
+          </Suspense>
+        ) : contentPage === 'gallery' ? (
+          viewMode === 'standard' ? (
+            <Suspense
+              fallback={
+                <div className="liquid-glass rounded-2xl p-10 text-center space-y-2">
+                  <div className="font-pixel text-xs text-sky-500 dark:text-cyan-300">
+                    LOADING GALLERY // 正在加载生活画廊与地图…
+                  </div>
+                  <div className="text-xs font-mono text-slate-500 dark:text-slate-400">
+                    Mapbox 地图引擎按需加载…
+                  </div>
+                </div>
+              }
+            >
+              <GalleryView
+                theme={theme}
+                onPreviewOpenChange={setGalleryPreviewOpen}
+                onBackHome={() => handleContentPageChange('home')}
+              />
+            </Suspense>
+          ) : (
+            <Suspense
+              fallback={
+                <div className="liquid-glass flex flex-1 items-center justify-center rounded-2xl p-10 font-mono text-xs text-emerald-600 dark:text-emerald-300">
+                  LOADING TERMINAL GALLERY…
+                </div>
+              }
+            >
+              <TerminalGalleryView
+                theme={theme}
+                onBackHome={() => handleContentPageChange('home')}
+                onPreviewOpenChange={setGalleryPreviewOpen}
+              />
+            </Suspense>
+          )
+        ) : viewMode === 'standard' ? (
           <StandardBlogView
             posts={posts}
             author={AUTHOR_PROFILE}
@@ -395,28 +468,9 @@ export const App: React.FC = () => {
               handleViewModeChange('terminal');
             }}
           />
-        ) : viewMode === 'gallery' ? (
-          <Suspense
-            fallback={
-              <div className="liquid-glass rounded-2xl p-10 text-center space-y-2">
-                <div className="font-pixel text-xs text-sky-500 dark:text-cyan-300">
-                  LOADING GALLERY // 正在加载生活画廊与地图…
-                </div>
-                <div className="text-xs font-mono text-slate-500 dark:text-slate-400">
-                  Mapbox 地图引擎按需加载中
-                </div>
-              </div>
-            }
-          >
-            <GalleryView
-              theme={theme}
-              onPreviewOpenChange={setGalleryPreviewOpen}
-            />
-          </Suspense>
         ) : (
           <TerminalBlogView
             posts={posts}
-            author={AUTHOR_PROFILE}
             theme={theme}
             onToggleTheme={handleThemeToggle}
             onSwitchToStandard={(post) => {
@@ -437,7 +491,8 @@ export const App: React.FC = () => {
             weatherStatus={weatherStatus}
             weatherHint={weatherHint}
             onWeatherRelocate={requestLiveWeather}
-            onOpenGallery={() => handleViewModeChange('gallery')}
+            onOpenGallery={() => handleContentPageChange('gallery')}
+            onOpenAbout={() => handleContentPageChange('about')}
             initialCommand={pendingTerminalCmd}
             onConsumeInitialCommand={() => setPendingTerminalCmd(null)}
             onCommandSound={() => pixelAudio.playCommandRun()}
@@ -473,8 +528,10 @@ export const App: React.FC = () => {
           href="?admin=1"
           title="开发环境图库后台"
           aria-label="打开开发环境图库后台"
-          className={`fixed z-40 left-3 liquid-pill rounded-full flex items-center gap-1.5 text-[10px] font-mono font-bold text-amber-700 dark:text-amber-300 border border-dashed border-amber-500/50 transition-all shadow-lg p-2.5 sm:bottom-5 sm:left-5 sm:px-3 sm:py-2 opacity-75 hover:opacity-100 ${
-            viewMode === 'terminal' ? 'bottom-[5rem]' : 'bottom-3'
+          className={`fixed z-40 left-3 liquid-pill rounded-full flex items-center gap-1.5 text-[10px] font-mono font-bold text-amber-700 dark:text-amber-300 border border-dashed border-amber-500/50 transition-all shadow-lg p-2.5 sm:left-5 sm:px-3 sm:py-2 opacity-75 hover:opacity-100 ${
+            viewMode === 'terminal'
+              ? 'bottom-[5rem] sm:bottom-[5rem] min-[1440px]:bottom-5'
+              : 'bottom-3 sm:bottom-5'
           }`}
         >
           <Settings className="w-3.5 h-3.5 text-amber-500" />
@@ -482,22 +539,16 @@ export const App: React.FC = () => {
         </a>
       )}
 
-      {/* Subtle Floating Mode Toggle Button (cycles blog → gallery → terminal) */}
+      {/* Floating mode switch: content page stays the same */}
       <button
         onClick={() =>
           handleViewModeChange(
-            viewMode === 'standard'
-              ? 'gallery'
-              : viewMode === 'gallery'
-              ? 'terminal'
-              : 'standard'
+            viewMode === 'standard' ? 'terminal' : 'standard'
           )
         }
         title={
           viewMode === 'standard'
-            ? '切换至生活画廊'
-            : viewMode === 'gallery'
-            ? '切换至终端风格'
+            ? '切换至终端模式'
             : '切换至普通博客风格'
         }
         className={`fixed z-40 liquid-pill rounded-full flex items-center gap-2 text-xs font-mono text-slate-600 dark:text-slate-300 transition-all shadow-lg p-2.5 sm:px-3.5 sm:py-2 ${
@@ -506,16 +557,11 @@ export const App: React.FC = () => {
             : 'opacity-75 hover:opacity-100'
         } ${
           viewMode === 'terminal'
-            ? 'bottom-[5rem] right-3 sm:bottom-5 sm:right-5'
+            ? 'bottom-[5rem] right-3 sm:bottom-[5rem] sm:right-5 min-[1440px]:bottom-5'
             : 'bottom-3 right-3 sm:bottom-5 sm:right-5'
         }`}
       >
         {viewMode === 'standard' ? (
-          <>
-            <Camera className="w-3.5 h-3.5 text-pink-500" />
-            <span className="hidden sm:inline">生活画廊</span>
-          </>
-        ) : viewMode === 'gallery' ? (
           <>
             <Terminal className="w-3.5 h-3.5 text-emerald-500" />
             <span className="hidden sm:inline">终端模式</span>

@@ -36,21 +36,23 @@ export const LiveProgressRing: React.FC<LiveProgressRingProps> = ({
         }}
       />
       <span className="absolute inset-[3px] rounded-full border border-white/15 bg-slate-950/40 backdrop-blur-md" />
-      {playing ? (
-        <Pause
-          className="relative text-pink-100"
-          style={{ width: size * 0.36, height: size * 0.36 }}
-          fill="currentColor"
-          strokeWidth={0}
-        />
-      ) : (
-        <Play
-          className="relative translate-x-[1px] text-pink-50"
-          style={{ width: size * 0.36, height: size * 0.36 }}
-          fill="currentColor"
-          strokeWidth={0}
-        />
-      )}
+      <span className="absolute inset-0 flex items-center justify-center">
+        {playing ? (
+          <Pause
+            className="block text-pink-100"
+            style={{ width: size * 0.36, height: size * 0.36 }}
+            fill="currentColor"
+            strokeWidth={0}
+          />
+        ) : (
+          <Play
+            className="block text-pink-50"
+            style={{ width: size * 0.36, height: size * 0.36 }}
+            fill="currentColor"
+            strokeWidth={0}
+          />
+        )}
+      </span>
     </span>
   );
 };

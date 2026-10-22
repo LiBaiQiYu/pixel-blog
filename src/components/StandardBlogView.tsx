@@ -272,7 +272,7 @@ export const StandardBlogView: React.FC<StandardBlogViewProps> = ({
                 </span>
               </div>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300">
-                「李白的白」—— 记录生活随感、旅途碎片与深夜独白的个人散文随笔集。
+                记录代码、旅途与日常观察的像素自留地。
               </p>
             </div>
           </div>
