@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  Eye,
+  EyeOff,
   FileText,
   ImagePlus,
   Loader2,
@@ -25,6 +27,17 @@ function nextPostId(items: BlogPost[]) {
   return String(max + 1).padStart(2, '0');
 }
 
+function withPublicField(markdown: string, isPublic: boolean) {
+  const end = markdown.indexOf('\n---', 3);
+  if (end === -1) return markdown;
+  const head = markdown.slice(0, end);
+  const tail = markdown.slice(end);
+  const nextHead = /^public:\s*.*$/m.test(head)
+    ? head.replace(/^public:\s*.*$/m, `public: ${isPublic}`)
+    : `${head}\npublic: ${isPublic}`;
+  return `${nextHead}${tail}`;
+}
+
 function newPostTemplate(id: string) {
   const date = new Date().toISOString().slice(0, 10);
   return `---
@@ -39,6 +52,7 @@ readTime: "1 MIN"
 views: 0
 likes: 0
 featured: false
+public: true
 coverSeed: ${Date.now() % 1000000}
 accent: "cyan"
 ---
@@ -98,6 +112,33 @@ export const PostsPanel: React.FC<PostsPanelProps> = ({
     } finally {
       setBusy(false);
       setLoadingPostId(null);
+    }
+  };
+
+  const toggleVisibility = async (post: BlogPost) => {
+    if (busy) return;
+    const nextPublic = post.isPublic === false;
+    setBusy(true);
+    try {
+      const data = await api(
+        `/__admin/posts/${encodeURIComponent(post.id)}/visibility`,
+        {
+          method: 'PATCH',
+          body: JSON.stringify({ isPublic: nextPublic }),
+        }
+      );
+      setItems(data.items ?? []);
+      if (selectedId === post.id) {
+        setMarkdown((current) => withPublicField(current, nextPublic));
+        setSavedMarkdown((current) => withPublicField(current, nextPublic));
+      }
+      onMessage(
+        `博文 #${post.id} 已设为${nextPublic ? '公开' : '私密'}`
+      );
+    } catch (error) {
+      onError(error instanceof Error ? error.message : '更新可见性失败');
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -219,32 +260,59 @@ export const PostsPanel: React.FC<PostsPanelProps> = ({
         ) : (
           <div className="max-h-[66vh] space-y-1 overflow-y-auto pr-1">
             {items.map((post) => (
-              <button
+              <div
                 key={post.id}
-                type="button"
-                disabled={Boolean(loadingPostId)}
-                onClick={() => void selectPost(post.id)}
-                className={`w-full rounded-xl border px-3 py-2 text-left transition-colors disabled:cursor-wait ${
+                className={`relative rounded-xl border transition-colors ${
                   post.id === selectedId
                     ? 'border-cyan-500/40 bg-cyan-500/10'
                     : 'border-transparent hover:border-slate-300/60 hover:bg-white/50 dark:hover:border-white/10 dark:hover:bg-white/5'
                 }`}
               >
-                <div className="flex items-center gap-2 font-mono text-[10px] text-slate-400">
-                  {loadingPostId === post.id ? (
-                    <Loader2 className="h-3 w-3 animate-spin text-cyan-500" />
+                <button
+                  type="button"
+                  disabled={Boolean(loadingPostId)}
+                  onClick={() => void selectPost(post.id)}
+                  className="w-full rounded-xl px-3 py-2 pr-12 text-left disabled:cursor-wait"
+                >
+                  <div className="flex items-center gap-2 font-mono text-[10px] text-slate-400">
+                    {loadingPostId === post.id ? (
+                      <Loader2 className="h-3 w-3 animate-spin text-cyan-500" />
+                    ) : (
+                      <FileText className="h-3 w-3" />
+                    )}
+                    #{post.id} · {post.date}
+                  </div>
+                  <div className="mt-0.5 truncate text-xs font-bold text-slate-800 dark:text-slate-100">
+                    {post.title}
+                  </div>
+                  <div className="mt-0.5 flex items-center gap-1.5 truncate font-mono text-[10px] text-slate-400">
+                    <span>{post.category} · {post.readTime}</span>
+                    {post.isPublic === false && (
+                      <span className="rounded border border-amber-400/40 bg-amber-500/10 px-1 py-0.2 text-[8px] text-amber-600 dark:text-amber-300">
+                        PRIVATE
+                      </span>
+                    )}
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void toggleVisibility(post)}
+                  className={`absolute right-2 top-2 rounded-lg border p-1.5 transition-colors disabled:opacity-40 ${
+                    post.isPublic === false
+                      ? 'border-amber-400/40 bg-amber-500/10 text-amber-600 dark:text-amber-300'
+                      : 'border-slate-300/60 text-slate-400 hover:text-cyan-600 dark:border-white/10 dark:text-slate-400 dark:hover:text-cyan-300'
+                  }`}
+                  title={post.isPublic === false ? '设为公开可见' : '设为私密'}
+                  aria-label={post.isPublic === false ? '设为公开可见' : '设为私密'}
+                >
+                  {post.isPublic === false ? (
+                    <EyeOff className="h-3.5 w-3.5" />
                   ) : (
-                    <FileText className="h-3 w-3" />
+                    <Eye className="h-3.5 w-3.5" />
                   )}
-                  #{post.id} · {post.date}
-                </div>
-                <div className="mt-0.5 truncate text-xs font-bold text-slate-800 dark:text-slate-100">
-                  {post.title}
-                </div>
-                <div className="mt-0.5 truncate font-mono text-[10px] text-slate-400">
-                  {post.category} · {post.readTime}
-                </div>
-              </button>
+                </button>
+              </div>
             ))}
             {items.length === 0 && (
               <div className="p-4 text-center font-mono text-xs text-slate-400">
@@ -287,6 +355,25 @@ export const PostsPanel: React.FC<PostsPanelProps> = ({
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-2">
+                {selectedPost && (
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void toggleVisibility(selectedPost)}
+                    className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 font-mono text-[10px] disabled:opacity-40 ${
+                      selectedPost.isPublic === false
+                        ? 'border-amber-400/40 bg-amber-500/10 text-amber-700 dark:text-amber-300'
+                        : 'border-emerald-400/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
+                    }`}
+                  >
+                    {selectedPost.isPublic === false ? (
+                      <EyeOff className="h-3.5 w-3.5" />
+                    ) : (
+                      <Eye className="h-3.5 w-3.5" />
+                    )}
+                    {selectedPost.isPublic === false ? '私密' : '公开'}
+                  </button>
+                )}
                 <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-300/60 bg-white/60 px-2.5 py-1.5 font-mono text-[10px] text-slate-600 hover:border-cyan-400/50 dark:border-white/10 dark:bg-slate-950/50 dark:text-slate-300">
                   {uploading ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />

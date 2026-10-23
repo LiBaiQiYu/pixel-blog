@@ -2,6 +2,7 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Camera, Sparkles, X } from 'lucide-react';
 import { LiquidPixelCard } from './LiquidPixelCard';
+import { TerminalPopup } from './TerminalPopup';
 
 const STORY_IMAGE =
   'https://about.cwa1e.top/%E6%9A%AE%E8%89%B2%E5%85%AC%E8%B7%AF%E4%B8%8A%E7%9A%84%E6%9C%88%E4%B8%8E%E8%90%BD%E6%97%A5.png';
@@ -14,8 +15,10 @@ interface Box {
   radius: number;
 }
 
-const TRANSITION =
-  'left 650ms cubic-bezier(0.16, 1, 0.3, 1), top 650ms cubic-bezier(0.16, 1, 0.3, 1), width 650ms cubic-bezier(0.16, 1, 0.3, 1), height 650ms cubic-bezier(0.16, 1, 0.3, 1), border-radius 650ms cubic-bezier(0.16, 1, 0.3, 1)';
+const TRANSITION_OPEN =
+  'left 300ms ease-out, top 300ms ease-out, width 300ms ease-out, height 300ms ease-out, border-radius 300ms ease-out, opacity 300ms ease-out';
+const TRANSITION_CLOSE =
+  'left 250ms ease-in, top 250ms ease-in, width 250ms ease-in, height 250ms ease-in, border-radius 250ms ease-in, opacity 250ms ease-in';
 
 function toBox(rect: DOMRect): Box {
   return {
@@ -49,16 +52,25 @@ export const PhotoStoryShowcase: React.FC = () => {
   const cardRef = useRef<HTMLButtonElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const finishTimerRef = useRef<number | null>(null);
+  const sourceTimerRef = useRef<number | null>(null);
   const [open, setOpen] = useState(false);
   const [closing, setClosing] = useState(false);
   const [origin, setOrigin] = useState<DOMRect | null>(null);
   const [box, setBox] = useState<Box | null>(null);
   const [expanded, setExpanded] = useState(false);
+  const [backdropVisible, setBackdropVisible] = useState(false);
+  const [sourceHidden, setSourceHidden] = useState(false);
+  const [panelVisible, setPanelVisible] = useState(false);
+  const contentOpacity = expanded ? 'opacity-100' : 'opacity-0';
 
   const clearFinishTimer = () => {
     if (finishTimerRef.current !== null) {
       window.clearTimeout(finishTimerRef.current);
       finishTimerRef.current = null;
+    }
+    if (sourceTimerRef.current !== null) {
+      window.clearTimeout(sourceTimerRef.current);
+      sourceTimerRef.current = null;
     }
   };
 
@@ -70,6 +82,9 @@ export const PhotoStoryShowcase: React.FC = () => {
     setBox(toBox(rect));
     setClosing(false);
     setExpanded(false);
+    setBackdropVisible(false);
+    setPanelVisible(false);
+    setSourceHidden(true);
     setOpen(true);
   };
 
@@ -78,12 +93,18 @@ export const PhotoStoryShowcase: React.FC = () => {
     clearFinishTimer();
     setClosing(true);
     setExpanded(false);
+    setBackdropVisible(false);
+    setPanelVisible(false);
     if (origin) setBox(toBox(origin));
+    sourceTimerRef.current = window.setTimeout(() => {
+      setSourceHidden(false);
+      sourceTimerRef.current = null;
+    }, 200);
     finishTimerRef.current = window.setTimeout(() => {
       setOpen(false);
       setClosing(false);
       finishTimerRef.current = null;
-    }, 700);
+    }, 280);
   };
 
   useEffect(
@@ -123,11 +144,13 @@ export const PhotoStoryShowcase: React.FC = () => {
     let secondFrame = 0;
     const firstFrame = window.requestAnimationFrame(() => {
       secondFrame = window.requestAnimationFrame(() => {
+        setBackdropVisible(true);
+        setPanelVisible(true);
         setBox(getTargetBox(origin));
         finishTimerRef.current = window.setTimeout(() => {
           setExpanded(true);
           finishTimerRef.current = null;
-        }, 300);
+        }, 120);
       });
     });
     return () => {
@@ -143,7 +166,8 @@ export const PhotoStoryShowcase: React.FC = () => {
         type="button"
         aria-expanded={open}
         onClick={beginOpen}
-        className="group block h-full w-full text-left focus:outline-none"
+        style={{ opacity: sourceHidden ? 0 : 1 }}
+        className="group block h-full w-full text-left transition-opacity duration-200 focus:outline-none"
         title="查看风景摄影故事"
       >
         <LiquidPixelCard
@@ -189,8 +213,13 @@ export const PhotoStoryShowcase: React.FC = () => {
         createPortal(
           <>
             <div
-              className="fixed inset-0 z-[78] bg-slate-950/25 transition-opacity duration-300"
-              style={{ opacity: expanded ? 1 : 0 }}
+              className="fixed inset-0 z-[90] bg-slate-950/45"
+              style={{
+                opacity: backdropVisible ? 1 : 0,
+                transition: backdropVisible
+                  ? 'opacity 300ms ease-out'
+                  : 'opacity 250ms ease-in',
+              }}
               onClick={beginClose}
             />
             <div
@@ -205,13 +234,14 @@ export const PhotoStoryShowcase: React.FC = () => {
                 width: box.width,
                 height: box.height,
                 borderRadius: box.radius,
-                zIndex: 80,
-                transition: TRANSITION,
-                willChange: 'left, top, width, height',
+                zIndex: 91,
+                opacity: panelVisible ? 1 : 0,
+                transition: closing ? TRANSITION_CLOSE : TRANSITION_OPEN,
+                willChange: 'left, top, width, height, opacity',
               }}
             >
               <div className="flex h-full flex-col">
-                <div className="flex shrink-0 items-center justify-between gap-3 border-b border-sky-500/15 px-4 py-3">
+                <div className={`flex shrink-0 items-center justify-between gap-3 border-b border-sky-500/15 px-4 py-3 transition-opacity duration-150 ${contentOpacity}`}>
                   <div className="flex min-w-0 items-center gap-2 font-mono">
                     <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-sky-500/30 bg-sky-500/10 text-sky-600 dark:text-cyan-300">
                       <Camera className="h-3.5 w-3.5" />
@@ -237,9 +267,7 @@ export const PhotoStoryShowcase: React.FC = () => {
                 </div>
 
                 <div
-                  className={`min-h-0 flex-1 overflow-y-auto overscroll-contain p-3 transition-opacity duration-300 sm:p-4 ${
-                    expanded ? 'opacity-100' : 'opacity-0'
-                  }`}
+                  className={`min-h-0 flex-1 overflow-y-auto overscroll-contain p-3 transition-opacity duration-150 sm:p-4 ${contentOpacity}`}
                 >
                   <div className="group relative overflow-hidden rounded-xl border border-sky-500/20 bg-slate-950">
                     <img
@@ -286,7 +314,7 @@ export const PhotoStoryShowcase: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex shrink-0 items-center justify-between gap-3 border-t border-sky-500/15 px-4 py-2 font-mono text-[9px] text-slate-500">
+                <div className={`flex shrink-0 items-center justify-between gap-3 border-t border-sky-500/15 px-4 py-2 font-mono text-[9px] text-slate-500 transition-opacity duration-150 ${contentOpacity}`}>
                   <span>[EOF] field note 01</span>
                   <span>click outside to close</span>
                 </div>
@@ -300,28 +328,52 @@ export const PhotoStoryShowcase: React.FC = () => {
 };
 
 export const TerminalPhotoStoryShowcase: React.FC = () => {
+  const cardRef = useRef<HTMLButtonElement | null>(null);
+  const revealTimerRef = useRef<number | null>(null);
   const [open, setOpen] = useState(false);
+  const [originRect, setOriginRect] = useState<DOMRect | null>(null);
+  const [sourceHidden, setSourceHidden] = useState(false);
 
-  useEffect(() => {
-    if (!open) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false);
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener('keydown', onKeyDown);
-    };
-  }, [open]);
+  useEffect(
+    () => () => {
+      if (revealTimerRef.current !== null) {
+        window.clearTimeout(revealTimerRef.current);
+      }
+    },
+    []
+  );
+
+  const openPopup = () => {
+    if (revealTimerRef.current !== null) {
+      window.clearTimeout(revealTimerRef.current);
+      revealTimerRef.current = null;
+    }
+    if (cardRef.current) {
+      setOriginRect(cardRef.current.getBoundingClientRect());
+    }
+    setSourceHidden(true);
+    setOpen(true);
+  };
+
+  const closePopup = () => {
+    setOpen(false);
+    if (revealTimerRef.current !== null) {
+      window.clearTimeout(revealTimerRef.current);
+    }
+    revealTimerRef.current = window.setTimeout(() => {
+      setSourceHidden(false);
+      revealTimerRef.current = null;
+    }, 200);
+  };
 
   return (
     <>
       <button
+        ref={cardRef}
         type="button"
-        onClick={() => setOpen(true)}
-        className="about-reveal group flex h-full flex-col gap-2 rounded-xl border border-sky-500/30 bg-white/40 p-3 text-left transition-colors hover:border-sky-400/60 hover:bg-sky-500/5 dark:bg-slate-950/50"
+        onClick={openPopup}
+        style={{ opacity: sourceHidden ? 0 : 1 }}
+        className="group flex h-full flex-col gap-2 rounded-xl border border-sky-500/30 bg-white/40 p-3 text-left transition-opacity duration-200 hover:border-sky-400/60 hover:bg-sky-500/5 dark:bg-slate-950/50"
         title="查看风景摄影"
       >
         <div className="flex items-start justify-between gap-2">
@@ -357,96 +409,59 @@ export const TerminalPhotoStoryShowcase: React.FC = () => {
         </span>
       </button>
 
-      {open &&
-        createPortal(
-          <div
-            className="fixed inset-0 z-[95] flex items-center justify-center bg-slate-950/85 p-3 backdrop-blur-sm sm:p-6"
-            role="presentation"
-            onClick={() => setOpen(false)}
-          >
-            <div
-              role="dialog"
-              aria-modal="true"
-              aria-label="风景摄影故事"
-              className="flex max-h-[86vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-sky-500/40 bg-slate-950 shadow-2xl shadow-sky-950/50"
-              onClick={(event) => event.stopPropagation()}
-            >
-              <div className="flex shrink-0 items-center justify-between gap-3 border-b border-sky-500/25 bg-sky-500/5 px-4 py-3">
-                <div className="flex min-w-0 items-center gap-2 font-mono">
-                  <Camera className="h-4 w-4 shrink-0 text-cyan-300" />
-                  <div className="min-w-0">
-                    <div className="truncate text-[11px] font-bold text-cyan-300">
-                      carlos@libai:~/about/photography
-                    </div>
-                    <div className="text-[9px] text-slate-500">
-                      01 STORY · FIELD NOTES
-                    </div>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setOpen(false)}
-                  className="rounded border border-sky-500/30 p-1.5 text-cyan-300 transition-colors hover:bg-sky-500/10"
-                  aria-label="关闭风景摄影故事"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-
-              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3 sm:p-4">
-                <div className="group relative overflow-hidden rounded-lg border border-sky-500/25 bg-slate-950">
-                  <img
-                    src={STORY_IMAGE}
-                    alt="暮色公路上的月亮与落日"
-                    loading="lazy"
-                    className="aspect-[4/3] w-full object-cover"
-                  />
-                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent" />
-                  <span className="absolute left-3 top-3 rounded border border-white/15 bg-slate-950/70 px-2 py-0.5 font-mono text-[9px] text-cyan-200 backdrop-blur-md">
-                    AI RECONSTRUCTION
-                  </span>
-                  <div className="absolute bottom-3 left-3 right-3">
-                    <div className="font-mono text-[9px] text-cyan-200/80">
-                      ALT. 963M · 公路尽头
-                    </div>
-                    <h2 className="mt-1 text-lg font-bold text-white">
-                      日月同辉
-                    </h2>
-                  </div>
-                </div>
-
-                <div className="mt-4 space-y-3 font-mono">
-                  <div className="flex items-center gap-2 text-[9px] text-cyan-300">
-                    <Sparkles className="h-3 w-3" />
-                    ONE FRAME / ONE MEMORY
-                  </div>
-                  <p className="text-[11px] leading-relaxed text-slate-300">
-                    旅途中遇到了日月同辉的一幕。受限于车内空间和高速路况，当时很难拍出满意的照片，于是我用 AI 复原了那个画面：后视镜里，月亮低悬在空中；前方，夕阳正沉入地平线。
-                  </p>
-                  <p className="border-l-2 border-sky-400/40 pl-3 text-[11px] leading-relaxed text-slate-300">
-                    像是周而复始的生命，绵绵不息。或许，这就是旅行的意义。
-                  </p>
-                  <div className="flex flex-wrap gap-1.5 pt-1">
-                    {['旅行', '日月同辉', 'AI 复原', '风景摄影'].map((tag) => (
-                      <span
-                        key={tag}
-                        className="rounded border border-sky-400/20 bg-sky-500/10 px-1.5 py-0.5 text-[9px] text-cyan-200"
-                      >
-                        #{tag}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex shrink-0 items-center justify-between gap-3 border-t border-sky-500/20 px-4 py-2 font-mono text-[9px] text-slate-500">
-                <span>[EOF] field note 01</span>
-                <span>ESC / click outside to close</span>
-              </div>
+      <TerminalPopup
+        open={open}
+        originRect={originRect}
+        onClose={closePopup}
+        accent="sky"
+        icon={<Camera className="h-3.5 w-3.5" />}
+        title="carlos@libai:~/about/photography"
+        subtitle="01 STORY · FIELD NOTES"
+        footerLeft="[EOF] field note 01"
+        targetHeight={600}
+      >
+        <div className="group relative overflow-hidden rounded-lg border border-sky-500/25 bg-slate-950">
+          <img
+            src={STORY_IMAGE}
+            alt="暮色公路上的月亮与落日"
+            loading="lazy"
+            className="aspect-[4/3] w-full object-cover"
+          />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent" />
+          <span className="absolute left-3 top-3 rounded border border-white/15 bg-slate-950/70 px-2 py-0.5 font-mono text-[9px] text-cyan-200 backdrop-blur-md">
+            AI RECONSTRUCTION
+          </span>
+          <div className="absolute bottom-3 left-3 right-3">
+            <div className="font-mono text-[9px] text-cyan-200/80">
+              ALT. 963M · 公路尽头
             </div>
-          </div>,
-          document.body
-        )}
+            <h2 className="mt-1 text-lg font-bold text-white">日月同辉</h2>
+          </div>
+        </div>
+
+        <div className="mt-4 space-y-3 font-mono">
+          <div className="flex items-center gap-2 text-[9px] text-sky-700 dark:text-cyan-300">
+            <Sparkles className="h-3 w-3" />
+            ONE FRAME / ONE MEMORY
+          </div>
+          <p className="text-[11px] leading-relaxed text-slate-600 dark:text-slate-300">
+            旅途中遇到了日月同辉的一幕。受限于车内空间和高速路况，当时很难拍出满意的照片，于是我用 AI 复原了那个画面：后视镜里，月亮低悬在空中；前方，夕阳正沉入地平线。
+          </p>
+          <p className="border-l-2 border-sky-400/40 pl-3 text-[11px] leading-relaxed text-slate-600 dark:text-slate-300">
+            像是周而复始的生命，绵绵不息。或许，这就是旅行的意义。
+          </p>
+          <div className="flex flex-wrap gap-1.5 pt-1">
+            {['旅行', '日月同辉', 'AI 复原', '风景摄影'].map((tag) => (
+              <span
+                key={tag}
+                className="rounded border border-sky-400/20 bg-sky-500/10 px-1.5 py-0.5 text-[9px] text-sky-700 dark:text-cyan-200"
+              >
+                #{tag}
+              </span>
+            ))}
+          </div>
+        </div>
+      </TerminalPopup>
     </>
   );
 };

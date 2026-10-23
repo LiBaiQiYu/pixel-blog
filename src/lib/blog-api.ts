@@ -30,9 +30,15 @@ export async function fetchBlogPosts(): Promise<BlogPost[]> {
   }
 
   return posts
-    .filter((post) => post && typeof post.id === 'string')
+    .filter(
+      (post) =>
+        post &&
+        typeof post.id === 'string' &&
+        post.isPublic !== false
+    )
     .map((post) => ({
       ...post,
+      isPublic: post.isPublic !== false,
       views: Number(post.views) || 0,
       likes: Number(post.likes) || 0,
       markdown: typeof post.markdown === 'string' ? post.markdown : '',

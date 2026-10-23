@@ -103,6 +103,7 @@ export function parseMarkdownFileToPost(
   const views = Number(meta.views) || 0;
   const likes = Number(meta.likes) || 0;
   const featured = meta.featured === 'true';
+  const isPublic = meta.public !== 'false';
   const coverType = (meta.coverType as CoverArtType) || 'auto';
   const coverSeed = meta.coverSeed
     ? normalizeSeed(meta.coverSeed)
@@ -120,6 +121,7 @@ export function parseMarkdownFileToPost(
     views,
     likes,
     featured,
+    isPublic,
     coverType,
     coverSeed,
     accent,
@@ -142,6 +144,7 @@ readTime: "${post.readTime}"
 views: ${post.views}
 likes: ${post.likes}
 featured: ${Boolean(post.featured)}
+public: ${post.isPublic !== false}
 coverSeed: ${post.coverSeed}
 accent: "${post.accent}"
 ---

@@ -29,6 +29,7 @@ export interface BlogPost {
   views: number;
   likes: number;
   featured?: boolean;
+  isPublic?: boolean;
   coverType: CoverArtType;
   coverSeed: number;
   accent: 'cyan' | 'magenta' | 'emerald' | 'amber' | 'violet';

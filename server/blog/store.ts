@@ -140,7 +140,7 @@ export async function rebuildBlogManifest(): Promise<BlogPost[]> {
   const manifest = {
     version: 1,
     generatedAt: new Date().toISOString(),
-    posts,
+    posts: posts.filter((post) => post.isPublic !== false),
   };
 
   await putText(
@@ -181,6 +181,29 @@ export async function saveBlogPost(
   }
 
   await putText(postKey(id), markdown.trim() + '\n', 'text/markdown; charset=utf-8');
+  return rebuildBlogManifest();
+}
+
+export async function setBlogPostVisibility(
+  id: string,
+  isPublic: boolean
+): Promise<BlogPost[]> {
+  if (!isValidPostId(id)) throw new Error('Invalid post id');
+  const raw = await readText(postKey(id));
+  const end = raw.indexOf('\n---', 3);
+  if (end === -1) throw new Error('Missing frontmatter');
+
+  const head = raw.slice(0, end);
+  const tail = raw.slice(end);
+  const nextHead = /^public:\s*.*$/m.test(head)
+    ? head.replace(/^public:\s*.*$/m, `public: ${isPublic}`)
+    : `${head}\npublic: ${isPublic}`;
+
+  await putText(
+    postKey(id),
+    `${nextHead}${tail}`.trim() + '\n',
+    'text/markdown; charset=utf-8'
+  );
   return rebuildBlogManifest();
 }
 

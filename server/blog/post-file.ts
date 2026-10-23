@@ -139,6 +139,7 @@ export function parsePostFile(
     views: Number(meta.views) || 0,
     likes: Number(meta.likes) || 0,
     featured: meta.featured === 'true',
+    isPublic: meta.public !== 'false',
     coverType,
     coverSeed: normalizeSeed(meta.coverSeed, fallbackId),
     accent,
@@ -160,6 +161,7 @@ readTime: "${post.readTime}"
 views: ${post.views}
 likes: ${post.likes}
 featured: ${Boolean(post.featured)}
+public: ${post.isPublic !== false}
 coverSeed: ${post.coverSeed}
 accent: "${post.accent}"
 ---

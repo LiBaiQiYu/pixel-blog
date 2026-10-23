@@ -24,6 +24,7 @@ import {
   rebuildBlogManifest,
   saveBlogImage,
   saveBlogPost,
+  setBlogPostVisibility,
 } from '../blog/store';
 
 function sendJson(res: ServerResponse, status: number, data: unknown) {
@@ -240,6 +241,23 @@ export function galleryAdminPlugin(): Plugin {
               200,
               await saveBlogImage(id, image.buffer, image.fileName)
             );
+            return;
+          }
+
+          const visibilityMatch = url.pathname.match(
+            /^\/__admin\/posts\/([^/]+)\/visibility$/
+          );
+          if (visibilityMatch && req.method === 'PATCH') {
+            const id = decodeURIComponent(visibilityMatch[1]);
+            const body = await readJsonBody<{ isPublic?: boolean }>(req);
+            if (typeof body.isPublic !== 'boolean') {
+              sendJson(res, 400, { error: 'Missing isPublic' });
+              return;
+            }
+            sendJson(res, 200, {
+              ok: true,
+              items: await setBlogPostVisibility(id, body.isPublic),
+            });
             return;
           }
 
