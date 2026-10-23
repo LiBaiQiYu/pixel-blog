@@ -187,7 +187,7 @@ export const StandardBlogView: React.FC<StandardBlogViewProps> = ({
         onOpenInTerminal={(p) => onSwitchToTerminal(`cat ${p.id}`)}
         onSelectPost={(p) => {
           onSelectPost(p);
-          window.scrollTo({ top: 0, behavior: 'smooth' });
+          window.scrollTo({ top: 0, behavior: 'auto' });
         }}
         relatedPosts={related}
         backOriginRef={backOriginRef}
@@ -513,7 +513,7 @@ export const StandardBlogView: React.FC<StandardBlogViewProps> = ({
                           interactive
                           onClick={() => {
                             onSelectPost(post);
-                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                            window.scrollTo({ top: 0, behavior: 'auto' });
                           }}
                           className="p-0 overflow-hidden"
                         >
@@ -562,6 +562,7 @@ export const StandardBlogView: React.FC<StandardBlogViewProps> = ({
                                 <div className="flex items-center gap-3">
                                   <button
                                     type="button"
+                                    data-custom-sound
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       onToggleLike(post.id);
@@ -619,7 +620,7 @@ export const StandardBlogView: React.FC<StandardBlogViewProps> = ({
                         interactive
                         onClick={() => {
                           onSelectPost(post);
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                          window.scrollTo({ top: 0, behavior: 'auto' });
                         }}
                         className="flex flex-col justify-between group"
                       >
@@ -661,6 +662,7 @@ export const StandardBlogView: React.FC<StandardBlogViewProps> = ({
                           <div className="flex items-center gap-3">
                             <button
                               type="button"
+                              data-custom-sound
                               onClick={(e) => {
                                 e.stopPropagation();
                                 onToggleLike(post.id);

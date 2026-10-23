@@ -2,6 +2,21 @@ import React, { lazy, Suspense } from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
+import { pixelAudio } from './utils/sound';
+
+document.addEventListener(
+  'click',
+  (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    const control = target.closest(
+      'button, a[href], [role="button"], select, summary, .cursor-pointer'
+    );
+    if (!control || control.closest('[data-custom-sound]')) return;
+    pixelAudio.playClick();
+  },
+  true
+);
 
 const isAdmin =
   import.meta.env.DEV &&

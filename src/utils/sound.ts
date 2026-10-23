@@ -1,11 +1,23 @@
 // Web Audio API 8-bit Chiptune Micro-Sound Synthesizer
 
+export type MusicMood = 'day' | 'dusk' | 'night' | 'rain' | 'storm';
+
+const MUSIC_FILES: Record<MusicMood, string> = {
+  day: 'audio/pixel-day-loop.wav',
+  dusk: 'audio/pixel-dusk-loop.wav',
+  night: 'audio/pixel-night-loop.wav',
+  rain: 'audio/pixel-rain-loop.wav',
+  storm: 'audio/pixel-storm-loop.wav',
+};
+
 class PixelAudioEngine {
   private ctx: AudioContext | null = null;
   private musicSource: AudioBufferSourceNode | null = null;
   private musicGain: GainNode | null = null;
-  private musicBuffer: AudioBuffer | null = null;
-  private musicLoadPromise: Promise<AudioBuffer> | null = null;
+  private musicBuffers = new Map<MusicMood, AudioBuffer>();
+  private musicLoadPromises = new Map<MusicMood, Promise<AudioBuffer>>();
+  private musicMood: MusicMood = 'day';
+  private lastClickAt = 0;
   public enabled: boolean = true;
   public musicEnabled: boolean = false;
 
@@ -28,12 +40,16 @@ class PixelAudioEngine {
     return this.getMusicContext();
   }
 
-  private async loadMusicBuffer(ctx: AudioContext): Promise<AudioBuffer> {
-    if (this.musicBuffer) return this.musicBuffer;
-    if (!this.musicLoadPromise) {
-      this.musicLoadPromise = fetch(
-        `${import.meta.env.BASE_URL}audio/pixel-night-loop.wav`
-      )
+  private async loadMusicBuffer(
+    ctx: AudioContext,
+    mood: MusicMood
+  ): Promise<AudioBuffer> {
+    const cached = this.musicBuffers.get(mood);
+    if (cached) return cached;
+
+    let promise = this.musicLoadPromises.get(mood);
+    if (!promise) {
+      promise = fetch(`${import.meta.env.BASE_URL}${MUSIC_FILES[mood]}`)
         .then((response) => {
           if (!response.ok) {
             throw new Error(`Music request failed: ${response.status}`);
@@ -42,33 +58,31 @@ class PixelAudioEngine {
         })
         .then((buffer) => ctx.decodeAudioData(buffer))
         .then((decoded) => {
-          this.musicBuffer = decoded;
+          this.musicBuffers.set(mood, decoded);
           return decoded;
         })
         .finally(() => {
-          this.musicLoadPromise = null;
+          this.musicLoadPromises.delete(mood);
         });
+      this.musicLoadPromises.set(mood, promise);
     }
-    return this.musicLoadPromise;
+    return promise;
   }
 
-  async setMusicEnabled(enabled: boolean): Promise<boolean> {
-    this.musicEnabled = enabled;
-
-    if (!enabled) {
-      this.stopMusic();
-      return false;
-    }
-
+  private async startMusic(): Promise<boolean> {
     const ctx = this.getMusicContext();
     if (!ctx) {
       this.musicEnabled = false;
       return false;
     }
 
+    const mood = this.musicMood;
     try {
-      const buffer = await this.loadMusicBuffer(ctx);
-      if (!this.musicEnabled || this.musicSource) return this.musicEnabled;
+      const buffer = await this.loadMusicBuffer(ctx, mood);
+      if (!this.musicEnabled || this.musicMood !== mood) {
+        return this.musicEnabled;
+      }
+      if (this.musicSource) return true;
 
       const source = ctx.createBufferSource();
       const gain = ctx.createGain();
@@ -89,6 +103,29 @@ class PixelAudioEngine {
       this.stopMusic();
       return false;
     }
+  }
+
+  async setMusicEnabled(
+    enabled: boolean,
+    mood: MusicMood = this.musicMood
+  ): Promise<boolean> {
+    this.musicMood = mood;
+    this.musicEnabled = enabled;
+
+    if (!enabled) {
+      this.stopMusic();
+      return false;
+    }
+
+    return this.startMusic();
+  }
+
+  async setMusicMood(mood: MusicMood): Promise<void> {
+    if (this.musicMood === mood) return;
+    this.musicMood = mood;
+    if (!this.musicEnabled) return;
+    this.stopMusic();
+    await this.startMusic();
   }
 
   private stopMusic() {
@@ -113,6 +150,10 @@ class PixelAudioEngine {
   }
 
   playClick() {
+    const now = performance.now();
+    if (now - this.lastClickAt < 45) return;
+    this.lastClickAt = now;
+
     const ctx = this.getContext();
     if (!ctx) return;
     const osc = ctx.createOscillator();
@@ -181,6 +222,64 @@ class PixelAudioEngine {
     gain.connect(ctx.destination);
     osc.start(now);
     osc.stop(now + 0.07);
+  }
+
+  playHeart(liked: boolean) {
+    const ctx = this.getContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    const notes = liked ? [659.25, 987.77] : [987.77, 659.25];
+    notes.forEach((freq, index) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const start = now + index * 0.055;
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(freq, start);
+      gain.gain.setValueAtTime(0.035, start);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.09);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(start);
+      osc.stop(start + 0.1);
+    });
+  }
+
+  playCamera() {
+    const ctx = this.getContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    [0, 0.045].forEach((offset, index) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const start = now + offset;
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(index === 0 ? 1400 : 920, start);
+      gain.gain.setValueAtTime(0.028, start);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.035);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(start);
+      osc.stop(start + 0.04);
+    });
+  }
+
+  playCopy() {
+    const ctx = this.getContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    [880, 1174.66].forEach((freq, index) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const start = now + index * 0.045;
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, start);
+      gain.gain.setValueAtTime(0.03, start);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.08);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(start);
+      osc.stop(start + 0.09);
+    });
   }
 }
 

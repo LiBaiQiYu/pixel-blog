@@ -224,6 +224,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
 
           <button
+            data-custom-sound
             onClick={onThemeToggle}
             className="liquid-pill px-2.5 py-1.5 rounded-xl flex items-center gap-1.5 text-xs font-mono text-slate-700 dark:text-slate-200"
             title="切换深色/浅色主题"

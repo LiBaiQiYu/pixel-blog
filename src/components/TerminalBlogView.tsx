@@ -280,6 +280,7 @@ export const TerminalBlogView: React.FC<TerminalBlogViewProps> = ({
           </div>
           <div className="flex items-center gap-2">
             <button
+              data-custom-sound
               onClick={() => onToggleLike(post.id)}
               className="px-2.5 py-1 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-300 flex items-center gap-1 text-xs"
             >

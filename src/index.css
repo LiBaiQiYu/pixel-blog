@@ -31,6 +31,7 @@
     inset 0 -1.5px 3px 0 rgba(219, 39, 119, 0.14);
   --pixel-grid-color: rgba(15, 23, 42, 0.045);
   --pixel-dot-color: rgba(2, 132, 199, 0.16);
+  --live-ring-track: rgba(100, 116, 139, 0.3);
 }
 
 html.dark {
@@ -63,6 +64,7 @@ html.dark {
     inset 0 -1.5px 3px 0 rgba(244, 114, 182, 0.22);
   --pixel-grid-color: rgba(56, 189, 248, 0.055);
   --pixel-dot-color: rgba(56, 189, 248, 0.2);
+  --live-ring-track: rgba(255, 255, 255, 0.16);
 }
 
 /* Resolution-Aware Root Scaling for 1080p, 2K (2560x1440), and 4K (3840x2160) */

@@ -3,6 +3,8 @@ import React, {
   Suspense,
   useCallback,
   useEffect,
+  useLayoutEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -19,6 +21,7 @@ import { useWeather } from './hooks/useWeather';
 import { isWeatherKind, resolveWeatherVisual } from './utils/weather';
 import type { WeatherKind } from './types/weather';
 import { pixelAudio } from './utils/sound';
+import type { MusicMood } from './utils/sound';
 import { Terminal, LayoutGrid, Settings, Minimize2 } from 'lucide-react';
 import { generateRandomSeed } from './components/PixelArtwork';
 import {
@@ -91,6 +94,7 @@ export const App: React.FC = () => {
 
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
   const [musicEnabled, setMusicEnabled] = useState(false);
+  const [localHour, setLocalHour] = useState(() => new Date().getHours());
   const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
   const [galleryPreviewOpen, setGalleryPreviewOpen] = useState(false);
   const [immersiveWeather, setImmersiveWeather] = useState(false);
@@ -225,6 +229,34 @@ export const App: React.FC = () => {
     ? weatherPreviewIntensity ?? 1
     : weatherVisual.intensity;
 
+  const musicMood = useMemo<MusicMood>(() => {
+    if (
+      ['thunder', 'hail', 'sand', 'wind'].includes(effectiveWeatherKind)
+    ) {
+      return 'storm';
+    }
+    if (['rain', 'sleet', 'fog', 'haze'].includes(effectiveWeatherKind)) {
+      return 'rain';
+    }
+    if (effectiveWeatherKind === 'snow') return 'night';
+    if (localHour >= 21 || localHour < 6) return 'night';
+    if (localHour >= 17) return 'dusk';
+    return 'day';
+  }, [effectiveWeatherKind, localHour]);
+
+  useEffect(() => {
+    const timer = window.setInterval(
+      () => setLocalHour(new Date().getHours()),
+      60_000
+    );
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!musicEnabled) return;
+    void pixelAudio.setMusicMood(musicMood);
+  }, [musicEnabled, musicMood]);
+
   // Elastic back-to-list button: flies into the navbar's left side on scroll down
   const backOriginRef = useRef<HTMLButtonElement | null>(null);
   const backDockAnchorRef = useRef<HTMLElement | null>(null);
@@ -248,6 +280,26 @@ export const App: React.FC = () => {
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, [viewMode, selectedPost]);
+
+  useLayoutEffect(() => {
+    if (!selectedPost) return;
+
+    const resetScroll = () => {
+      const scroller = document.scrollingElement ?? document.documentElement;
+      scroller.scrollTop = 0;
+      document.body.scrollTop = 0;
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    };
+
+    resetScroll();
+    const frame = window.requestAnimationFrame(resetScroll);
+    const timer = window.setTimeout(resetScroll, 80);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(timer);
+    };
+  }, [selectedPost?.id]);
 
   // Sync theme class with <html>
   useEffect(() => {
@@ -367,13 +419,13 @@ export const App: React.FC = () => {
     const next = !musicEnabled;
     setMusicEnabled(next);
     pixelAudio.playClick();
-    const started = await pixelAudio.setMusicEnabled(next);
+    const started = await pixelAudio.setMusicEnabled(next, musicMood);
     if (next && !started) setMusicEnabled(false);
   };
 
   const handleToggleLike = (id: string) => {
-    pixelAudio.playClick();
     const nextLiked = !likedPostIds.includes(id);
+    pixelAudio.playHeart(nextLiked);
     const delta = nextLiked ? 1 : -1;
     const seq = (likeRequestSeqRef.current[id] ?? 0) + 1;
     likeRequestSeqRef.current[id] = seq;
@@ -696,6 +748,7 @@ export const App: React.FC = () => {
 
       {/* Floating mode switch: content page stays the same */}
       <button
+        data-custom-sound
         onClick={() =>
           handleViewModeChange(
             viewMode === 'standard' ? 'terminal' : 'standard'

@@ -32,21 +32,21 @@ export const LiveProgressRing: React.FC<LiveProgressRingProps> = ({
       <span
         className="absolute inset-0 rounded-full"
         style={{
-          background: `conic-gradient(from -90deg, rgba(244, 114, 182, 0.62) ${degrees}deg, rgba(255, 255, 255, 0.16) ${degrees}deg 360deg)`,
+          background: `conic-gradient(from -90deg, rgba(244, 114, 182, 0.62) ${degrees}deg, var(--live-ring-track) ${degrees}deg 360deg)`,
         }}
       />
-      <span className="absolute inset-[3px] rounded-full border border-white/15 bg-slate-950/40 backdrop-blur-md" />
+      <span className="absolute inset-[3px] rounded-full border border-slate-300/70 bg-white/55 backdrop-blur-md dark:border-white/15 dark:bg-slate-950/40" />
       <span className="absolute inset-0 flex items-center justify-center">
         {playing ? (
           <Pause
-            className="block text-pink-100"
+            className="block text-pink-600 dark:text-pink-100"
             style={{ width: size * 0.36, height: size * 0.36 }}
             fill="currentColor"
             strokeWidth={0}
           />
         ) : (
           <Play
-            className="block text-pink-50"
+            className="block text-pink-700 dark:text-pink-50"
             style={{ width: size * 0.36, height: size * 0.36 }}
             fill="currentColor"
             strokeWidth={0}

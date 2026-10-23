@@ -27,6 +27,7 @@ import {
   downloadMarkdownPostFile,
   serializePostToMarkdownFile,
 } from '../data/posts';
+import { pixelAudio } from '../utils/sound';
 
 interface ArticleModalProps {
   post: BlogPost;
@@ -69,12 +70,14 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
 
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
+    pixelAudio.playCopy();
     setSharedToast(true);
     setTimeout(() => setSharedToast(false), 2000);
   };
 
   const handleCopyRawMarkdown = () => {
     navigator.clipboard.writeText(fullMarkdownFile);
+    pixelAudio.playCopy();
     setCopiedRaw(true);
     setTimeout(() => setCopiedRaw(false), 1800);
   };
@@ -140,6 +143,7 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
           </button>
 
           <button
+            data-custom-sound
             onClick={handleShare}
             className="liquid-glass-strong px-2.5 sm:px-3 py-2 rounded-xl flex items-center gap-1.5 text-xs font-mono text-slate-700 dark:text-slate-300 shadow-md"
           >
@@ -226,6 +230,7 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
           </div>
 
           <button
+            data-custom-sound
             onClick={() => onToggleLike(post.id)}
             className={`px-3.5 py-1.5 rounded-xl text-xs font-mono font-bold flex items-center gap-2 transition-all border ${
               isLiked
@@ -258,6 +263,7 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
                 </span>
                 <div className="flex items-center gap-2">
                   <button
+                    data-custom-sound
                     onClick={handleCopyRawMarkdown}
                     className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-white/10 hover:bg-white/20 text-slate-200 transition-colors"
                   >

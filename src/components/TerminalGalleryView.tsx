@@ -6,6 +6,7 @@ import { PhotoDetail } from './PhotoDetail';
 import { GALLERY_CATEGORIES, GALLERY_PHOTOS } from '../data/gallery';
 import type { GalleryPhoto } from '../types/gallery';
 import type { ThemeMode } from '../types/blog';
+import { pixelAudio } from '../utils/sound';
 
 interface TerminalGalleryViewProps {
   theme: ThemeMode;
@@ -149,6 +150,7 @@ const TerminalGalleryCard: React.FC<{
   return (
     <button
       type="button"
+      data-custom-sound
       onClick={() => {
         if (suppressClickRef.current) {
           suppressClickRef.current = false;
@@ -258,6 +260,10 @@ export const TerminalGalleryView: React.FC<TerminalGalleryViewProps> = ({
     onPreviewOpenChange?.(Boolean(activeId));
     return () => onPreviewOpenChange?.(false);
   }, [activeId, onPreviewOpenChange]);
+
+  useEffect(() => {
+    if (activeId) pixelAudio.playCamera();
+  }, [activeId]);
 
   const navigate = (direction: 1 | -1) => {
     if (!active) return;

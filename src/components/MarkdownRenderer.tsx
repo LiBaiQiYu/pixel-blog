@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Check, Copy, Sparkles } from 'lucide-react';
 import { MarkdownImage } from './MarkdownImage';
+import { pixelAudio } from '../utils/sound';
 
 const IMAGE_LINE_RE = /^!\[([^\]]*)\]\((\S+?)(?:\s+"([^"]*)")?\)$/;
 
@@ -157,6 +158,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
 
   const handleCopy = (code: string, blockId: number) => {
     navigator.clipboard.writeText(code);
+    pixelAudio.playCopy();
     setCopiedBlock(blockId);
     setTimeout(() => setCopiedBlock(null), 1800);
   };
@@ -214,6 +216,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
             </div>
             <button
               type="button"
+              data-custom-sound
               onClick={() => handleCopy(codeStr, currentBlockId)}
               className="flex items-center gap-1 text-slate-400 hover:text-white transition-colors"
             >

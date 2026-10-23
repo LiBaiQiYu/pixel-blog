@@ -19,6 +19,7 @@ import { PhotoDetail } from './PhotoDetail';
 import { GALLERY_CATEGORIES, GALLERY_PHOTOS } from '../data/gallery';
 import type { GalleryPhoto } from '../types/gallery';
 import type { ThemeMode } from '../types/blog';
+import { pixelAudio } from '../utils/sound';
 
 const GalleryMap = React.lazy(() =>
   import('./GalleryMap').then((module) => ({ default: module.GalleryMap }))
@@ -198,6 +199,7 @@ const GalleryCard: React.FC<{
 
   return (
     <button
+      data-custom-sound
       onMouseEnter={() => {
         preloadMedium();
         if (supportsHover()) startLive();
@@ -333,6 +335,10 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
     onPreviewOpenChange?.(Boolean(activeId));
     return () => onPreviewOpenChange?.(false);
   }, [activeId, onPreviewOpenChange]);
+
+  useEffect(() => {
+    if (activeId) pixelAudio.playCamera();
+  }, [activeId]);
 
   const filtered = useMemo(
     () =>

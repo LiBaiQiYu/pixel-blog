@@ -1202,21 +1202,27 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
                   <div
                     role="status"
                     aria-live="polite"
-                    className={`w-full max-w-[300px] rounded-lg border bg-slate-950/85 px-3 py-2 font-mono backdrop-blur-md ${
+                    className={`w-full max-w-[300px] rounded-lg border px-3 py-2 font-mono backdrop-blur-md ${
+                      isDark ? 'bg-slate-950/85' : 'bg-white/90'
+                    } ${
                       hudComplete
-                        ? 'border-emerald-400/35 shadow-[0_0_24px_rgba(52,211,153,0.14)]'
-                        : 'border-cyan-400/30 shadow-[0_0_24px_rgba(34,211,238,0.12)]'
+                        ? isDark
+                          ? 'border-emerald-400/35 shadow-[0_0_24px_rgba(52,211,153,0.14)]'
+                          : 'border-emerald-500/35 shadow-[0_8px_24px_rgba(16,185,129,0.12)]'
+                        : isDark
+                          ? 'border-cyan-400/30 shadow-[0_0_24px_rgba(34,211,238,0.12)]'
+                          : 'border-sky-400/35 shadow-[0_8px_24px_rgba(14,165,233,0.12)]'
                     }`}
                   >
                     <div className="flex items-center justify-between gap-3 text-[10px]">
                       {hudComplete ? (
-                        <span className="flex items-center gap-1.5 text-emerald-300">
+                        <span className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-300">
                           <Check className="h-3 w-3" />
                           LOAD COMPLETE
                         </span>
                       ) : (
-                        <span className="flex items-center gap-1.5 text-cyan-300">
-                          <span className="inline-block h-1.5 w-1.5 animate-pulse bg-cyan-400" />
+                        <span className="flex items-center gap-1.5 text-sky-700 dark:text-cyan-300">
+                          <span className="inline-block h-1.5 w-1.5 animate-pulse bg-sky-500 dark:bg-cyan-400" />
                           {isConverting
                             ? 'CONVERTING HEIC'
                             : isDecoding
@@ -1228,7 +1234,9 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
                       )}
                       <span
                         className={`tabular-nums ${
-                          hudComplete ? 'text-emerald-200' : 'text-slate-300'
+                          hudComplete
+                            ? 'text-emerald-700 dark:text-emerald-200'
+                            : 'text-slate-600 dark:text-slate-300'
                         }`}
                       >
                         {hudComplete
@@ -1238,11 +1246,11 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
                             : `${loadingPercent}%`}
                       </span>
                     </div>
-                    <div className="mt-1.5 h-1.5 overflow-hidden rounded-sm border border-white/5 bg-slate-800/90">
+                    <div className="mt-1.5 h-1.5 overflow-hidden rounded-sm border border-slate-300/70 bg-slate-200 dark:border-white/5 dark:bg-slate-800/90">
                       {hudComplete ? (
                         <div className="h-full w-full bg-gradient-to-r from-emerald-400 to-cyan-400" />
                       ) : loadingPercent === null ? (
-                        <div className="h-full w-1/3 animate-pulse bg-gradient-to-r from-cyan-500/10 via-cyan-300 to-sky-400/10" />
+                        <div className="h-full w-1/3 animate-pulse bg-gradient-to-r from-sky-300/30 via-sky-400 to-cyan-300/30 dark:from-cyan-500/10 dark:via-cyan-300 dark:to-sky-400/10" />
                       ) : (
                         <div
                           className="h-full bg-gradient-to-r from-cyan-400 to-sky-500 transition-[width] duration-300 ease-out"
@@ -1250,14 +1258,14 @@ export const PhotoDetail: React.FC<PhotoDetailProps> = ({
                         />
                       )}
                     </div>
-                    <div className="mt-1 flex items-center justify-between gap-3 text-[10px] tabular-nums text-slate-400">
+                    <div className="mt-1 flex items-center justify-between gap-3 text-[10px] tabular-nums text-slate-500 dark:text-slate-400">
                       <span>
                         {formatBytes(loadState.loaded)}
                         {loadState.total > 0
                           ? ` / ${formatBytes(loadState.total)}`
                           : ''}
                       </span>
-                      <span className={hudComplete ? 'text-emerald-300/80' : ''}>
+                      <span className={hudComplete ? 'text-emerald-700/80 dark:text-emerald-300/80' : ''}>
                         {hudComplete
                           ? '加载完成'
                           : isConverting
