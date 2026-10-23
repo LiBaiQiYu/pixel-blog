@@ -10,9 +10,12 @@ import {
   Terminal,
 } from 'lucide-react';
 import { AvatarVideoModal } from './AvatarVideoModal';
-import { GearShowcase } from './GearShowcase';
+import { GearShowcase, TerminalGearShowcase } from './GearShowcase';
 import { LiquidPixelCard } from './LiquidPixelCard';
-import { PhotoStoryShowcase } from './PhotoStoryShowcase';
+import {
+  PhotoStoryShowcase,
+  TerminalPhotoStoryShowcase,
+} from './PhotoStoryShowcase';
 import type { ViewMode } from '../types/blog';
 
 interface AboutViewProps {
@@ -378,6 +381,16 @@ export const AboutView: React.FC<AboutViewProps> = ({
                 <p className="text-[11px] leading-relaxed text-slate-700 dark:text-slate-200">
                   希望有一天能匹配到 Topson，来一场真正的中单博弈。
                 </p>
+              </section>
+
+              <section className="space-y-2">
+                <p className="text-emerald-600 dark:text-emerald-300">
+                  # photography_and_gear
+                </p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <TerminalPhotoStoryShowcase />
+                  <TerminalGearShowcase />
+                </div>
               </section>
 
               <section className="space-y-2">

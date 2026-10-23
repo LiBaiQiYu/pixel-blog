@@ -7,6 +7,9 @@ import {
   ChevronRight,
   CloudSun,
   CloudOff,
+  Maximize2,
+  Music,
+  Music2,
 } from 'lucide-react';
 import {
   BlogPost,
@@ -30,10 +33,13 @@ interface NavbarProps {
   onThemeToggle: () => void;
   soundEnabled: boolean;
   onSoundToggle: () => void;
+  musicEnabled: boolean;
+  onMusicToggle: () => void;
   onResetHome: () => void;
   selectedPost?: BlogPost | null;
   weatherBgEnabled: boolean;
   onWeatherBgToggle: () => void;
+  onImmersiveWeather: () => void;
   /** Anchor element where the flying back button docks when scrolling down */
   backDockAnchorRef?: React.RefObject<HTMLElement | null>;
   articleDocked?: boolean;
@@ -49,10 +55,13 @@ export const Navbar: React.FC<NavbarProps> = ({
   onThemeToggle,
   soundEnabled,
   onSoundToggle,
+  musicEnabled,
+  onMusicToggle,
   onResetHome,
   selectedPost,
   weatherBgEnabled,
   onWeatherBgToggle,
+  onImmersiveWeather,
   backDockAnchorRef,
   articleDocked = false,
   concealed = false,
@@ -130,7 +139,9 @@ export const Navbar: React.FC<NavbarProps> = ({
           <span
             ref={backDockAnchorRef}
             aria-hidden="true"
-            className="block w-0 h-7 shrink-0"
+            className={`block h-7 shrink-0 transition-[width] duration-300 ease-out ${
+              articleDocked ? 'w-12 sm:w-28' : 'w-0'
+            }`}
           />
 
           {viewMode === 'standard' && selectedPost && !articleDocked && (
@@ -165,6 +176,33 @@ export const Navbar: React.FC<NavbarProps> = ({
               <CloudSun className="w-3.5 h-3.5" />
             ) : (
               <CloudOff className="w-3.5 h-3.5" />
+            )}
+          </button>
+
+          <button
+            onClick={onImmersiveWeather}
+            className="liquid-pill p-1.5 rounded-xl flex items-center justify-center text-sky-600 transition-colors dark:text-cyan-300"
+            title="沉浸式天气：隐藏标题栏和内容"
+            aria-label="开启沉浸式天气"
+          >
+            <Maximize2 className="w-3.5 h-3.5" />
+          </button>
+
+          <button
+            onClick={onMusicToggle}
+            aria-pressed={musicEnabled}
+            className={`liquid-pill p-1.5 rounded-xl flex items-center justify-center transition-colors ${
+              musicEnabled
+                ? 'text-fuchsia-600 dark:text-fuchsia-300'
+                : 'text-slate-400 dark:text-slate-600'
+            }`}
+            title={musicEnabled ? '关闭背景音乐' : '播放 8bit 背景音乐'}
+            aria-label={musicEnabled ? '关闭背景音乐' : '播放背景音乐'}
+          >
+            {musicEnabled ? (
+              <Music2 className="w-3.5 h-3.5" />
+            ) : (
+              <Music className="w-3.5 h-3.5" />
             )}
           </button>
 

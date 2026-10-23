@@ -358,3 +358,133 @@ export const GearShowcase: React.FC = () => {
     </>
   );
 };
+
+export const TerminalGearShowcase: React.FC = () => {
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [open]);
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="about-reveal group flex h-full flex-col gap-2 rounded-xl border border-emerald-500/30 bg-white/40 p-3 text-left transition-colors hover:border-emerald-400/60 hover:bg-emerald-500/5 dark:bg-slate-950/50"
+        title="查看电子产品柜"
+      >
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <div className="font-mono text-[9px] tracking-wider text-emerald-700 dark:text-emerald-300">
+              GEAR CABINET //
+            </div>
+            <h3 className="mt-1 text-sm font-bold text-slate-900 dark:text-white">
+              我的电子产品柜
+            </h3>
+          </div>
+          <span className="rounded border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 font-mono text-[9px] text-emerald-700 dark:text-emerald-300">
+            {DEVICES.length.toString().padStart(2, '0')}
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5 font-mono text-[10px] text-cyan-700 dark:text-cyan-300">
+          <Cpu className="h-3.5 w-3.5" />
+          gadgets / hardware
+        </div>
+        <p className="text-[11px] leading-relaxed text-slate-600 dark:text-slate-300">
+          正在服役的手机、电脑、显示器与外设，以及那些留下深刻印象的设备。
+        </p>
+        <span className="mt-auto font-mono text-[9px] text-emerald-600 transition-colors group-hover:text-emerald-500 dark:text-emerald-300">
+          $ cat gear.log <span className="animate-pulse">_</span>
+        </span>
+      </button>
+
+      {open &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[95] flex items-center justify-center bg-slate-950/85 p-3 backdrop-blur-sm sm:p-6"
+            role="presentation"
+            onClick={() => setOpen(false)}
+          >
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-label="电子产品柜"
+              className="flex max-h-[84vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-emerald-500/40 bg-slate-950 shadow-2xl shadow-emerald-950/50"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="flex shrink-0 items-center justify-between gap-3 border-b border-emerald-500/25 bg-emerald-500/5 px-4 py-3">
+                <div className="flex min-w-0 items-center gap-2 font-mono">
+                  <Cpu className="h-4 w-4 shrink-0 text-emerald-400" />
+                  <div className="min-w-0">
+                    <div className="truncate text-[11px] font-bold text-emerald-300">
+                      carlos@libai:~/about/gear
+                    </div>
+                    <div className="text-[9px] text-slate-500">
+                      {DEVICES.length} DEVICES · ACTIVE
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  className="rounded border border-emerald-500/30 p-1.5 text-emerald-400 transition-colors hover:bg-emerald-500/10"
+                  aria-label="关闭电子产品柜"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain p-3 sm:p-4">
+                <div className="mb-1 font-mono text-[10px] text-slate-500">
+                  <span className="text-emerald-400">$</span> ls -la ~/devices
+                </div>
+                {DEVICES.map((device) => (
+                  <div
+                    key={`${device.category}-${device.detail}`}
+                    className="flex items-center gap-3 rounded-lg border border-emerald-500/15 bg-emerald-500/[0.03] p-2.5"
+                  >
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded border border-emerald-500/25 bg-slate-900 text-emerald-300">
+                      {device.icon}
+                    </span>
+                    <div className="min-w-0 flex-1 font-mono">
+                      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                        <span className="text-[11px] font-semibold text-slate-100">
+                          {device.nameZh}
+                        </span>
+                        <span className="text-[8px] text-emerald-500">
+                          {device.category}
+                        </span>
+                      </div>
+                      <div className="truncate text-[9px] text-slate-500">
+                        {device.nameEn}
+                      </div>
+                    </div>
+                    <div className="shrink-0 text-right font-mono text-[9px] text-slate-400">
+                      {device.detail}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex shrink-0 items-center justify-between gap-3 border-t border-emerald-500/20 px-4 py-2 font-mono text-[9px] text-slate-500">
+                <span>[EOF] gear inventory</span>
+                <span>ESC / click outside to close</span>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+    </>
+  );
+};

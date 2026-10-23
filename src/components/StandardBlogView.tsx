@@ -8,10 +8,10 @@ import {
   Dices,
   Hash,
   Check,
-  Calendar,
   ListFilter,
   LayoutGrid,
 } from 'lucide-react';
+import { ArchiveDropdown } from './ArchiveDropdown';
 import { AuthorProfile, BlogPost, PostCategory } from '../types/blog';
 import type { WeatherData, WeatherKind } from '../types/weather';
 import type { WeatherStatus } from '../hooks/useWeather';
@@ -109,6 +109,34 @@ export const StandardBlogView: React.FC<StandardBlogViewProps> = ({
       count,
     }));
   }, [posts]);
+
+  const yearMonthGroups = useMemo(() => {
+    const groups = new Map<
+      string,
+      { year: string; total: number; months: typeof yearMonthBuckets }
+    >();
+
+    for (const bucket of yearMonthBuckets) {
+      const year = bucket.ym.slice(0, 4);
+      let group = groups.get(year);
+      if (!group) {
+        group = { year, total: 0, months: [] };
+        groups.set(year, group);
+      }
+      group.total += bucket.count;
+      group.months.push(bucket);
+    }
+
+    return Array.from(groups.values());
+  }, [yearMonthBuckets]);
+
+  const activeArchiveLabel =
+    activeYearMonth === 'ALL'
+      ? `全部归档 (${posts.length})`
+      : /^\d{4}$/.test(activeYearMonth)
+        ? `${activeYearMonth} 全年`
+        : yearMonthBuckets.find((bucket) => bucket.ym === activeYearMonth)
+            ?.label ?? activeYearMonth;
 
   const filteredPosts = useMemo(() => {
     return [...posts]
@@ -403,40 +431,20 @@ export const StandardBlogView: React.FC<StandardBlogViewProps> = ({
           </div>
         </div>
 
-        {/* Year-Month Archive Pills Row */}
-        <div className="pt-2.5 border-t border-slate-200/40 dark:border-white/5 flex flex-wrap items-center gap-x-2 gap-y-1.5">
-          <span className="text-[11px] font-mono text-slate-400 flex items-center gap-1 shrink-0">
-            <Calendar className="w-3 h-3 text-sky-500" />
-            <span>年月归档:</span>
+        <div className="pt-2.5 border-t border-slate-200/40 dark:border-white/5 flex flex-wrap items-center gap-2">
+          <span className="shrink-0 font-mono text-[11px] text-slate-400">
+            年月归档
           </span>
-          <button
-            onClick={() => setActiveYearMonth('ALL')}
-            className={`px-2.5 py-0.5 rounded-lg text-[11px] font-mono whitespace-nowrap transition-all border ${
-              activeYearMonth === 'ALL'
-                ? 'bg-sky-500/20 text-sky-700 dark:text-cyan-300 border-sky-400/50 font-bold'
-                : 'bg-white/30 dark:bg-slate-900/40 text-slate-500 dark:text-slate-400 border-transparent hover:border-sky-400/30'
-            }`}
-          >
-            全部 ({posts.length})
-          </button>
-          {yearMonthBuckets.map((bucket) => {
-            const active = activeYearMonth === bucket.ym;
-            return (
-              <button
-                key={bucket.ym}
-                onClick={() =>
-                  setActiveYearMonth(active ? 'ALL' : bucket.ym)
-                }
-                className={`px-2.5 py-0.5 rounded-lg text-[11px] font-mono whitespace-nowrap transition-all border ${
-                  active
-                    ? 'bg-sky-500/20 text-sky-700 dark:text-cyan-300 border-sky-400/50 font-bold'
-                    : 'bg-white/30 dark:bg-slate-900/40 text-slate-600 dark:text-slate-400 border-transparent hover:border-sky-400/30'
-                }`}
-              >
-                {bucket.label} ({bucket.count})
-              </button>
-            );
-          })}
+          <ArchiveDropdown
+            value={activeYearMonth}
+            total={posts.length}
+            groups={yearMonthGroups}
+            activeLabel={activeArchiveLabel}
+            onChange={setActiveYearMonth}
+          />
+          <span className="font-mono text-[10px] text-slate-400">
+            筛选后 {filteredPosts.length} 篇
+          </span>
         </div>
       </LiquidPixelCard>
 

@@ -18,6 +18,13 @@ import {
 } from './data';
 import { processUpload, type UploadFields } from './processing';
 import { deleteFiles, saveFiles } from './storage';
+import {
+  deleteBlogPost,
+  getBlogPostRaw,
+  rebuildBlogManifest,
+  saveBlogImage,
+  saveBlogPost,
+} from '../blog/store';
 
 function sendJson(res: ServerResponse, status: number, data: unknown) {
   res.statusCode = status;
@@ -199,6 +206,77 @@ export function galleryAdminPlugin(): Plugin {
               throw error;
             }
             return;
+          }
+
+          if (req.method === 'GET' && url.pathname === '/__admin/posts') {
+            sendJson(res, 200, { items: await rebuildBlogManifest() });
+            return;
+          }
+
+          if (
+            req.method === 'POST' &&
+            url.pathname === '/__admin/posts/rebuild'
+          ) {
+            sendJson(res, 200, {
+              ok: true,
+              items: await rebuildBlogManifest(),
+            });
+            return;
+          }
+
+          const postImageMatch = url.pathname.match(
+            /^\/__admin\/posts\/([^/]+)\/images$/
+          );
+          if (postImageMatch && req.method === 'POST') {
+            const id = decodeURIComponent(postImageMatch[1]);
+            const { files } = await parseMultipart(req);
+            const image = files.image;
+            if (!image) {
+              sendJson(res, 400, { error: '请选择要上传的图片' });
+              return;
+            }
+            sendJson(
+              res,
+              200,
+              await saveBlogImage(id, image.buffer, image.fileName)
+            );
+            return;
+          }
+
+          const postMatch = url.pathname.match(/^\/__admin\/posts\/([^/]+)$/);
+          if (postMatch) {
+            const id = decodeURIComponent(postMatch[1]);
+
+            if (req.method === 'GET') {
+              sendJson(res, 200, {
+                id,
+                markdown: await getBlogPostRaw(id),
+              });
+              return;
+            }
+
+            if (req.method === 'PUT') {
+              const body = await readJsonBody<{ markdown?: string }>(req);
+              if (typeof body.markdown !== 'string') {
+                sendJson(res, 400, { error: '缺少 markdown 内容' });
+                return;
+              }
+              sendJson(res, 200, {
+                ok: true,
+                items: await saveBlogPost(id, body.markdown),
+              });
+              return;
+            }
+
+            if (req.method === 'DELETE') {
+              const deleteImages =
+                url.searchParams.get('deleteImages') === '1';
+              sendJson(res, 200, {
+                ok: true,
+                items: await deleteBlogPost(id, deleteImages),
+              });
+              return;
+            }
           }
 
           const entryMatch = url.pathname.match(

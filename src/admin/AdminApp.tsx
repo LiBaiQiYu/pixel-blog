@@ -9,6 +9,7 @@ import {
   AlertTriangle,
   Check,
   ExternalLink,
+  FileText,
   Image as ImageIcon,
   KeyRound,
   Loader2,
@@ -23,6 +24,7 @@ import {
 
 import type { GalleryEntry, GalleryMeta } from '../types/gallery';
 import type { GalleryManifestEntry } from '../types/gallery-manifest';
+import { PostsPanel } from './PostsPanel';
 
 interface LibraryItem {
   entry: GalleryEntry;
@@ -55,7 +57,7 @@ interface UploadRow {
   error?: string;
 }
 
-type Tab = 'storage' | 'upload' | 'library';
+type Tab = 'storage' | 'upload' | 'library' | 'posts';
 
 const TOKEN_KEY = 'pixel_blog_admin_token';
 
@@ -230,6 +232,7 @@ export default function AdminApp() {
             ['storage', Settings, '存储配置'],
             ['upload', UploadCloud, '上传图片'],
             ['library', ImageIcon, '图片管理'],
+            ['posts', FileText, '博文管理'],
           ].map(([key, Icon, label]) => (
             <button
               key={key as string}
@@ -302,6 +305,13 @@ export default function AdminApp() {
                   setMessage(msg);
                   void refresh();
                 }}
+                onError={setError}
+              />
+            )}
+            {tab === 'posts' && (
+              <PostsPanel
+                api={api}
+                onMessage={setMessage}
                 onError={setError}
               />
             )}

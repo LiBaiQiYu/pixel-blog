@@ -100,8 +100,8 @@ export function parseMarkdownFileToPost(
   );
   const readTime =
     meta.readTime || `${Math.max(1, Math.ceil(markdownBody.length / 260))} MIN`;
-  const views = Number(meta.views) || 100 + index * 35;
-  const likes = Number(meta.likes) || 12 + index * 5;
+  const views = Number(meta.views) || 0;
+  const likes = Number(meta.likes) || 0;
   const featured = meta.featured === 'true';
   const coverType = (meta.coverType as CoverArtType) || 'auto';
   const coverSeed = meta.coverSeed
@@ -167,19 +167,6 @@ export function downloadMarkdownPostFile(post: BlogPost) {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
-
-// Automatically scan and load all static Markdown files in src/posts/*.md at build/dev time
-const rawPostFiles = import.meta.glob('../posts/*.md', {
-  query: '?raw',
-  import: 'default',
-  eager: true,
-}) as Record<string, string>;
-
-export const INITIAL_POSTS: BlogPost[] = Object.entries(rawPostFiles)
-  .sort(([pathA], [pathB]) => pathA.localeCompare(pathB))
-  .map(([filePath, rawContent], idx) =>
-    parseMarkdownFileToPost(rawContent, filePath, idx)
-  );
 
 export function ensurePostMarkdown(post: BlogPost): BlogPost {
   if (post.markdown && post.markdown.trim().length > 0) {

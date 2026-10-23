@@ -254,7 +254,7 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
             <div className="rounded-xl overflow-hidden border border-slate-300/80 dark:border-white/15 bg-slate-950 text-slate-100 shadow-lg">
               <div className="px-4 py-2.5 bg-slate-900 border-b border-white/10 flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
                 <span className="text-cyan-300 font-bold">
-                  src/posts/{post.id}-{post.slug}.md
+                  blog/{post.id}/post.md
                 </span>
                 <div className="flex items-center gap-2">
                   <button
@@ -287,7 +287,11 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
               </pre>
             </div>
           ) : (
-            <MarkdownRenderer content={post.markdown} variant="gui" />
+            <MarkdownRenderer
+              content={post.markdown}
+              variant="gui"
+              imageBaseUrl={post.assetBaseUrl}
+            />
           )}
         </LiquidPixelCard>
 

@@ -27,20 +27,27 @@ export const FlyingBackButton: React.FC<FlyingBackButtonProps> = ({
   const [hovered, setHovered] = useState(false);
   const [pressed, setPressed] = useState(false);
   const rafRef = useRef(0);
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
 
   const update = useCallback(() => {
     const el = docked ? dockRef.current : originRef.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
+    const scaledHeight = (buttonRef.current?.offsetHeight ?? 0) * 0.86;
+    const y =
+      docked && scaledHeight > 0
+        ? rect.top + (rect.height - scaledHeight) / 2
+        : rect.top;
+
     setPos((prev) => {
       if (
         prev &&
         Math.abs(prev.x - rect.left) < 0.5 &&
-        Math.abs(prev.y - rect.top) < 0.5
+        Math.abs(prev.y - y) < 0.5
       ) {
         return prev;
       }
-      return { x: rect.left, y: rect.top };
+      return { x: rect.left, y };
     });
   }, [docked, dockRef, originRef]);
 
@@ -102,6 +109,7 @@ export const FlyingBackButton: React.FC<FlyingBackButtonProps> = ({
 
   return (
     <button
+      ref={buttonRef}
       type="button"
       onClick={onClick}
       title="返回文章列表"

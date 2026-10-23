@@ -323,7 +323,11 @@ export const TerminalBlogView: React.FC<TerminalBlogViewProps> = ({
         </div>
 
         <div className="font-sans">
-          <MarkdownRenderer content={post.markdown} variant="terminal" />
+          <MarkdownRenderer
+            content={post.markdown}
+            variant="terminal"
+            imageBaseUrl={post.assetBaseUrl}
+          />
         </div>
       </div>
     );

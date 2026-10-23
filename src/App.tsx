@@ -1,5 +1,13 @@
-import React, { lazy, Suspense, useEffect, useRef, useState } from 'react';
-import { AUTHOR_PROFILE, INITIAL_POSTS, ensurePostMarkdown } from './data/posts';
+import React, {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
+import { AUTHOR_PROFILE } from './data/posts';
+import { fetchBlogPosts } from './lib/blog-api';
 import { BlogPost, ContentPage, ThemeMode, ViewMode } from './types/blog';
 import { AmbientPixelBackground } from './components/AmbientPixelBackground';
 import { Navbar } from './components/Navbar';
@@ -11,7 +19,7 @@ import { useWeather } from './hooks/useWeather';
 import { isWeatherKind, resolveWeatherVisual } from './utils/weather';
 import type { WeatherKind } from './types/weather';
 import { pixelAudio } from './utils/sound';
-import { Terminal, LayoutGrid, Settings } from 'lucide-react';
+import { Terminal, LayoutGrid, Settings, Minimize2 } from 'lucide-react';
 import { generateRandomSeed } from './components/PixelArtwork';
 import {
   PixelCursorEffects,
@@ -56,43 +64,36 @@ export const App: React.FC = () => {
     return saved === 'light' || saved === 'dark' ? saved : 'dark';
   });
 
-  // Load all static Markdown files from src/posts/*.md and merge any local browser drafts
-  const [posts, setPosts] = useState<BlogPost[]>(() => {
-    localStorage.removeItem('pixel_blog_posts_v1');
-    localStorage.removeItem('pixel_blog_local_drafts_v1');
-    const staticIds = new Set(INITIAL_POSTS.map((p) => p.id));
-    let localDrafts: BlogPost[] = [];
-    const savedDrafts = localStorage.getItem('pixel_blog_local_drafts_v2');
-    if (savedDrafts) {
-      try {
-        const parsed = JSON.parse(savedDrafts);
-        if (Array.isArray(parsed)) {
-          localDrafts = parsed
-            .map(ensurePostMarkdown)
-            .filter((d) => !staticIds.has(d.id));
-        }
-      } catch {
-        localDrafts = [];
-      }
-    }
-    return [...localDrafts, ...INITIAL_POSTS];
-  });
+  const [posts, setPosts] = useState<BlogPost[]>([]);
+  const [postsLoading, setPostsLoading] = useState(true);
+  const [postsError, setPostsError] = useState<string | null>(null);
 
-  const [likedPostIds, setLikedPostIds] = useState<string[]>(() => {
-    const saved = localStorage.getItem('pixel_blog_likes');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        return ['01'];
-      }
+  const loadPosts = useCallback(async () => {
+    setPostsLoading(true);
+    setPostsError(null);
+    try {
+      setPosts(await fetchBlogPosts());
+    } catch (error) {
+      setPosts([]);
+      setPostsError(
+        error instanceof Error ? error.message : 'R2 博文索引加载失败'
+      );
+    } finally {
+      setPostsLoading(false);
     }
-    return ['01'];
-  });
+  }, []);
+
+  useEffect(() => {
+    void loadPosts();
+  }, [loadPosts]);
+
+  const [likedPostIds, setLikedPostIds] = useState<string[]>([]);
 
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
+  const [musicEnabled, setMusicEnabled] = useState(false);
   const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
   const [galleryPreviewOpen, setGalleryPreviewOpen] = useState(false);
+  const [immersiveWeather, setImmersiveWeather] = useState(false);
   const likeRequestSeqRef = useRef<Record<string, number>>({});
   const [weatherBgEnabled, setWeatherBgEnabled] = useState<boolean>(() => {
     return localStorage.getItem('pixel_blog_weather_bg') !== 'off';
@@ -116,6 +117,37 @@ export const App: React.FC = () => {
       nextEnabled ? 'on' : 'off'
     );
   };
+
+  const handleEnterImmersiveWeather = () => {
+    pixelAudio.playClick();
+    triggerPixelLoadingCursor(260);
+    setImmersiveWeather(true);
+  };
+
+  const handleExitImmersiveWeather = () => {
+    pixelAudio.playClick();
+    setImmersiveWeather(false);
+  };
+
+  useEffect(() => {
+    if (!immersiveWeather) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        pixelAudio.playClick();
+        setImmersiveWeather(false);
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [immersiveWeather]);
 
   // Temporary preview override: ?weather=rain in URL, or sessionStorage, or terminal/widget switcher
   const [weatherPreviewKind, setWeatherPreviewKind] = useState<
@@ -233,15 +265,6 @@ export const App: React.FC = () => {
   }, [viewMode]);
 
   useEffect(() => {
-    const staticIds = new Set(INITIAL_POSTS.map((p) => p.id));
-    const draftsOnly = posts.filter((p) => !staticIds.has(p.id));
-    localStorage.setItem(
-      'pixel_blog_local_drafts_v2',
-      JSON.stringify(draftsOnly)
-    );
-  }, [posts]);
-
-  useEffect(() => {
     localStorage.setItem('pixel_blog_likes', JSON.stringify(likedPostIds));
   }, [likedPostIds]);
 
@@ -338,6 +361,14 @@ export const App: React.FC = () => {
       if (next) pixelAudio.playClick();
       return next;
     });
+  };
+
+  const handleMusicToggle = async () => {
+    const next = !musicEnabled;
+    setMusicEnabled(next);
+    pixelAudio.playClick();
+    const started = await pixelAudio.setMusicEnabled(next);
+    if (next && !started) setMusicEnabled(false);
   };
 
   const handleToggleLike = (id: string) => {
@@ -470,6 +501,8 @@ export const App: React.FC = () => {
         onThemeToggle={() => handleThemeToggle()}
         soundEnabled={soundEnabled}
         onSoundToggle={handleSoundToggle}
+        musicEnabled={musicEnabled}
+        onMusicToggle={handleMusicToggle}
         onResetHome={() => {
           pixelAudio.playClick();
           setSelectedPost(null);
@@ -478,14 +511,20 @@ export const App: React.FC = () => {
         selectedPost={selectedPost}
         weatherBgEnabled={weatherBgEnabled}
         onWeatherBgToggle={() => handleSetWeatherBg(!weatherBgEnabled)}
+        onImmersiveWeather={handleEnterImmersiveWeather}
         backDockAnchorRef={backDockAnchorRef}
         articleDocked={backDocked}
-        concealed={galleryPreviewOpen}
+        concealed={galleryPreviewOpen || immersiveWeather}
       />
 
       {/* Main Content Container */}
       <main
-        className={`relative z-10 flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 ${
+        aria-hidden={immersiveWeather}
+        className={`relative z-10 flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 transition-[opacity,transform] duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+          immersiveWeather
+            ? 'pointer-events-none -translate-y-6 scale-[0.98] opacity-0'
+            : 'translate-y-0 scale-100 opacity-100'
+        } ${
           viewMode === 'terminal' ? 'pt-4 sm:pt-5 min-h-0 flex flex-col' : 'pt-4'
         }`}
       >
@@ -537,6 +576,22 @@ export const App: React.FC = () => {
               />
             </Suspense>
           )
+        ) : postsLoading ? (
+          <div className="liquid-glass flex min-h-48 items-center justify-center gap-2 rounded-2xl p-10 font-mono text-xs text-sky-600 dark:text-cyan-300">
+            <span className="inline-block h-2 w-2 animate-pulse bg-sky-500" />
+            LOADING R2 POSTS...
+          </div>
+        ) : postsError ? (
+          <div className="liquid-glass space-y-3 rounded-2xl p-8 text-center font-mono text-xs text-rose-600 dark:text-rose-300">
+            <div>{postsError}</div>
+            <button
+              type="button"
+              onClick={() => void loadPosts()}
+              className="rounded-lg border border-rose-400/40 bg-rose-500/10 px-3 py-1.5 text-rose-700 dark:text-rose-200"
+            >
+              重新加载
+            </button>
+          </div>
         ) : viewMode === 'standard' ? (
           <StandardBlogView
             posts={posts}
@@ -596,7 +651,13 @@ export const App: React.FC = () => {
 
       {/* Minimalist Colophon Footer */}
       {viewMode !== 'terminal' && (
-        <footer className="relative z-20 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+        <footer
+          className={`relative z-20 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 pb-8 transition-all duration-500 ${
+            immersiveWeather
+              ? 'pointer-events-none translate-y-4 opacity-0'
+              : 'translate-y-0 opacity-100'
+          }`}
+        >
           <div className="border-t border-slate-300/50 dark:border-white/10 pt-5 flex flex-col items-start gap-1.5 sm:flex-row sm:items-center sm:justify-between text-xs font-mono text-slate-400 pr-12 sm:pr-0">
             <span>李白的白 · CarlosWhite (LV.7)</span>
             <span>MARKDOWN · PIXEL GLASS</span>
@@ -606,7 +667,7 @@ export const App: React.FC = () => {
 
       {/* Elastic back-to-list button (flies between article bar and navbar) */}
       <FlyingBackButton
-        visible={viewMode === 'standard' && !!selectedPost}
+        visible={viewMode === 'standard' && !!selectedPost && !immersiveWeather}
         docked={backDocked}
         originRef={backOriginRef}
         dockRef={backDockAnchorRef}
@@ -617,7 +678,7 @@ export const App: React.FC = () => {
       />
 
       {/* Dev-only gallery admin entry. Removed from production builds. */}
-      {import.meta.env.DEV && !galleryPreviewOpen && (
+      {import.meta.env.DEV && !galleryPreviewOpen && !immersiveWeather && (
         <a
           href="?admin=1"
           title="开发环境图库后台"
@@ -646,7 +707,7 @@ export const App: React.FC = () => {
             : '切换至普通博客风格'
         }
         className={`fixed z-40 liquid-pill rounded-full flex items-center gap-2 text-xs font-mono text-slate-600 dark:text-slate-300 transition-all shadow-lg p-2.5 sm:px-3.5 sm:py-2 ${
-          galleryPreviewOpen
+          galleryPreviewOpen || immersiveWeather
             ? 'opacity-0 translate-y-6 pointer-events-none'
             : 'opacity-75 hover:opacity-100'
         } ${
@@ -667,6 +728,29 @@ export const App: React.FC = () => {
           </>
         )}
       </button>
+
+      <div
+        className={`fixed bottom-4 right-4 z-50 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] sm:bottom-5 sm:right-5 ${
+          immersiveWeather
+            ? 'translate-y-0 opacity-100'
+            : 'pointer-events-none translate-y-5 opacity-0'
+        }`}
+        aria-hidden={!immersiveWeather}
+      >
+        <button
+          type="button"
+          onClick={handleExitImmersiveWeather}
+          tabIndex={immersiveWeather ? 0 : -1}
+          className="liquid-pill flex items-center gap-2 rounded-full border border-slate-300/70 bg-white/75 px-3.5 py-2 font-mono text-xs text-slate-700 shadow-xl transition-colors hover:border-sky-400/60 hover:text-sky-700 dark:border-white/15 dark:bg-slate-950/55 dark:text-slate-100 dark:hover:text-cyan-200"
+          title="退出沉浸式天气 (Esc)"
+        >
+          <Minimize2 className="h-4 w-4 text-sky-600 dark:text-cyan-300" />
+          <span>退出沉浸</span>
+          <span className="hidden rounded border border-slate-300/70 px-1.5 py-0.5 text-[9px] text-slate-500 dark:border-white/15 dark:text-slate-400 sm:inline">
+            ESC
+          </span>
+        </button>
+      </div>
     </div>
   );
 };

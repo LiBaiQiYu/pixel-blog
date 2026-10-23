@@ -34,6 +34,7 @@ export interface BlogPost {
   accent: 'cyan' | 'magenta' | 'emerald' | 'amber' | 'violet';
   excerpt: string;
   markdown: string;
+  assetBaseUrl?: string;
   sections?: PostSection[];
 }
 

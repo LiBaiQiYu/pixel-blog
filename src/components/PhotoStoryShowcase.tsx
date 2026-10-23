@@ -298,3 +298,155 @@ export const PhotoStoryShowcase: React.FC = () => {
     </>
   );
 };
+
+export const TerminalPhotoStoryShowcase: React.FC = () => {
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [open]);
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="about-reveal group flex h-full flex-col gap-2 rounded-xl border border-sky-500/30 bg-white/40 p-3 text-left transition-colors hover:border-sky-400/60 hover:bg-sky-500/5 dark:bg-slate-950/50"
+        title="查看风景摄影"
+      >
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <div className="font-mono text-[9px] tracking-wider text-sky-700 dark:text-cyan-300">
+              FIELD NOTES //
+            </div>
+            <h3 className="mt-1 text-sm font-bold text-slate-900 dark:text-white">
+              风景摄影
+            </h3>
+          </div>
+          <span className="rounded border border-sky-500/30 bg-sky-500/10 p-1.5 text-sky-600 dark:text-cyan-300">
+            <Camera className="h-3.5 w-3.5" />
+          </span>
+        </div>
+        <div className="relative h-24 overflow-hidden rounded-lg border border-sky-500/20 bg-slate-950">
+          <img
+            src={STORY_IMAGE}
+            alt="暮色公路上的月亮与落日"
+            loading="lazy"
+            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+          />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-950/65 via-transparent to-transparent" />
+          <span className="absolute bottom-1.5 left-2 font-mono text-[9px] text-cyan-100">
+            01 / 日月同辉
+          </span>
+        </div>
+        <p className="text-[11px] leading-relaxed text-slate-600 dark:text-slate-300">
+          在旅途中收集山川、云层与光线，也记下那些来不及按快门的瞬间。
+        </p>
+        <span className="mt-auto font-mono text-[9px] text-sky-600 transition-colors group-hover:text-sky-500 dark:text-cyan-300">
+          $ cat field-note-01.md <span className="animate-pulse">_</span>
+        </span>
+      </button>
+
+      {open &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[95] flex items-center justify-center bg-slate-950/85 p-3 backdrop-blur-sm sm:p-6"
+            role="presentation"
+            onClick={() => setOpen(false)}
+          >
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-label="风景摄影故事"
+              className="flex max-h-[86vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-sky-500/40 bg-slate-950 shadow-2xl shadow-sky-950/50"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="flex shrink-0 items-center justify-between gap-3 border-b border-sky-500/25 bg-sky-500/5 px-4 py-3">
+                <div className="flex min-w-0 items-center gap-2 font-mono">
+                  <Camera className="h-4 w-4 shrink-0 text-cyan-300" />
+                  <div className="min-w-0">
+                    <div className="truncate text-[11px] font-bold text-cyan-300">
+                      carlos@libai:~/about/photography
+                    </div>
+                    <div className="text-[9px] text-slate-500">
+                      01 STORY · FIELD NOTES
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  className="rounded border border-sky-500/30 p-1.5 text-cyan-300 transition-colors hover:bg-sky-500/10"
+                  aria-label="关闭风景摄影故事"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3 sm:p-4">
+                <div className="group relative overflow-hidden rounded-lg border border-sky-500/25 bg-slate-950">
+                  <img
+                    src={STORY_IMAGE}
+                    alt="暮色公路上的月亮与落日"
+                    loading="lazy"
+                    className="aspect-[4/3] w-full object-cover"
+                  />
+                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent" />
+                  <span className="absolute left-3 top-3 rounded border border-white/15 bg-slate-950/70 px-2 py-0.5 font-mono text-[9px] text-cyan-200 backdrop-blur-md">
+                    AI RECONSTRUCTION
+                  </span>
+                  <div className="absolute bottom-3 left-3 right-3">
+                    <div className="font-mono text-[9px] text-cyan-200/80">
+                      ALT. 963M · 公路尽头
+                    </div>
+                    <h2 className="mt-1 text-lg font-bold text-white">
+                      日月同辉
+                    </h2>
+                  </div>
+                </div>
+
+                <div className="mt-4 space-y-3 font-mono">
+                  <div className="flex items-center gap-2 text-[9px] text-cyan-300">
+                    <Sparkles className="h-3 w-3" />
+                    ONE FRAME / ONE MEMORY
+                  </div>
+                  <p className="text-[11px] leading-relaxed text-slate-300">
+                    旅途中遇到了日月同辉的一幕。受限于车内空间和高速路况，当时很难拍出满意的照片，于是我用 AI 复原了那个画面：后视镜里，月亮低悬在空中；前方，夕阳正沉入地平线。
+                  </p>
+                  <p className="border-l-2 border-sky-400/40 pl-3 text-[11px] leading-relaxed text-slate-300">
+                    像是周而复始的生命，绵绵不息。或许，这就是旅行的意义。
+                  </p>
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {['旅行', '日月同辉', 'AI 复原', '风景摄影'].map((tag) => (
+                      <span
+                        key={tag}
+                        className="rounded border border-sky-400/20 bg-sky-500/10 px-1.5 py-0.5 text-[9px] text-cyan-200"
+                      >
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex shrink-0 items-center justify-between gap-3 border-t border-sky-500/20 px-4 py-2 font-mono text-[9px] text-slate-500">
+                <span>[EOF] field note 01</span>
+                <span>ESC / click outside to close</span>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+    </>
+  );
+};

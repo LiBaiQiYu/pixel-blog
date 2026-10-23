@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import { Check, Copy, Sparkles } from 'lucide-react';
+import { MarkdownImage } from './MarkdownImage';
+
+const IMAGE_LINE_RE = /^!\[([^\]]*)\]\((\S+?)(?:\s+"([^"]*)")?\)$/;
 
 export interface TocItem {
   id: string;
@@ -54,7 +57,8 @@ export function extractMarkdownExcerpt(markdown: string, maxLen = 120): string {
       t.startsWith('#') ||
       t.startsWith('>') ||
       t.startsWith('|') ||
-      t.startsWith('---')
+      t.startsWith('---') ||
+      IMAGE_LINE_RE.test(t)
     ) {
       continue;
     }
@@ -141,11 +145,13 @@ function renderInlineMarkdown(text: string): React.ReactNode[] {
 interface MarkdownRendererProps {
   content: string;
   variant?: 'gui' | 'terminal';
+  imageBaseUrl?: string;
 }
 
 export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
   content,
   variant = 'gui',
+  imageBaseUrl,
 }) => {
   const [copiedBlock, setCopiedBlock] = useState<number | null>(null);
 
@@ -430,7 +436,25 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
       continue;
     }
 
-    // 8. Standard Paragraph
+    // 8. Image: ![alt](url "caption")
+    const imageMatch = IMAGE_LINE_RE.exec(trimmed);
+    if (imageMatch) {
+      const [, alt, src, title] = imageMatch;
+      blocks.push(
+        <MarkdownImage
+          key={`image-${blockKey++}`}
+          src={src}
+          alt={alt}
+          caption={title || alt}
+          variant={variant}
+          baseUrl={imageBaseUrl}
+        />
+      );
+      i++;
+      continue;
+    }
+
+    // 9. Standard Paragraph
     const paraLines: string[] = [];
     while (
       i < lines.length &&
@@ -441,7 +465,8 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
       !lines[i].trim().startsWith('|') &&
       !/^[-*+]\s+/.test(lines[i].trim()) &&
       !/^\d+\.\s+/.test(lines[i].trim()) &&
-      !/^(-{3,}|\*{3,})$/.test(lines[i].trim())
+      !/^(-{3,}|\*{3,})$/.test(lines[i].trim()) &&
+      !IMAGE_LINE_RE.test(lines[i].trim())
     ) {
       paraLines.push(lines[i].trim());
       i++;

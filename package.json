@@ -13,6 +13,7 @@
     "gallery:manifest": "node scripts/upload-gallery.mjs --manifest-only",
     "gallery:upload": "node scripts/upload-gallery.mjs",
     "gallery:upload:dry": "node scripts/upload-gallery.mjs --dry-run",
+    "music:generate": "node scripts/generate-chiptune.mjs",
     "stats:schema": "npx wrangler d1 execute DB --remote --file=worker/schema.sql",
     "stats:deploy": "npx wrangler deploy"
   },
