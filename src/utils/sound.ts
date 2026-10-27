@@ -49,7 +49,7 @@ class PixelAudioEngine {
 
     let promise = this.musicLoadPromises.get(mood);
     if (!promise) {
-      promise = fetch(`${import.meta.env.BASE_URL}${MUSIC_FILES[mood]}`)
+      promise = fetch(`/${MUSIC_FILES[mood]}`)
         .then((response) => {
           if (!response.ok) {
             throw new Error(`Music request failed: ${response.status}`);

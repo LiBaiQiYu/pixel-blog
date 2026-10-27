@@ -1,7 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
-    "./index.html",
+    "./app/**/*.{js,ts,jsx,tsx}",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   darkMode: 'class',
@@ -22,8 +22,13 @@ export default {
         'pulse-glow': 'pulseGlow 4s ease-in-out infinite',
         'scanline': 'scanline 8s linear infinite',
         'blink': 'blink 1.1s step-end infinite',
+        'fadeIn': 'fadeIn 220ms cubic-bezier(0.16, 1, 0.3, 1) both',
       },
       keyframes: {
+        fadeIn: {
+          from: { opacity: '0', transform: 'translateY(4px)' },
+          to: { opacity: '1', transform: 'translateY(0)' },
+        },
         floatSlow: {
           '0%, 100%': { transform: 'translateY(0px)' },
           '50%': { transform: 'translateY(-8px)' },

@@ -1,8 +1,9 @@
 import type { GalleryAssetRecord } from '../types/gallery-manifest';
 import galleryStorageJson from '../data/gallery-storage.json';
+import { APP_ENV } from './app-env';
 
 const BASE = (
-  import.meta.env.VITE_GALLERY_BASE_URL ||
+  APP_ENV.galleryBaseUrl ||
   galleryStorageJson.publicBaseUrl ||
   ''
 ).replace(/\/+$/, '');

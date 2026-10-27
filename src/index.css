@@ -316,6 +316,27 @@ html:not(.dark) .crt-scanlines {
   will-change: transform, opacity;
 }
 
+/* Route loading scan line */
+@keyframes routeLoadingScan {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(320%);
+  }
+}
+
+.route-loading-scan {
+  animation: routeLoadingScan 1.15s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .route-loading-scan {
+    animation: none;
+  }
+}
+
 /* ==========================================================================
    Global micro-interactions: hover lift + press feedback for all buttons
    ========================================================================== */

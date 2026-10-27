@@ -11,7 +11,11 @@ interface MarkdownImageProps {
 }
 
 function resolveImageSrc(src: string, baseUrl?: string) {
-  if (/^(https?:)?\/\//i.test(src) || src.startsWith('data:') || src.startsWith('blob:')) {
+  if (
+    /^(https?:)?\/\//i.test(src) ||
+    src.startsWith('data:') ||
+    src.startsWith('blob:')
+  ) {
     return src;
   }
   if (!baseUrl) return src;
@@ -122,7 +126,7 @@ export const MarkdownImage: React.FC<MarkdownImageProps> = ({
               ? 'border-emerald-500/35 bg-slate-950/70 hover:border-emerald-400/60'
               : 'border-slate-300/70 bg-white/40 hover:border-sky-400/60 dark:border-white/15 dark:bg-slate-950/50'
           }`}
-          aria-label={`查看大图�?{label}`}
+          aria-label={`查看大图：${label}`}
         >
           {failed ? (
             <span className="flex min-h-40 flex-col items-center justify-center gap-2 p-6 font-mono text-xs text-slate-400">

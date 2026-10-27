@@ -1,8 +1,8 @@
 import mapboxgl from 'mapbox-gl';
 import type { ThemeMode } from '../types/blog';
+import { APP_ENV } from './app-env';
 
-export const MAPBOX_TOKEN =
-  import.meta.env.VITE_MAPBOX_ACCESS_TOKEN?.trim() || '';
+export const MAPBOX_TOKEN = APP_ENV.mapboxToken;
 
 const MAPBOX_STYLE = 'mapbox://styles/mapbox/standard';
 const TERRAIN_SOURCE_ID = 'gallery-terrain-dem';

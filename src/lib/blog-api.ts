@@ -1,14 +1,10 @@
 import type { BlogPost } from '../types/blog';
+import { APP_ENV } from './app-env';
 
-const BLOG_PUBLIC_BASE = (
-  import.meta.env.VITE_BLOG_IMAGE_BASE_URL?.trim() ||
-  'https://img.cwa1e.top'
-).replace(/\/+$/, '');
+const BLOG_PUBLIC_BASE = APP_ENV.blogImageBaseUrl;
 
 export const BLOG_ASSET_BASE_URL = `${BLOG_PUBLIC_BASE}/blog`;
-export const BLOG_INDEX_URL =
-  import.meta.env.VITE_BLOG_INDEX_URL?.trim() ||
-  `${BLOG_ASSET_BASE_URL}/posts.json`;
+export const BLOG_INDEX_URL = APP_ENV.blogIndexUrl;
 
 export async function fetchBlogPosts(): Promise<BlogPost[]> {
   const response = await fetch(`${BLOG_INDEX_URL}?t=${Date.now()}`, {

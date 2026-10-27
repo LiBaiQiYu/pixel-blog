@@ -9,11 +9,9 @@ const CACHE_TTL = 10 * 60 * 1000;
 
 // Local dev uses the built-in Vite proxy; static hosts (GitHub Pages) can point
 // to an externally deployed proxy via VITE_WEATHER_API_ENDPOINT at build time.
-const WEATHER_ENDPOINT = (() => {
-  const configured = import.meta.env.VITE_WEATHER_API_ENDPOINT?.trim();
-  if (!configured) return '/api/weather';
-  return configured.replace(/\/+$/, '');
-})();
+import { APP_ENV } from '../lib/app-env';
+
+const WEATHER_ENDPOINT = APP_ENV.weatherEndpoint;
 
 export interface UseWeatherResult {
   weather: WeatherData;

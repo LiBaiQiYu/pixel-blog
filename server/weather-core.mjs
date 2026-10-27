@@ -9,8 +9,8 @@ let envLoaded = false;
 
 function loadEnvFile(fileName) {
   const filePath = resolve(ROOT, fileName);
-  if (!existsSync(filePath)) return;
-  const content = readFileSync(filePath, 'utf8');
+  if (!existsSync(/*turbopackIgnore: true*/ filePath)) return;
+  const content = readFileSync(/*turbopackIgnore: true*/ filePath, 'utf8');
   for (const rawLine of content.split(/\r?\n/)) {
     const line = rawLine.trim();
     if (!line || line.startsWith('#')) continue;
@@ -87,8 +87,8 @@ export function getWeatherConfig() {
 
   if (!privateKey && env.QWEATHER_PRIVATE_KEY_PATH) {
     const keyPath = resolve(ROOT, env.QWEATHER_PRIVATE_KEY_PATH.trim());
-    if (existsSync(keyPath)) {
-      privateKey = readFileSync(keyPath, 'utf8').trim();
+    if (existsSync(/*turbopackIgnore: true*/ keyPath)) {
+      privateKey = readFileSync(/*turbopackIgnore: true*/ keyPath, 'utf8').trim();
       keySource = 'QWEATHER_PRIVATE_KEY_PATH';
     }
   }
@@ -132,7 +132,7 @@ export function getMissingWeatherEnv() {
   }
   if (!privateKey && env.QWEATHER_PRIVATE_KEY_PATH) {
     const keyPath = resolve(ROOT, env.QWEATHER_PRIVATE_KEY_PATH.trim());
-    if (existsSync(keyPath)) privateKey = 'found';
+    if (existsSync(/*turbopackIgnore: true*/ keyPath)) privateKey = 'found';
   }
   if (!privateKey) missing.push('QWEATHER_PRIVATE_KEY');
 

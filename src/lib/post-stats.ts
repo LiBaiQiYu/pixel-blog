@@ -1,6 +1,6 @@
-const STATS_API_URL = (
-  import.meta.env.VITE_STATS_API_URL?.trim() || 'https://stats.cwa1e.top'
-).replace(/\/+$/, '');
+import { APP_ENV } from './app-env';
+
+const STATS_API_URL = APP_ENV.statsApiUrl;
 
 const CLIENT_ID_KEY = 'pixel_blog_stats_client_id';
 

@@ -597,10 +597,14 @@ export const StandardBlogView: React.FC<StandardBlogViewProps> = ({
                                   </div>
                                 </div>
 
-                                <span className="text-sky-600 dark:text-cyan-300 flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform">
+                                <a
+                                  href={`/posts/${post.id}`}
+                                  onClick={(event) => event.stopPropagation()}
+                                  className="text-sky-600 dark:text-cyan-300 flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform"
+                                >
                                   <span>阅读</span>
                                   <ArrowUpRight className="w-3.5 h-3.5" />
-                                </span>
+                                </a>
                               </div>
                             </div>
                           </div>
@@ -686,10 +690,14 @@ export const StandardBlogView: React.FC<StandardBlogViewProps> = ({
                             </span>
                           </div>
 
-                          <span className="text-sky-600 dark:text-cyan-300 flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform">
+                          <a
+                            href={`/posts/${post.id}`}
+                            onClick={(event) => event.stopPropagation()}
+                            className="text-sky-600 dark:text-cyan-300 flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform"
+                          >
                             <span>阅读</span>
                             <ArrowUpRight className="w-3.5 h-3.5" />
-                          </span>
+                          </a>
                         </div>
                       </LiquidPixelCard>
                     );
