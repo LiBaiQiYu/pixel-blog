@@ -479,6 +479,7 @@ export const PhotoSwiperDetail: React.FC<PhotoSwiperDetailProps> = ({
                     index === (activeIndex + 1) % photos.length ||
                     index === (activeIndex - 1 + photos.length) % photos.length
                   }
+                  controlsVisible={zoomScale <= 1.01}
                 />
               </SwiperSlide>
             ))}

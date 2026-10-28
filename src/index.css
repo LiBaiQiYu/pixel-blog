@@ -1048,6 +1048,173 @@ html.dark .pixel-input:focus {
   transform: translate(-1px, -1px);
 }
 
+.live-hold-dock {
+  transform-origin: top center;
+  will-change: transform, opacity;
+}
+
+.live-hold-dock-enter {
+  animation: liveHoldDockIn 420ms cubic-bezier(0.22, 1.35, 0.36, 1) both;
+}
+
+.live-hold-dock-exit {
+  animation: liveHoldDockOut 320ms cubic-bezier(0.55, 0, 0.72, 0.18) both;
+  pointer-events: none;
+}
+
+@keyframes liveHoldDockIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-22px) scale(0.36);
+  }
+  55% {
+    opacity: 1;
+    transform: translateY(5px) scale(1.1);
+  }
+  78% {
+    opacity: 1;
+    transform: translateY(-2px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes liveHoldDockOut {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  22% {
+    opacity: 1;
+    transform: translateY(-5px) scale(0.92);
+  }
+  45% {
+    opacity: 0.9;
+    transform: translateY(-2px) scale(0.98);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-24px) scale(0.32);
+  }
+}
+
+.live-progress-glyph {
+  filter: drop-shadow(0 1px 2px rgba(2, 6, 23, 0.5));
+}
+
+.live-state-icon {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform-origin: center;
+  pointer-events: none;
+  will-change: transform, opacity;
+  transition:
+    opacity 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.live-state-icon-visible {
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+}
+
+.live-state-icon-hidden {
+  opacity: 0;
+  transform: scale(0.62) rotate(-14deg);
+}
+
+.live-progress-ring {
+  transition:
+    border-color 260ms ease,
+    box-shadow 300ms ease;
+}
+
+.live-progress-ring-playing {
+  border-color: rgba(255, 255, 255, 0.32);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 6px 22px rgba(2, 6, 23, 0.42),
+    0 0 18px rgba(255, 255, 255, 0.07);
+}
+
+.live-hold-button {
+  border: 0;
+  padding: 0;
+  border-radius: 9999px;
+  background: transparent;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.live-hold-button:hover:not(:disabled) {
+  transform: none;
+  filter: none;
+}
+
+.live-hold-button:active:not(:disabled) {
+  transform: scale(0.94);
+  filter: none;
+}
+
+.live-hold-button:focus-visible {
+  outline: 2px solid rgba(244, 114, 182, 0.92);
+  outline-offset: 4px;
+}
+
+.retry-original-button {
+  border: 2px solid rgba(251, 113, 133, 0.82);
+  border-radius: 0;
+  background-color: rgba(76, 5, 25, 0.92);
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0.045) 0 1px,
+    transparent 1px 3px
+  );
+  color: #fff1f2;
+  box-shadow:
+    4px 4px 0 0 rgba(0, 0, 0, 0.62),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.9);
+  image-rendering: pixelated;
+  transition:
+    transform 80ms steps(2, end),
+    box-shadow 90ms step-end,
+    filter 90ms step-end;
+}
+
+.retry-original-button:hover:not(:disabled) {
+  transform: translate(-2px, -2px);
+  box-shadow:
+    6px 6px 0 0 rgba(0, 0, 0, 0.72),
+    0 0 0 2px rgba(251, 113, 133, 0.18);
+  filter: brightness(1.08);
+}
+
+.retry-original-button:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 0 rgba(0, 0, 0, 0.7);
+  filter: brightness(0.96);
+}
+
+.retry-original-button:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 3px;
+}
+
+.retry-original-icon {
+  transition: transform 120ms steps(3, end);
+}
+
+.retry-original-button:hover .retry-original-icon {
+  transform: rotate(-180deg);
+}
+
 @keyframes photoCommentIn {
   from {
     opacity: 0;
@@ -1062,9 +1229,20 @@ html.dark .pixel-input:focus {
 @media (prefers-reduced-motion: reduce) {
   .photo-comment-item,
   .pixel-action-button,
-  .pixel-icon-button {
+  .pixel-icon-button,
+  .retry-original-button,
+  .retry-original-icon,
+  .live-hold-dock,
+  .live-hold-dock-enter,
+  .live-hold-dock-exit,
+  .live-state-icon,
+  .live-progress-ring {
     animation: none;
     transition: none;
+  }
+
+  .retry-original-button:hover:not(:disabled) {
+    transform: none;
   }
 }
 

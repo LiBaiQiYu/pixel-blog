@@ -1,9 +1,10 @@
 'use client';
 
-import React, { lazy, Suspense, useMemo } from 'react';
+import React, { lazy, Suspense, useId, useMemo } from 'react';
 import { Camera, MapPin } from 'lucide-react';
 import type { ThemeMode } from '../types/blog';
 import type { GalleryPhoto } from '../types/gallery';
+import { PhotoHistogram } from './PhotoHistogram';
 
 const PhotoMiniMap = lazy(() =>
   import('./PhotoMiniMap').then((module) => ({
@@ -27,32 +28,6 @@ function formatCoords(lat: number, lon: number) {
   return `${Math.abs(lat).toFixed(5)}°${ns}, ${Math.abs(lon).toFixed(5)}°${ew}`;
 }
 
-function buildSmoothArea(values: number[], width: number, height: number) {
-  const n = values.length;
-  if (n === 0) return `M 0 ${height} L ${width} ${height} Z`;
-  const pts = values.map((v, i) => ({
-    x: (i / (n - 1)) * width,
-    y: height - Math.max(0.01, Math.min(1, v)) * height,
-  }));
-
-  let d = `M 0 ${height} L ${pts[0].x} ${pts[0].y}`;
-  for (let i = 0; i < pts.length - 1; i++) {
-    const p0 = pts[i - 1] || pts[i];
-    const p1 = pts[i];
-    const p2 = pts[i + 1];
-    const p3 = pts[i + 2] || p2;
-    const cp1x = p1.x + (p2.x - p0.x) / 6;
-    const cp1y = p1.y + (p2.y - p0.y) / 6;
-    const cp2x = p2.x - (p3.x - p1.x) / 6;
-    const cp2y = p2.y - (p3.y - p1.y) / 6;
-    d += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(
-      1
-    )} ${cp2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
-  }
-  d += ` L ${width} ${height} Z`;
-  return d;
-}
-
 const CHANNELS = [
   { key: 'r' as const, label: 'R', color: '#F87171', dark: '#FCA5A5' },
   { key: 'g' as const, label: 'G', color: '#34D399', dark: '#6EE7B7' },
@@ -64,16 +39,26 @@ const RgbHistogram: React.FC<{
   theme: ThemeMode;
 }> = ({ histogram, theme }) => {
   const isDark = theme === 'dark';
+  const gradientId = useId().replace(/[^a-zA-Z0-9_-]/g, '');
   const width = 320;
   const height = 96;
-  const paths = useMemo(
-    () =>
-      CHANNELS.map((channel) => ({
-        ...channel,
-        path: buildSmoothArea(histogram[channel.key], width, height),
-      })),
-    [histogram]
-  );
+  const chartPadding = 4;
+  const chartWidth = width - chartPadding * 2;
+  const chartHeight = height - chartPadding * 2;
+  const binCount = Math.max(1, histogram.r.length);
+  const barSlot = chartWidth / binCount;
+  const barWidth = barSlot * 0.8;
+  const chartMax = useMemo(() => {
+    const maxValue = CHANNELS.reduce(
+      (maximum, channel) =>
+        histogram[channel.key].reduce(
+          (channelMaximum, value) => Math.max(channelMaximum, value),
+          maximum
+        ),
+      0
+    );
+    return maxValue * 1.1;
+  }, [histogram]);
 
   return (
     <div
@@ -113,16 +98,18 @@ const RgbHistogram: React.FC<{
 
       <svg
         viewBox={`0 0 ${width} ${height}`}
-        className="block h-[104px] w-full"
+        className="block h-[104px] w-full overflow-hidden rounded-md"
         preserveAspectRatio="none"
         role="img"
         aria-label="RGB histogram"
       >
         <defs>
-          {paths.map((channel) => (
+          {CHANNELS.map((channel) => (
             <linearGradient
               key={channel.key}
-              id={`hist-${channel.key}-${isDark ? 'dark' : 'light'}`}
+              id={`hist-${gradientId}-${channel.key}-${
+                isDark ? 'dark' : 'light'
+              }`}
               x1="0"
               y1="0"
               x2="0"
@@ -130,62 +117,73 @@ const RgbHistogram: React.FC<{
             >
               <stop
                 offset="0%"
-                stopColor={isDark ? channel.dark : channel.color}
-                stopOpacity={isDark ? 0.55 : 0.4}
+                stopColor={channel.dark}
+                stopOpacity="0.92"
               />
               <stop
                 offset="100%"
-                stopColor={isDark ? channel.dark : channel.color}
-                stopOpacity={0.03}
+                stopColor={channel.dark}
+                stopOpacity="0.24"
               />
             </linearGradient>
           ))}
         </defs>
 
+        <rect width={width} height={height} fill="rgba(9,14,28,0.9)" />
+
         {[0.25, 0.5, 0.75].map((ratio) => (
           <line
             key={ratio}
-            x1={0}
-            x2={width}
-            y1={height * ratio}
-            y2={height * ratio}
-            stroke={isDark ? 'rgba(148,163,184,0.16)' : 'rgba(100,116,139,0.18)'}
-            strokeWidth={0.7}
-            strokeDasharray="3 4"
-          />
-        ))}
-        {[0.25, 0.5, 0.75].map((ratio) => (
-          <line
-            key={`v-${ratio}`}
-            x1={width * ratio}
-            x2={width * ratio}
-            y1={0}
-            y2={height}
-            stroke={isDark ? 'rgba(148,163,184,0.1)' : 'rgba(100,116,139,0.12)'}
+            x1={chartPadding}
+            x2={width - chartPadding}
+            y1={chartPadding + chartHeight * ratio}
+            y2={chartPadding + chartHeight * ratio}
+            stroke="rgba(226,232,240,0.14)"
             strokeWidth={0.7}
             strokeDasharray="3 4"
           />
         ))}
 
-        <g style={{ mixBlendMode: isDark ? 'screen' : 'multiply' }}>
-          {paths.map((channel) => (
-            <path
-              key={channel.key}
-              d={channel.path}
-              fill={`url(#hist-${channel.key}-${isDark ? 'dark' : 'light'})`}
-              stroke={isDark ? channel.dark : channel.color}
-              strokeWidth={1.1}
-              strokeLinejoin="round"
-            />
-          ))}
+        <g style={{ mixBlendMode: 'screen' }}>
+          {CHANNELS.map((channel) =>
+            histogram[channel.key].map((value, index) => {
+              const ratio =
+                chartMax > 0
+                  ? Math.max(0, Math.min(1, value / chartMax))
+                  : 0;
+              const barHeight = ratio * chartHeight;
+              if (barHeight <= 0) return null;
+
+              const x =
+                chartPadding +
+                index * barSlot +
+                (barSlot - barWidth) / 2;
+              const y = chartPadding + chartHeight - barHeight;
+
+              return (
+                <rect
+                  key={`${channel.key}-${index}`}
+                  x={x}
+                  y={y}
+                  width={barWidth}
+                  height={barHeight}
+                  rx={Math.min(1.4, barWidth * 0.22)}
+                  fill={`url(#hist-${gradientId}-${channel.key}-${
+                    isDark ? 'dark' : 'light'
+                  })`}
+                />
+              );
+            })
+          )}
         </g>
 
-        <line
-          x1={0}
-          x2={width}
-          y1={height - 0.5}
-          y2={height - 0.5}
-          stroke={isDark ? 'rgba(226,232,240,0.25)' : 'rgba(71,85,105,0.3)'}
+        <rect
+          x={0.5}
+          y={0.5}
+          width={width - 1}
+          height={height - 1}
+          fill="none"
+          stroke="rgba(226,232,240,0.18)"
           strokeWidth={1}
         />
       </svg>
@@ -330,9 +328,7 @@ export const PhotoInfoPanel: React.FC<PhotoInfoPanelProps> = ({
         </div>
       ))}
 
-      {photo.meta.histogram && (
-        <RgbHistogram histogram={photo.meta.histogram} theme={theme} />
-      )}
+      <PhotoHistogram thumbnailUrl={photo.src} theme={theme} />
 
       <div className="flex items-center justify-between border-t border-slate-300/50 pt-1 font-mono text-[10px] text-slate-400 dark:border-white/10 dark:text-slate-500">
         <span>SOURCE: chronoframe</span>

@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Loader2, Pause, Play, RotateCcw } from 'lucide-react';
+import { Loader2, RotateCcw } from 'lucide-react';
 import type { GalleryPhoto } from '../types/gallery';
 import { useLiveVideo } from '../hooks/useLiveVideo';
+import { LiveProgressRing } from './LiveProgressRing';
 import {
   convertHeicToJpeg,
   isHeicBlob,
@@ -14,6 +15,7 @@ interface PhotoSlideContentProps {
   photo: GalleryPhoto;
   active: boolean;
   highQuality: boolean;
+  controlsVisible?: boolean;
 }
 
 type LoadPhase = 'download' | 'convert' | 'decode';
@@ -34,6 +36,7 @@ export const PhotoSlideContent: React.FC<PhotoSlideContentProps> = ({
   photo,
   active,
   highQuality,
+  controlsVisible = true,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [bitmap, setBitmap] = useState<ImageBitmap | null>(null);
@@ -47,11 +50,17 @@ export const PhotoSlideContent: React.FC<PhotoSlideContentProps> = ({
   }>({ loaded: 0, total: 0, phase: 'download' });
   const [hudMode, setHudMode] = useState<HudMode>('hidden');
   const [livePlaying, setLivePlaying] = useState(false);
+  const liveVideoRef = useRef<HTMLVideoElement | null>(null);
+  const liveHoldTimerRef = useRef<number | null>(null);
+  const liveHoldActiveRef = useRef(false);
+  const liveHoldStartRef = useRef<{ x: number; y: number } | null>(null);
+  const suppressLiveClickRef = useRef(false);
+  const suppressLiveTimerRef = useRef<number | null>(null);
   const liveAsset = useLiveVideo(
     photo.meta.liveVideo,
     active && Boolean(photo.meta.liveVideo)
   );
-  const hasLive = Boolean(photo.meta.liveVideo);
+  const hasLive = Boolean(photo.meta.liveVideo) && !liveAsset.error;
   const previewSrc = photo.medium || '';
   const layoutSrc = previewSrc || photo.src;
   const isLoading = active && !bitmap && !imageError;
@@ -62,6 +71,116 @@ export const PhotoSlideContent: React.FC<PhotoSlideContentProps> = ({
       ? Math.min(100, Math.round((loadState.loaded / loadState.total) * 100))
       : null;
 
+  const stopLiveHold = () => {
+    if (liveHoldTimerRef.current !== null) {
+      window.clearTimeout(liveHoldTimerRef.current);
+      liveHoldTimerRef.current = null;
+    }
+    liveHoldActiveRef.current = false;
+    liveHoldStartRef.current = null;
+    setLivePlaying(false);
+    liveVideoRef.current?.pause();
+  };
+
+  const clearLiveHold = () => {
+    if (liveHoldTimerRef.current !== null) {
+      window.clearTimeout(liveHoldTimerRef.current);
+      liveHoldTimerRef.current = null;
+    }
+    liveHoldStartRef.current = null;
+  };
+
+  const scheduleLiveClickSuppression = () => {
+    suppressLiveClickRef.current = true;
+    if (suppressLiveTimerRef.current !== null) {
+      window.clearTimeout(suppressLiveTimerRef.current);
+    }
+    suppressLiveTimerRef.current = window.setTimeout(() => {
+      suppressLiveClickRef.current = false;
+      suppressLiveTimerRef.current = null;
+    }, 700);
+  };
+
+  const toggleLivePlayback = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    if (!hasLive) return;
+    if (livePlaying) {
+      stopLiveHold();
+    } else {
+      setLivePlaying(true);
+    }
+  };
+
+  const handlePhotoPointerDown = (
+    event: React.PointerEvent<HTMLDivElement>
+  ) => {
+    if (!active || !hasLive || !controlsVisible) return;
+    const target = event.target;
+    if (target instanceof Element && target.closest('button')) return;
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+
+    clearLiveHold();
+    liveHoldStartRef.current = { x: event.clientX, y: event.clientY };
+    liveHoldTimerRef.current = window.setTimeout(() => {
+      liveHoldTimerRef.current = null;
+      liveHoldActiveRef.current = true;
+      scheduleLiveClickSuppression();
+      setLivePlaying(true);
+    }, 450);
+  };
+
+  const handlePhotoPointerMove = (
+    event: React.PointerEvent<HTMLDivElement>
+  ) => {
+    const start = liveHoldStartRef.current;
+    if (!start) return;
+    if (Math.hypot(event.clientX - start.x, event.clientY - start.y) <= 10) {
+      return;
+    }
+
+    clearLiveHold();
+    if (liveHoldActiveRef.current) {
+      liveHoldActiveRef.current = false;
+      scheduleLiveClickSuppression();
+      stopLiveHold();
+    }
+  };
+
+  const handlePhotoPointerEnd = () => {
+    clearLiveHold();
+    if (!liveHoldActiveRef.current) return;
+    liveHoldActiveRef.current = false;
+    scheduleLiveClickSuppression();
+    stopLiveHold();
+  };
+
+  const handlePhotoClickCapture = (event: React.MouseEvent) => {
+    if (!suppressLiveClickRef.current) return;
+    suppressLiveClickRef.current = false;
+    if (suppressLiveTimerRef.current !== null) {
+      window.clearTimeout(suppressLiveTimerRef.current);
+      suppressLiveTimerRef.current = null;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+  };
+
+  useEffect(() => {
+    return () => {
+      if (liveHoldTimerRef.current !== null) {
+        window.clearTimeout(liveHoldTimerRef.current);
+      }
+      if (suppressLiveTimerRef.current !== null) {
+        window.clearTimeout(suppressLiveTimerRef.current);
+      }
+      liveVideoRef.current?.pause();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!controlsVisible) stopLiveHold();
+  }, [controlsVisible]);
+
   useEffect(() => {
     if (!active) {
       setBitmap(null);
@@ -70,6 +189,12 @@ export const PhotoSlideContent: React.FC<PhotoSlideContentProps> = ({
       setLoadState({ loaded: 0, total: 0, phase: 'download' });
       setHudMode('hidden');
       setLivePlaying(false);
+      liveHoldActiveRef.current = false;
+      liveHoldStartRef.current = null;
+      if (liveHoldTimerRef.current !== null) {
+        window.clearTimeout(liveHoldTimerRef.current);
+        liveHoldTimerRef.current = null;
+      }
       return;
     }
 
@@ -86,10 +211,10 @@ export const PhotoSlideContent: React.FC<PhotoSlideContentProps> = ({
         ? `${photo.original}${photo.original.includes('?') ? '&' : '?'}retry=${retryToken}`
         : photo.original;
 
-    const loadBlob = () =>
+    const openBlob = (url: string) =>
       new Promise<Blob>((resolve, reject) => {
         xhr = new XMLHttpRequest();
-        xhr.open('GET', requestUrl);
+        xhr.open('GET', url);
         xhr.responseType = 'blob';
         xhr.onprogress = (event) => {
           if (cancelled) return;
@@ -115,6 +240,51 @@ export const PhotoSlideContent: React.FC<PhotoSlideContentProps> = ({
         xhr.onerror = () => reject(new Error('Network error'));
         xhr.onabort = () => reject(new DOMException('Aborted', 'AbortError'));
         xhr.send();
+      });
+
+    const loadBlob = async () => {
+      let lastError: unknown = new Error('Network error');
+
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        if (cancelled) break;
+
+        const url =
+          attempt === 0
+            ? requestUrl
+            : `${requestUrl}${requestUrl.includes('?') ? '&' : '?'}autoRetry=${attempt}&t=${Date.now()}`;
+
+        try {
+          return await openBlob(url);
+        } catch (error) {
+          lastError = error;
+          if (cancelled) break;
+          if (error instanceof Error && /^HTTP 4/.test(error.message)) {
+            break;
+          }
+          if (attempt < 2) {
+            await new Promise((resolve) =>
+              window.setTimeout(resolve, 260 * (attempt + 1))
+            );
+          }
+        }
+      }
+
+      throw lastError;
+    };
+
+    const loadFallbackBitmap = () =>
+      new Promise<ImageBitmap>((resolve, reject) => {
+        const image = new Image();
+        image.crossOrigin = 'anonymous';
+        image.decoding = 'async';
+        image.onload = () => {
+          createImageBitmap(image, { imageOrientation: 'from-image' }).then(
+            resolve,
+            reject
+          );
+        };
+        image.onerror = () => reject(new Error('Image fallback failed'));
+        image.src = requestUrl;
       });
 
     const load = async () => {
@@ -148,6 +318,21 @@ export const PhotoSlideContent: React.FC<PhotoSlideContentProps> = ({
         setBitmap(nextBitmap);
         setHudMode('complete');
       } catch {
+        if (cancelled) return;
+
+        if (!isHeicUrl(photo.original)) {
+          try {
+            const fallbackBitmap = await loadFallbackBitmap();
+            if (cancelled) {
+              fallbackBitmap.close();
+              return;
+            }
+            setBitmap(fallbackBitmap);
+            setHudMode('complete');
+            return;
+          } catch {}
+        }
+
         if (!cancelled) {
           setImageError(true);
           setHudMode('hidden');
@@ -210,7 +395,18 @@ export const PhotoSlideContent: React.FC<PhotoSlideContentProps> = ({
   }, [hudMode]);
 
   return (
-    <div className="relative h-full w-full overflow-hidden">
+    <div
+      className="relative h-full w-full overflow-hidden"
+      onPointerDown={handlePhotoPointerDown}
+      onPointerMove={handlePhotoPointerMove}
+      onPointerUp={handlePhotoPointerEnd}
+      onPointerCancel={handlePhotoPointerEnd}
+      onPointerLeave={handlePhotoPointerEnd}
+      onClickCapture={handlePhotoClickCapture}
+      onContextMenu={(event) => {
+        if (hasLive) event.preventDefault();
+      }}
+    >
       <div
         className="pointer-events-none absolute inset-0 overflow-hidden"
         aria-hidden="true"
@@ -323,20 +519,29 @@ export const PhotoSlideContent: React.FC<PhotoSlideContentProps> = ({
       )}
 
       {active && imageError && (
-        <button
-          type="button"
-          onClick={() => setRetryToken((token) => token + 1)}
-          className="absolute bottom-20 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1.5 border border-rose-300/30 bg-rose-950/85 px-2.5 py-1.5 font-mono text-[10px] text-rose-100 shadow-lg backdrop-blur-md"
-        >
-          <RotateCcw className="h-3 w-3" />
-          重试原图
-        </button>
+        <div className="pointer-events-none absolute inset-x-0 bottom-20 z-20 flex justify-center">
+          <button
+            type="button"
+            data-custom-sound
+            onClick={() => setRetryToken((token) => token + 1)}
+            className="retry-original-button pointer-events-auto flex items-center gap-2 px-3 py-2"
+            title="重新加载原图"
+            aria-label="重新加载原图"
+          >
+            <RotateCcw className="retry-original-icon h-3.5 w-3.5" />
+            <span className="font-pixel text-[8px] tracking-[0.12em]">
+              RETRY
+            </span>
+            <span className="font-mono text-[10px]">重试原图</span>
+          </button>
+        </div>
       )}
 
       {active && hasLive && (
         <>
           {livePlaying && liveAsset.objectUrl ? (
             <video
+              ref={liveVideoRef}
               key={photo.id}
               src={liveAsset.objectUrl}
               poster={photo.src}
@@ -347,19 +552,37 @@ export const PhotoSlideContent: React.FC<PhotoSlideContentProps> = ({
               className="absolute inset-0 z-10 h-full w-full object-contain"
             />
           ) : null}
-          <button
-            type="button"
-            onClick={() => setLivePlaying((current) => !current)}
-            className="absolute bottom-4 left-4 z-20 flex items-center gap-1.5 border border-white/25 bg-slate-950/75 px-2.5 py-1.5 font-mono text-[10px] text-cyan-100 shadow-lg backdrop-blur hover:bg-slate-900/90"
-            title={livePlaying ? '暂停实况照片' : '播放实况照片'}
+          <div
+            className={`live-hold-dock absolute left-4 top-4 z-20 ${
+              controlsVisible
+                ? 'live-hold-dock-enter'
+                : 'live-hold-dock-exit'
+            }`}
+            aria-hidden={!controlsVisible}
           >
-            {livePlaying ? (
-              <Pause className="h-3.5 w-3.5" />
-            ) : (
-              <Play className="h-3.5 w-3.5" />
-            )}
-            LIVE
-          </button>
+            <button
+              type="button"
+              data-custom-sound
+              onClick={toggleLivePlayback}
+              onContextMenu={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+              }}
+              className="live-hold-button"
+              title={livePlaying ? '停止实况播放' : '播放实况照片'}
+              aria-label={livePlaying ? '停止实况播放' : '播放实况照片'}
+              aria-pressed={livePlaying}
+              tabIndex={controlsVisible ? undefined : -1}
+            >
+              <LiveProgressRing
+                progress={liveAsset.progress}
+                loaded={liveAsset.loaded}
+                playing={livePlaying}
+                size={40}
+                className="shadow-lg shadow-slate-950/30"
+              />
+            </button>
+          </div>
         </>
       )}
     </div>

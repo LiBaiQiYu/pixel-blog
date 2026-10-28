@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { CornerDownLeft, Image as ImageIcon, Terminal } from 'lucide-react';
 import { useLiveVideo } from '../hooks/useLiveVideo';
 import { LiquidPixelCard } from './LiquidPixelCard';
+import { LiveProgressRing } from './LiveProgressRing';
 import { PhotoSwiperDetail } from './PhotoSwiperDetail';
 import { GALLERY_CATEGORIES, GALLERY_PHOTOS } from '../data/gallery';
 import type { GalleryPhoto } from '../types/gallery';
@@ -49,17 +50,12 @@ const TerminalGalleryCard: React.FC<{
   const suppressClickRef = useRef(false);
   const pressStartRef = useRef<{ x: number; y: number } | null>(null);
   const pendingPlayRef = useRef(false);
-  const hasLive = Boolean(photo.meta.liveVideo);
+  const hasLiveSource = Boolean(photo.meta.liveVideo);
   const liveAsset = useLiveVideo(
     photo.meta.liveVideo,
-    hasLive && thumbnailLoaded
+    hasLiveSource && thumbnailLoaded
   );
-  const percent = Math.round(
-    (liveAsset.loaded ? 1 : liveAsset.progress) * 100
-  );
-  const blocks = 6;
-  const filled = Math.round((percent / 100) * blocks);
-  const progressBar = `${'█'.repeat(filled)}${'░'.repeat(blocks - filled)}`;
+  const hasLive = hasLiveSource && !liveAsset.error;
 
   const playLive = () => {
     const video = videoRef.current;
@@ -204,13 +200,13 @@ const TerminalGalleryCard: React.FC<{
           [{String(index + 1).padStart(2, '0')}]
         </span>
         {hasLive && (
-          <span className="absolute right-2 top-2 border border-emerald-500/40 bg-slate-950/85 px-1.5 py-0.5 font-mono text-[8px] text-emerald-300">
-            <span className={playing ? 'text-cyan-300' : ''}>LIVE</span>
-            <span className="ml-1 tracking-[-0.08em] text-emerald-400/80">
-              [{progressBar}]
-            </span>
-            <span className="ml-1 text-slate-400">{percent}%</span>
-          </span>
+          <LiveProgressRing
+            progress={liveAsset.progress}
+            loaded={liveAsset.loaded}
+            playing={playing}
+            size={28}
+            className="absolute right-2 top-2 shadow-lg shadow-slate-950/30"
+          />
         )}
       </div>
       <div className="space-y-1 p-2.5">

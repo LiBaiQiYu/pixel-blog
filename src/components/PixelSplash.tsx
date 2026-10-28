@@ -153,6 +153,7 @@ function createMotion(
 
 function scheduleFill(
   shards: SplashShard[],
+  start = 0,
   fillSpan = FILL_DURATION - 820
 ) {
   for (let i = shards.length - 1; i > 0; i -= 1) {
@@ -163,6 +164,7 @@ function scheduleFill(
   shards.forEach((shard, index) => {
     const fillDuration = randomBetween(460, 760);
     const slot =
+      start +
       (index / Math.max(1, shards.length - 1)) * fillSpan +
       randomBetween(-20, 20);
     shard.fillDuration = fillDuration;
@@ -173,76 +175,17 @@ function scheduleFill(
   });
 }
 
-function createShards(width: number, height: number, isDark: boolean) {
-  const shards: SplashShard[] = [];
-  const cell = Math.max(
-    14,
-    Math.min(46, Math.sqrt((width * height) / 3200))
-  );
-
-  let y = 0;
-  while (y < height) {
-    const rowHeight = Math.min(
-      height - y,
-      Math.max(7, Math.round(cell * randomBetween(0.7, 1.35)))
-    );
-    let x = 0;
-
-    while (x < width) {
-      const shardWidth = Math.min(
-        width - x,
-        Math.max(7, Math.round(cell * randomBetween(0.65, 1.45)))
-      );
-      const centerX = x + shardWidth / 2;
-      const centerY = y + rowHeight / 2;
-      const entry = createEntry(width, height);
-      const motion = createMotion(width, height, centerX, centerY);
-      const { color, accent } = createShardColor(isDark);
-      const accentSize = Math.max(
-        2,
-        Math.round(Math.min(shardWidth, rowHeight) * randomBetween(0.18, 0.3))
-      );
-
-      shards.push({
-        x,
-        y,
-        w: shardWidth,
-        h: rowHeight,
-        vx: motion.vx,
-        vy: motion.vy,
-        entryX: entry.entryX,
-        entryY: entry.entryY,
-        entryRotation: entry.entryRotation,
-        fillDelay: 0,
-        fillDuration: 1,
-        burstDelay: motion.burstDelay,
-        color,
-        accent,
-        outline: null,
-        accentX: Math.max(
-          1,
-          Math.round(randomBetween(1, shardWidth - accentSize - 1))
-        ),
-        accentY: Math.max(
-          1,
-          Math.round(randomBetween(1, rowHeight - accentSize - 1))
-        ),
-        accentSize,
-        trail: Math.random() > 0.68,
-      });
-
-      x += shardWidth;
-    }
-
-    y += rowHeight;
-  }
-
-  scheduleFill(shards);
-  return shards;
+interface LoadingLayout {
+  cell: number;
+  cols: number;
+  rows: number;
+  occupied: Set<number>;
+  shards: SplashShard[];
 }
 
-function createLoadingShards(width: number, height: number) {
+function createLoadingLayout(width: number, height: number): LoadingLayout {
   const shards: SplashShard[] = [];
+  const occupied = new Set<number>();
   const word = 'LOADING';
   const letterWidth = 5;
   const letterGap = 1;
@@ -255,8 +198,16 @@ function createLoadingShards(width: number, height: number) {
       Math.floor(Math.min((width * 0.72) / columns, (height * 0.22) / rows))
     )
   );
-  const startX = Math.floor((width - columns * cell) / 2);
-  const startY = Math.floor((height - rows * cell) / 2);
+  const cols = Math.ceil(width / cell);
+  const gridRows = Math.ceil(height / cell);
+  const startCol = Math.max(
+    0,
+    Math.floor((width - columns * cell) / 2 / cell)
+  );
+  const startRow = Math.max(
+    0,
+    Math.floor((height - rows * cell) / 2 / cell)
+  );
 
   word.split('').forEach((letter, letterIndex) => {
     const pattern = LOADING_GLYPHS[letter];
@@ -267,20 +218,26 @@ function createLoadingShards(width: number, height: number) {
       row.split('').forEach((value, columnIndex) => {
         if (value !== '1') return;
 
-        const x =
-          startX +
-          (letterIndex * (letterWidth + letterGap) + columnIndex) * cell;
-        const y = startY + rowIndex * cell;
-        const centerX = x + cell / 2;
-        const centerY = y + cell / 2;
+        const gridX =
+          startCol +
+          letterIndex * (letterWidth + letterGap) +
+          columnIndex;
+        const gridY = startRow + rowIndex;
+        const x = gridX * cell;
+        const y = gridY * cell;
+        const shardWidth = Math.min(cell, width - x);
+        const shardHeight = Math.min(cell, height - y);
+        const centerX = x + shardWidth / 2;
+        const centerY = y + shardHeight / 2;
         const entry = createEntry(width, height);
         const motion = createMotion(width, height, centerX, centerY);
 
+        occupied.add(gridY * cols + gridX);
         shards.push({
           x,
           y,
-          w: cell,
-          h: cell,
+          w: shardWidth,
+          h: shardHeight,
           vx: motion.vx,
           vy: motion.vy,
           entryX: entry.entryX,
@@ -301,7 +258,110 @@ function createLoadingShards(width: number, height: number) {
     });
   });
 
-  scheduleFill(shards, 2050);
+  scheduleFill(shards, 0, 1400);
+  return { cell, cols, rows: gridRows, occupied, shards };
+}
+
+function createShards(
+  width: number,
+  height: number,
+  isDark: boolean,
+  layout: LoadingLayout
+) {
+  const { cell, cols, rows, occupied } = layout;
+  const assigned = new Uint8Array(cols * rows);
+  occupied.forEach((index) => {
+    assigned[index] = 1;
+  });
+  const shards: SplashShard[] = [];
+
+  for (let gridY = 0; gridY < rows; gridY += 1) {
+    for (let gridX = 0; gridX < cols; gridX += 1) {
+      if (assigned[gridY * cols + gridX]) continue;
+
+      let maxWidth = 1;
+      while (
+        gridX + maxWidth < cols &&
+        !assigned[gridY * cols + gridX + maxWidth]
+      ) {
+        maxWidth += 1;
+      }
+
+      let maxHeight = 1;
+      while (gridY + maxHeight < rows) {
+        let free = true;
+        for (let dx = 0; dx < maxWidth; dx += 1) {
+          if (
+            assigned[(gridY + maxHeight) * cols + gridX + dx]
+          ) {
+            free = false;
+            break;
+          }
+        }
+        if (!free) break;
+        maxHeight += 1;
+      }
+
+      const widthCells =
+        1 + Math.floor(Math.random() * Math.min(4, maxWidth));
+      const heightCells =
+        1 + Math.floor(Math.random() * Math.min(3, maxHeight));
+
+      for (let dy = 0; dy < heightCells; dy += 1) {
+        for (let dx = 0; dx < widthCells; dx += 1) {
+          assigned[(gridY + dy) * cols + gridX + dx] = 1;
+        }
+      }
+
+      const x = gridX * cell;
+      const y = gridY * cell;
+      const shardWidth = Math.min(width - x, widthCells * cell);
+      const shardHeight = Math.min(height - y, heightCells * cell);
+      const centerX = x + shardWidth / 2;
+      const centerY = y + shardHeight / 2;
+      const entry = createEntry(width, height);
+      const motion = createMotion(width, height, centerX, centerY);
+      const { color, accent } = createShardColor(isDark);
+      const accentSize = Math.max(
+        2,
+        Math.round(
+          Math.min(shardWidth, shardHeight) * randomBetween(0.18, 0.3)
+        )
+      );
+
+      shards.push({
+        x,
+        y,
+        w: shardWidth,
+        h: shardHeight,
+        vx: motion.vx,
+        vy: motion.vy,
+        entryX: entry.entryX,
+        entryY: entry.entryY,
+        entryRotation: entry.entryRotation,
+        fillDelay: 0,
+        fillDuration: 1,
+        burstDelay: motion.burstDelay,
+        color,
+        accent,
+        outline: null,
+        accentX: Math.max(
+          1,
+          Math.round(randomBetween(1, shardWidth - accentSize - 1))
+        ),
+        accentY: Math.max(
+          1,
+          Math.round(randomBetween(1, shardHeight - accentSize - 1))
+        ),
+        accentSize,
+        trail: Math.random() > 0.68,
+      });
+
+      gridX += widthCells - 1;
+    }
+  }
+
+  scheduleFill(shards, 2100, 1100);
   return shards;
 }
 
@@ -444,7 +504,6 @@ function drawShard(
 function drawSplash(
   context: CanvasRenderingContext2D,
   shards: SplashShard[],
-  loadingShards: SplashShard[],
   elapsed: number,
   width: number,
   height: number
@@ -452,9 +511,6 @@ function drawSplash(
   context.clearRect(0, 0, width, height);
 
   for (const shard of shards) {
-    drawShard(context, shard, elapsed);
-  }
-  for (const shard of loadingShards) {
     drawShard(context, shard, elapsed);
   }
 
@@ -506,8 +562,11 @@ export const PixelSplash: React.FC = () => {
     overlay.style.backgroundColor = isDark ? '#000000' : '#ffffff';
     overlay.dataset.phase = 'fill';
 
-    const shards = createShards(width, height, isDark);
-    const loadingShards = createLoadingShards(width, height);
+    const loadingLayout = createLoadingLayout(width, height);
+    const shards = [
+      ...createShards(width, height, isDark, loadingLayout),
+      ...loadingLayout.shards,
+    ];
     if (shards.length === 0) {
       finish();
       return;
@@ -530,7 +589,7 @@ export const PixelSplash: React.FC = () => {
         overlay.dataset.phase = 'burst';
       }
 
-      drawSplash(context, shards, loadingShards, elapsed, width, height);
+      drawSplash(context, shards, elapsed, width, height);
       animationFrame = window.requestAnimationFrame(tick);
     };
 
