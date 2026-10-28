@@ -19,6 +19,60 @@ CREATE TABLE IF NOT EXISTS post_views (
   PRIMARY KEY (post_id, client_id)
 );
 
+CREATE TABLE IF NOT EXISTS site_stats (
+  stat_key TEXT PRIMARY KEY,
+  value INTEGER NOT NULL DEFAULT 0,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS site_visits (
+  client_id TEXT PRIMARY KEY,
+  visited_at INTEGER NOT NULL
+);
+
+INSERT OR IGNORE INTO site_stats (stat_key, value) VALUES ('visits', 0);
+
+CREATE TABLE IF NOT EXISTS photo_reactions (
+  photo_id TEXT NOT NULL,
+  client_id TEXT NOT NULL,
+  reaction TEXT NOT NULL CHECK (
+    reaction IN (
+      'stunning', 'cozy', 'solid', 'shock', 'intriguing',
+      'plain', 'moving', 'blank', 'wistful'
+    )
+  ),
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (photo_id, client_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_photo_reactions_photo
+ON photo_reactions(photo_id);
+
+CREATE TABLE IF NOT EXISTS photo_stats (
+  photo_id TEXT PRIMARY KEY,
+  views INTEGER NOT NULL DEFAULT 0,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS photo_views (
+  photo_id TEXT NOT NULL,
+  client_id TEXT NOT NULL,
+  viewed_at INTEGER NOT NULL,
+  PRIMARY KEY (photo_id, client_id)
+);
+
+CREATE TABLE IF NOT EXISTS photo_comments (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  photo_id TEXT NOT NULL,
+  nickname TEXT NOT NULL,
+  content TEXT NOT NULL,
+  client_id TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_photo_comments_photo
+ON photo_comments(photo_id, id DESC);
+
 CREATE TRIGGER IF NOT EXISTS trg_post_likes_insert
 AFTER INSERT ON post_likes
 BEGIN

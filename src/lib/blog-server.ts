@@ -2,7 +2,6 @@ import 'server-only';
 import { cache } from 'react';
 import type { BlogPost } from '../types/blog';
 import { APP_ENV } from './app-env';
-import { listBlogPosts } from '../../server/blog/store';
 
 function normalize(post: BlogPost): BlogPost {
   return {
@@ -32,12 +31,7 @@ async function readPublicManifest(): Promise<BlogPost[]> {
 }
 
 export const getPublicPosts = cache(async (): Promise<BlogPost[]> => {
-  let posts: BlogPost[];
-  try {
-    posts = await listBlogPosts();
-  } catch {
-    posts = await readPublicManifest();
-  }
+  const posts = await readPublicManifest();
 
   return posts
     .filter((post) => post && typeof post.id === 'string')

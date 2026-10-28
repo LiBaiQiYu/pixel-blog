@@ -1,7 +1,7 @@
 interface D1Result<T = unknown> {
   results?: T[];
   success: boolean;
-  meta?: { changes?: number };
+  meta?: { changes?: number; last_row_id?: number };
 }
 
 interface D1PreparedStatement {
@@ -30,9 +30,53 @@ interface ViewRow {
   viewed_at: number;
 }
 
+interface PhotoCommentRow {
+  id: number;
+  nickname: string;
+  content: string;
+  created_at: string;
+}
+
 const VIEW_WINDOW_MS = 6 * 60 * 60 * 1000;
+const PHOTO_VIEW_WINDOW_MS = 6 * 60 * 60 * 1000;
+const SITE_VISIT_WINDOW_MS = 24 * 60 * 60 * 1000;
+const PHOTO_COMMENT_LIMIT = 100;
 const POST_ID_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
 const CLIENT_ID_PATTERN = /^[A-Za-z0-9._:-]{8,128}$/;
+
+const PHOTO_REACTIONS = [
+  'stunning',
+  'cozy',
+  'solid',
+  'shock',
+  'intriguing',
+  'plain',
+  'moving',
+  'blank',
+  'wistful',
+] as const;
+type PhotoReaction = (typeof PHOTO_REACTIONS)[number];
+
+function isPhotoReaction(value: unknown): value is PhotoReaction {
+  return (
+    typeof value === 'string' &&
+    (PHOTO_REACTIONS as readonly string[]).includes(value)
+  );
+}
+
+function emptyReactionCounts(): Record<PhotoReaction, number> {
+  return {
+    stunning: 0,
+    cozy: 0,
+    solid: 0,
+    shock: 0,
+    intriguing: 0,
+    plain: 0,
+    moving: 0,
+    blank: 0,
+    wistful: 0,
+  };
+}
 
 const CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
@@ -94,6 +138,256 @@ async function getAllStats(db: D1Database) {
     };
   }
   return stats;
+}
+
+async function getSiteVisits(db: D1Database) {
+  const row = await db
+    .prepare("SELECT value FROM site_stats WHERE stat_key = 'visits'")
+    .first<{ value: number }>();
+  return Number(row?.value ?? 0);
+}
+
+async function recordSiteVisit(db: D1Database, clientId: string) {
+  const now = Date.now();
+  const existing = await db
+    .prepare('SELECT visited_at FROM site_visits WHERE client_id = ?')
+    .bind(clientId)
+    .first<{ visited_at: number }>();
+
+  const shouldCount =
+    !existing || now - Number(existing.visited_at) > SITE_VISIT_WINDOW_MS;
+
+  if (shouldCount) {
+    await db.batch([
+      db
+        .prepare(
+          `INSERT INTO site_visits (client_id, visited_at)
+           VALUES (?, ?)
+           ON CONFLICT(client_id) DO UPDATE SET visited_at = excluded.visited_at`
+        )
+        .bind(clientId, now),
+      db
+        .prepare(
+          `INSERT INTO site_stats (stat_key, value, updated_at)
+           VALUES ('visits', 1, CURRENT_TIMESTAMP)
+           ON CONFLICT(stat_key) DO UPDATE SET
+             value = site_stats.value + 1,
+             updated_at = CURRENT_TIMESTAMP`
+        ),
+    ]);
+  }
+
+  return {
+    counted: shouldCount,
+    visits: await getSiteVisits(db),
+  };
+}
+
+async function getPhotoReactionState(
+  db: D1Database,
+  photoId: string,
+  clientId: string
+) {
+  const rows = await db
+    .prepare(
+      `SELECT reaction, COUNT(*) AS count
+       FROM photo_reactions
+       WHERE photo_id = ?
+       GROUP BY reaction`
+    )
+    .bind(photoId)
+    .all<{ reaction: string; count: number }>();
+
+  const counts = emptyReactionCounts();
+  for (const row of rows.results ?? []) {
+    if (isPhotoReaction(row.reaction)) {
+      counts[row.reaction] = Number(row.count ?? 0);
+    }
+  }
+
+  const mineRow = await db
+    .prepare(
+      `SELECT reaction
+       FROM photo_reactions
+       WHERE photo_id = ? AND client_id = ?`
+    )
+    .bind(photoId, clientId)
+    .first<{ reaction: string }>();
+
+  return {
+    counts,
+    mine: isPhotoReaction(mineRow?.reaction) ? mineRow.reaction : null,
+  };
+}
+
+async function setPhotoReaction(
+  db: D1Database,
+  photoId: string,
+  clientId: string,
+  reaction: PhotoReaction | null
+) {
+  if (reaction === null) {
+    await db
+      .prepare(
+        'DELETE FROM photo_reactions WHERE photo_id = ? AND client_id = ?'
+      )
+      .bind(photoId, clientId)
+      .run();
+  } else {
+    await db
+      .prepare(
+        `INSERT INTO photo_reactions (photo_id, client_id, reaction)
+         VALUES (?, ?, ?)
+         ON CONFLICT(photo_id, client_id) DO UPDATE SET
+           reaction = excluded.reaction`
+      )
+      .bind(photoId, clientId, reaction)
+      .run();
+  }
+
+  return getPhotoReactionState(db, photoId, clientId);
+}
+
+function isoFromSqliteTimestamp(value: string) {
+  const parsed = new Date(value.includes('T') ? value : `${value.replace(' ', 'T')}Z`);
+  return Number.isNaN(parsed.getTime()) ? value : parsed.toISOString();
+}
+
+function serializePhotoComment(row: PhotoCommentRow) {
+  return {
+    id: Number(row.id),
+    nickname: row.nickname,
+    content: row.content,
+    createdAt: isoFromSqliteTimestamp(row.created_at),
+  };
+}
+
+async function getPhotoCommentCount(db: D1Database, photoId: string) {
+  const row = await db
+    .prepare('SELECT COUNT(*) AS count FROM photo_comments WHERE photo_id = ?')
+    .bind(photoId)
+    .first<{ count: number }>();
+  return Number(row?.count ?? 0);
+}
+
+async function listPhotoComments(db: D1Database, photoId: string) {
+  const [rows, total] = await Promise.all([
+    db
+      .prepare(
+        `SELECT id, nickname, content, created_at
+         FROM photo_comments
+         WHERE photo_id = ?
+         ORDER BY id DESC
+         LIMIT ?`
+      )
+      .bind(photoId, PHOTO_COMMENT_LIMIT)
+      .all<PhotoCommentRow>(),
+    getPhotoCommentCount(db, photoId),
+  ]);
+
+  return {
+    comments: (rows.results ?? []).map(serializePhotoComment),
+    total,
+  };
+}
+
+async function createPhotoComment(
+  db: D1Database,
+  photoId: string,
+  clientId: string,
+  nickname: string,
+  content: string
+) {
+  const result = await db
+    .prepare(
+      `INSERT INTO photo_comments (photo_id, nickname, content, client_id)
+       VALUES (?, ?, ?, ?)`
+    )
+    .bind(photoId, nickname, content, clientId)
+    .run();
+
+  const id = Number(result.meta?.last_row_id ?? 0);
+  const row =
+    id > 0
+      ? await db
+          .prepare(
+            `SELECT id, nickname, content, created_at
+             FROM photo_comments
+             WHERE id = ?`
+          )
+          .bind(id)
+          .first<PhotoCommentRow>()
+      : await db
+          .prepare(
+            `SELECT id, nickname, content, created_at
+             FROM photo_comments
+             WHERE photo_id = ?
+             ORDER BY id DESC
+             LIMIT 1`
+          )
+          .bind(photoId)
+          .first<PhotoCommentRow>();
+
+  return {
+    comment: row
+      ? serializePhotoComment(row)
+      : {
+          id,
+          nickname,
+          content,
+          createdAt: new Date().toISOString(),
+        },
+    total: await getPhotoCommentCount(db, photoId),
+  };
+}
+
+async function recordPhotoView(
+  db: D1Database,
+  photoId: string,
+  clientId: string
+) {
+  const now = Date.now();
+  const existing = await db
+    .prepare(
+      'SELECT viewed_at FROM photo_views WHERE photo_id = ? AND client_id = ?'
+    )
+    .bind(photoId, clientId)
+    .first<ViewRow>();
+
+  const shouldCount =
+    !existing || now - Number(existing.viewed_at) > PHOTO_VIEW_WINDOW_MS;
+
+  if (shouldCount) {
+    await db.batch([
+      db
+        .prepare(
+          `INSERT INTO photo_views (photo_id, client_id, viewed_at)
+           VALUES (?, ?, ?)
+           ON CONFLICT(photo_id, client_id) DO UPDATE SET viewed_at = excluded.viewed_at`
+        )
+        .bind(photoId, clientId, now),
+      db
+        .prepare(
+          `INSERT INTO photo_stats (photo_id, views, updated_at)
+           VALUES (?, 1, CURRENT_TIMESTAMP)
+           ON CONFLICT(photo_id) DO UPDATE SET
+             views = photo_stats.views + 1,
+             updated_at = CURRENT_TIMESTAMP`
+        )
+        .bind(photoId),
+    ]);
+  }
+
+  const stats = await db
+    .prepare('SELECT views FROM photo_stats WHERE photo_id = ?')
+    .bind(photoId)
+    .first<{ views: number }>();
+
+  return {
+    counted: shouldCount,
+    views: Number(stats?.views ?? 0),
+    comments: await getPhotoCommentCount(db, photoId),
+  };
 }
 
 async function getLikedPostIds(db: D1Database, clientId: string) {
@@ -183,6 +477,99 @@ export default {
         return json({ ok: true, stats: await getAllStats(env.DB) });
       }
 
+      if (request.method === 'GET' && path === '/site') {
+        return json({ ok: true, visits: await getSiteVisits(env.DB) });
+      }
+
+      if (request.method === 'GET' && path === '/photo-reactions') {
+        const photoId = url.searchParams.get('photoId');
+        const clientId = url.searchParams.get('clientId');
+        if (!isValidPostId(photoId) || !isValidClientId(clientId)) {
+          return json({ ok: false, error: 'invalid_payload' }, 400);
+        }
+        return json({
+          ok: true,
+          ...(await getPhotoReactionState(env.DB, photoId, clientId)),
+        });
+      }
+
+      if (request.method === 'POST' && path === '/photo-react') {
+        const body = await readJson(request);
+        if (
+          !body ||
+          !isValidPostId(body.photoId) ||
+          !isValidClientId(body.clientId) ||
+          (body.reaction !== null && !isPhotoReaction(body.reaction))
+        ) {
+          return json({ ok: false, error: 'invalid_payload' }, 400);
+        }
+
+        return json({
+          ok: true,
+          ...(await setPhotoReaction(
+            env.DB,
+            body.photoId,
+            body.clientId,
+            body.reaction as PhotoReaction | null
+          )),
+        });
+      }
+
+      if (request.method === 'GET' && path === '/photo-comments') {
+        const photoId = url.searchParams.get('photoId');
+        if (!isValidPostId(photoId)) {
+          return json({ ok: false, error: 'invalid_payload' }, 400);
+        }
+        return json({ ok: true, ...(await listPhotoComments(env.DB, photoId)) });
+      }
+
+      if (request.method === 'POST' && path === '/photo-comments') {
+        const body = await readJson(request);
+        const nickname =
+          typeof body?.nickname === 'string' ? body.nickname.trim() : '';
+        const content =
+          typeof body?.content === 'string' ? body.content.trim() : '';
+
+        if (
+          !body ||
+          !isValidPostId(body.photoId) ||
+          !isValidClientId(body.clientId) ||
+          nickname.length < 1 ||
+          nickname.length > 24 ||
+          content.length < 1 ||
+          content.length > 500
+        ) {
+          return json({ ok: false, error: 'invalid_payload' }, 400);
+        }
+
+        return json({
+          ok: true,
+          ...(await createPhotoComment(
+            env.DB,
+            body.photoId,
+            body.clientId,
+            nickname,
+            content
+          )),
+        });
+      }
+
+      if (request.method === 'POST' && path === '/photo-view') {
+        const body = await readJson(request);
+        if (
+          !body ||
+          !isValidPostId(body.photoId) ||
+          !isValidClientId(body.clientId)
+        ) {
+          return json({ ok: false, error: 'invalid_payload' }, 400);
+        }
+
+        return json({
+          ok: true,
+          ...(await recordPhotoView(env.DB, body.photoId, body.clientId)),
+        });
+      }
+
       if (request.method === 'GET' && path === '/likes') {
         const clientId = url.searchParams.get('clientId');
         if (!isValidClientId(clientId)) {
@@ -192,6 +579,15 @@ export default {
           ok: true,
           likedPostIds: await getLikedPostIds(env.DB, clientId),
         });
+      }
+
+      if (request.method === 'POST' && path === '/visit') {
+        const body = await readJson(request);
+        if (!body || !isValidClientId(body.clientId)) {
+          return json({ ok: false, error: 'invalid_payload' }, 400);
+        }
+
+        return json({ ok: true, ...(await recordSiteVisit(env.DB, body.clientId)) });
       }
 
       if (request.method === 'POST' && path === '/view') {

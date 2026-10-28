@@ -4,7 +4,7 @@
 
 [build.environment]
   NODE_VERSION = "20"
-  SECRETS_SCAN_OMIT_KEYS = "VITE_MAPBOX_ACCESS_TOKEN"
+  SECRETS_SCAN_OMIT_KEYS = "VITE_MAPBOX_ACCESS_TOKEN,NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"

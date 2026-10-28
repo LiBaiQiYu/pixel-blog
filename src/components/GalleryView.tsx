@@ -15,11 +15,10 @@ import {
 } from 'lucide-react';
 import { useLiveVideo } from '../hooks/useLiveVideo';
 import { LiveProgressRing } from './LiveProgressRing';
-import { PhotoDetail } from './PhotoDetail';
+import { PhotoSwiperDetail } from './PhotoSwiperDetail';
 import { GALLERY_CATEGORIES, GALLERY_PHOTOS } from '../data/gallery';
 import type { GalleryPhoto } from '../types/gallery';
 import type { ThemeMode } from '../types/blog';
-import { pixelAudio } from '../utils/sound';
 
 const GalleryMap = React.lazy(() =>
   import('./GalleryMap').then((module) => ({ default: module.GalleryMap }))
@@ -27,7 +26,10 @@ const GalleryMap = React.lazy(() =>
 
 interface GalleryViewProps {
   theme: ThemeMode;
-  onPreviewOpenChange?: (open: boolean) => void;
+  previewId: string | null;
+  onPreviewOpen: (id: string) => void;
+  onPreviewNavigate: (id: string) => void;
+  onPreviewClose: () => void;
   onBackHome?: () => void;
 }
 
@@ -312,12 +314,14 @@ const GalleryCard: React.FC<{
 
 export const GalleryView: React.FC<GalleryViewProps> = ({
   theme,
-  onPreviewOpenChange,
+  previewId,
+  onPreviewOpen,
+  onPreviewNavigate,
+  onPreviewClose,
   onBackHome,
 }) => {
   const [activeCategory, setActiveCategory] = useState<string>('全部');
   const [displayMode, setDisplayMode] = useState<'grid' | 'map'>('grid');
-  const [activeId, setActiveId] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(INITIAL_BATCH);
   const [batchStart, setBatchStart] = useState(0);
   const [columnCount, setColumnCount] = useState(getColumnCount);
@@ -329,16 +333,6 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);
-
-  // Let the app hide the navbar while the fullscreen photo viewer is open
-  React.useEffect(() => {
-    onPreviewOpenChange?.(Boolean(activeId));
-    return () => onPreviewOpenChange?.(false);
-  }, [activeId, onPreviewOpenChange]);
-
-  useEffect(() => {
-    if (activeId) pixelAudio.playCamera();
-  }, [activeId]);
 
   const filtered = useMemo(
     () =>
@@ -468,17 +462,14 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
   };
 
   const active = useMemo(
-    () => filtered.find((photo) => photo.id === activeId) || null,
-    [filtered, activeId]
+    () =>
+      previewId
+        ? filtered.find((photo) => photo.id === previewId) ||
+          GALLERY_PHOTOS.find((photo) => photo.id === previewId) ||
+          null
+        : null,
+    [filtered, previewId]
   );
-
-  const navigate = (direction: 1 | -1) => {
-    if (!active) return;
-    const index = filtered.findIndex((photo) => photo.id === active.id);
-    if (index === -1) return;
-    const next = filtered[(index + direction + filtered.length) % filtered.length];
-    setActiveId(next.id);
-  };
 
   return (
     <div className="space-y-5 pb-20">
@@ -584,7 +575,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
                     key={`${activeCategory}-${photo.id}`}
                     photo={photo}
                     loadDelay={loadDelay}
-                    onOpen={() => setActiveId(photo.id)}
+                    onOpen={() => onPreviewOpen(photo.id)}
                   />
                 );
               })}
@@ -618,7 +609,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
             photos={filtered}
             theme={theme}
             viewerOpen={Boolean(active)}
-            onOpen={(id) => setActiveId(id)}
+            onOpen={onPreviewOpen}
           />
         </Suspense>
       )}
@@ -633,12 +624,14 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
       )}
 
       {active && (
-        <PhotoDetail
+        <PhotoSwiperDetail
           photo={active}
-          photos={filtered}
+          photos={filtered.some((photo) => photo.id === active.id)
+            ? filtered
+            : [active]}
           theme={theme}
-          onClose={() => setActiveId(null)}
-          onNavigate={navigate}
+          onClose={onPreviewClose}
+          onActiveChange={onPreviewNavigate}
         />
       )}
     </div>

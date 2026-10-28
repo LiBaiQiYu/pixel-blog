@@ -624,6 +624,7 @@ function UploadPanel({
 }) {
   const [photos, setPhotos] = useState<File[]>([]);
   const [video, setVideo] = useState<File | null>(null);
+  const [showLocation, setShowLocation] = useState(true);
   const [fields, setFields] = useState({
     title: '',
     description: '',
@@ -727,6 +728,7 @@ function UploadPanel({
           for (const [key, value] of Object.entries(fields)) {
             if (value.trim()) body.append(key, value.trim());
           }
+          body.append('locationVisible', String(showLocation));
           xhr.send(body);
         });
       }
@@ -829,6 +831,23 @@ function UploadPanel({
             />
           </label>
         </div>
+
+        <label className="mt-3 flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-slate-300/60 bg-white/60 px-3 py-2.5 dark:border-white/10 dark:bg-slate-950/50">
+          <span>
+            <span className="block font-mono text-[11px] text-slate-700 dark:text-slate-200">
+              显示地理位置信息
+            </span>
+            <span className="mt-0.5 block font-mono text-[10px] text-slate-500 dark:text-slate-400">
+              关闭后隐藏地图、坐标和地点名称
+            </span>
+          </span>
+          <input
+            type="checkbox"
+            checked={showLocation}
+            onChange={(event) => setShowLocation(event.target.checked)}
+            className="h-4 w-4 shrink-0 accent-cyan-500"
+          />
+        </label>
 
         <button
           type="button"
@@ -1000,10 +1019,11 @@ function LibraryEditor({
     place: item.entry.place ?? '',
     tags: item.meta?.tags?.join(', ') ?? '',
     date: toLocalDateTime(item.entry.date),
+    locationVisible: item.entry.locationVisible !== false,
   });
   const [busy, setBusy] = useState(false);
 
-  const update = (key: keyof typeof form, value: string) => {
+  const update = (key: keyof typeof form, value: string | boolean) => {
     setForm((previous) => ({ ...previous, [key]: value }));
   };
 
@@ -1114,6 +1134,25 @@ function LibraryEditor({
           />
         </label>
       </div>
+
+      <label className="mt-3 flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-slate-300/60 bg-white/60 px-3 py-2.5 dark:border-white/10 dark:bg-slate-950/50">
+        <span>
+          <span className="block font-mono text-[11px] text-slate-700 dark:text-slate-200">
+            显示地理位置信息
+          </span>
+          <span className="mt-0.5 block font-mono text-[10px] text-slate-500 dark:text-slate-400">
+            关闭后隐藏地图、坐标和地点名称
+          </span>
+        </span>
+        <input
+          type="checkbox"
+          checked={form.locationVisible}
+          onChange={(event) =>
+            update('locationVisible', event.target.checked)
+          }
+          className="h-4 w-4 shrink-0 accent-cyan-500"
+        />
+      </label>
 
       <div className="mt-4 flex flex-wrap gap-2">
         <button

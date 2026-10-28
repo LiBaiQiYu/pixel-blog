@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   ArrowLeft,
   Terminal,
@@ -52,14 +53,25 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
   relatedPosts,
   backOriginRef,
 }) => {
-  const [sharedToast, setSharedToast] = useState(false);
+  const [shareFeedback, setShareFeedback] = useState<
+    'copied' | 'failed' | null
+  >(null);
   const [copiedRaw, setCopiedRaw] = useState(false);
   const [viewRawMd, setViewRawMd] = useState(false);
   const [seedDraft, setSeedDraft] = useState<string>(String(post.coverSeed));
+  const shareTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     setSeedDraft(String(post.coverSeed));
   }, [post.id, post.coverSeed]);
+
+  useEffect(() => {
+    return () => {
+      if (shareTimerRef.current) {
+        window.clearTimeout(shareTimerRef.current);
+      }
+    };
+  }, []);
 
   const toc = useMemo(() => extractMarkdownToc(post.markdown), [post.markdown]);
 
@@ -68,11 +80,25 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
     [post]
   );
 
-  const handleShare = () => {
-    navigator.clipboard.writeText(window.location.href);
-    pixelAudio.playCopy();
-    setSharedToast(true);
-    setTimeout(() => setSharedToast(false), 2000);
+  const showShareFeedback = (next: 'copied' | 'failed') => {
+    if (shareTimerRef.current) {
+      window.clearTimeout(shareTimerRef.current);
+    }
+    setShareFeedback(next);
+    shareTimerRef.current = window.setTimeout(
+      () => setShareFeedback(null),
+      2000
+    );
+  };
+
+  const handleShare = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      pixelAudio.playCopy();
+      showShareFeedback('copied');
+    } catch {
+      showShareFeedback('failed');
+    }
   };
 
   const handleCopyRawMarkdown = () => {
@@ -148,10 +174,34 @@ export const ArticleModal: React.FC<ArticleModalProps> = ({
             className="liquid-glass-strong px-2.5 sm:px-3 py-2 rounded-xl flex items-center gap-1.5 text-xs font-mono text-slate-700 dark:text-slate-300 shadow-md"
           >
             <Share2 className="w-3.5 h-3.5" />
-            <span className="hidden xs:inline">{sharedToast ? '已复制!' : '分享'}</span>
+            <span className="whitespace-nowrap">
+              {shareFeedback === 'copied'
+                ? '已复制'
+                : shareFeedback === 'failed'
+                  ? '复制失败'
+                  : '分享'}
+            </span>
           </button>
         </div>
       </div>
+
+      {shareFeedback &&
+        createPortal(
+          <div
+            role="status"
+            aria-live="polite"
+            className={`pointer-events-none fixed bottom-6 left-1/2 z-[90] -translate-x-1/2 animate-fadeIn rounded-xl border px-4 py-2.5 font-mono text-xs shadow-2xl backdrop-blur-xl ${
+              shareFeedback === 'copied'
+                ? 'border-emerald-400/40 bg-emerald-50/95 text-emerald-700 dark:border-emerald-300/25 dark:bg-emerald-950/90 dark:text-emerald-200'
+                : 'border-rose-400/40 bg-rose-50/95 text-rose-700 dark:border-rose-300/25 dark:bg-rose-950/90 dark:text-rose-200'
+            }`}
+          >
+            {shareFeedback === 'copied'
+              ? '文章链接已复制'
+              : '复制失败，请手动复制地址栏'}
+          </div>,
+          document.body
+        )}
 
       {/* Hero Article Header Card: Pure Cover Art + Clearly Separated Title Panel */}
       <LiquidPixelCard accent={post.accent} strong className="p-0 overflow-hidden">

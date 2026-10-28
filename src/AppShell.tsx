@@ -15,8 +15,15 @@ import { AUTHOR_PROFILE } from './data/posts';
 import { fetchBlogPosts } from './lib/blog-api';
 import { APP_ENV } from './lib/app-env';
 import { startRouteTransition } from './lib/route-transition';
-import { BlogPost, ContentPage, ThemeMode, ViewMode } from './types/blog';
+import {
+  BlogPost,
+  ContentPage,
+  ThemeMode,
+  ThemePreference,
+  ViewMode,
+} from './types/blog';
 import { AmbientPixelBackground } from './components/AmbientPixelBackground';
+import { PixelSplash } from './components/PixelSplash';
 import { BlogShellProvider } from './components/BlogShellContext';
 import { Navbar } from './components/Navbar';
 import { StandardBlogView } from './components/StandardBlogView';
@@ -28,7 +35,7 @@ import { isWeatherKind, resolveWeatherVisual } from './utils/weather';
 import type { WeatherKind } from './types/weather';
 import { pixelAudio } from './utils/sound';
 import type { MusicMood } from './utils/sound';
-import { Terminal, LayoutGrid, Settings, Minimize2 } from 'lucide-react';
+import { Eye, Terminal, LayoutGrid, Settings, Minimize2 } from 'lucide-react';
 import { generateRandomSeed } from './components/PixelArtwork';
 import {
   PixelCursorEffects,
@@ -38,6 +45,7 @@ import {
   fetchLikedPostIds,
   fetchPostStats,
   recordPostView,
+  recordSiteVisit,
   setPostLike,
 } from './lib/post-stats';
 import type { PostStats } from './lib/post-stats';
@@ -73,6 +81,11 @@ export const AppShell: React.FC<AppShellProps> = ({
   const router = useRouter();
   const pathname = usePathname();
   const isArticleRoute = pathname.startsWith('/posts/');
+  const isGalleryPreviewRoute = pathname.startsWith('/gallery/');
+  const galleryPreviewId = isGalleryPreviewRoute
+    ? decodeURIComponent(pathname.slice('/gallery/'.length).split('/')[0])
+    : null;
+  const galleryPreviewOpen = Boolean(galleryPreviewId);
   const contentPage: ContentPage = pathname.startsWith('/gallery')
     ? 'gallery'
     : pathname.startsWith('/about')
@@ -83,7 +96,11 @@ export const AppShell: React.FC<AppShellProps> = ({
   const [viewMode, setViewMode] = useState<ViewMode>('standard');
   const shellViewMode: ViewMode = isArticleRoute ? 'standard' : viewMode;
 
-  const [theme, setTheme] = useState<ThemeMode>('dark');
+  const [themePreference, setThemePreference] =
+    useState<ThemePreference>('auto');
+  const [systemTheme, setSystemTheme] = useState<ThemeMode>('dark');
+  const theme: ThemeMode =
+    themePreference === 'auto' ? systemTheme : themePreference;
 
   const [posts, setPosts] = useState<BlogPost[]>(initialPosts ?? []);
   const [postsLoading, setPostsLoading] = useState(!initialPosts);
@@ -110,12 +127,12 @@ export const AppShell: React.FC<AppShellProps> = ({
 
   const [likedPostIds, setLikedPostIds] = useState<string[]>([]);
   const [postStats, setPostStats] = useState<Record<string, PostStats>>({});
+  const [siteVisits, setSiteVisits] = useState<number | null>(null);
   const [articleMeta, setArticleMeta] = useState<BlogPost | null>(null);
 
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
   const [musicEnabled, setMusicEnabled] = useState(false);
   const [localHour, setLocalHour] = useState(() => new Date().getHours());
-  const [galleryPreviewOpen, setGalleryPreviewOpen] = useState(false);
   const [immersiveWeather, setImmersiveWeather] = useState(false);
   const likeRequestSeqRef = useRef<Record<string, number>>({});
   const [weatherBgEnabled, setWeatherBgEnabled] = useState(true);
@@ -202,9 +219,17 @@ export const AppShell: React.FC<AppShellProps> = ({
       if (savedView === 'terminal' || savedView === 'standard') {
         setViewMode(savedView);
       }
-      const savedTheme = localStorage.getItem('pixel_blog_theme');
-      if (savedTheme === 'light' || savedTheme === 'dark') {
-        setTheme(savedTheme);
+      const savedTheme = localStorage.getItem(
+        'pixel_blog_theme_preference'
+      );
+      if (
+        savedTheme === 'light' ||
+        savedTheme === 'dark' ||
+        savedTheme === 'auto'
+      ) {
+        setThemePreference(savedTheme);
+      } else {
+        setThemePreference('auto');
       }
       if (localStorage.getItem('pixel_blog_weather_bg') === 'off') {
         setWeatherBgEnabled(false);
@@ -339,8 +364,21 @@ export const AppShell: React.FC<AppShellProps> = ({
     };
   }, [isArticleRoute, pathname]);
 
+  useEffect(() => {
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
+    const syncSystemTheme = () => {
+      setSystemTheme(media.matches ? 'dark' : 'light');
+    };
+
+    syncSystemTheme();
+    media.addEventListener('change', syncSystemTheme);
+    return () => media.removeEventListener('change', syncSystemTheme);
+  }, []);
+
   // Sync theme class with <html>
   useEffect(() => {
+    if (!prefsReady) return;
+
     const root = document.documentElement;
     if (theme === 'dark') {
       root.classList.add('dark');
@@ -348,10 +386,15 @@ export const AppShell: React.FC<AppShellProps> = ({
       root.classList.remove('dark');
     }
     root.style.colorScheme = theme;
-    if (prefsReady) {
-      localStorage.setItem('pixel_blog_theme', theme);
+    root.dataset.themePreference = themePreference;
+    const themeColor = document.querySelector<HTMLMetaElement>(
+      'meta[name="theme-color"]'
+    );
+    if (themeColor) {
+      themeColor.content = theme === 'dark' ? '#060913' : '#f8fafc';
     }
-  }, [theme, prefsReady]);
+    localStorage.setItem('pixel_blog_theme_preference', themePreference);
+  }, [theme, themePreference, prefsReady]);
 
   useEffect(() => {
     if (prefsReady) {
@@ -365,6 +408,14 @@ export const AppShell: React.FC<AppShellProps> = ({
 
   useEffect(() => {
     let cancelled = false;
+
+    recordSiteVisit()
+      .then((visits) => {
+        if (!cancelled) setSiteVisits(visits);
+      })
+      .catch(() => {
+        // Keep the counter hidden when the stats API is unavailable.
+      });
 
     fetchPostStats()
       .then((stats) => {
@@ -426,20 +477,30 @@ export const AppShell: React.FC<AppShellProps> = ({
   const handleContentPageChange = (nextPage: ContentPage) => {
     if (nextPage === contentPage && !isArticleRoute) return;
     pixelAudio.playClick();
-    setGalleryPreviewOpen(false);
-    startRouteTransition(
-      nextPage === 'home' ? '正在返回首页' : '正在切换页面'
-    );
     router.push(nextPage === 'home' ? '/' : `/${nextPage}`);
     window.scrollTo({ top: 0, behavior: 'auto' });
   };
 
-  const handleThemeToggle = (explicitTheme?: ThemeMode) => {
+  const openGalleryPreview = (id: string) => {
+    router.push(`/gallery/${encodeURIComponent(id)}`, { scroll: false });
+  };
+
+  const navigateGalleryPreview = (id: string) => {
+    router.replace(`/gallery/${encodeURIComponent(id)}`, { scroll: false });
+  };
+
+  const closeGalleryPreview = () => {
+    router.replace('/gallery', { scroll: false });
+  };
+
+  const handleThemeToggle = (explicitTheme?: ThemePreference) => {
     triggerPixelLoadingCursor(240);
     pixelAudio.playThemeSwitch();
-    setTheme((prev) => {
+    setThemePreference((prev) => {
       if (explicitTheme) return explicitTheme;
-      return prev === 'dark' ? 'light' : 'dark';
+      if (prev === 'auto') return 'dark';
+      if (prev === 'dark') return 'light';
+      return 'auto';
     });
   };
 
@@ -598,6 +659,8 @@ export const AppShell: React.FC<AppShellProps> = ({
             : 'min-h-screen'
         }`}
       >
+      <PixelSplash />
+
       {/* Custom Pixel Mouse Click Spark & Loading Cursor Manager */}
       <PixelCursorEffects />
 
@@ -620,7 +683,7 @@ export const AppShell: React.FC<AppShellProps> = ({
         viewMode={shellViewMode}
         contentPage={contentPage}
         onContentPageChange={handleContentPageChange}
-        theme={theme}
+        themePreference={themePreference}
         onThemeToggle={() => handleThemeToggle()}
         soundEnabled={soundEnabled}
         onSoundToggle={handleSoundToggle}
@@ -628,7 +691,9 @@ export const AppShell: React.FC<AppShellProps> = ({
         onMusicToggle={handleMusicToggle}
         onResetHome={() => {
           pixelAudio.playClick();
-          startRouteTransition('正在返回首页');
+          if (isArticleRoute) {
+            startRouteTransition('正在返回首页');
+          }
           router.push('/');
         }}
         selectedPost={articleMeta}
@@ -684,7 +749,10 @@ export const AppShell: React.FC<AppShellProps> = ({
             >
               <GalleryView
                 theme={theme}
-                onPreviewOpenChange={setGalleryPreviewOpen}
+                previewId={galleryPreviewId}
+                onPreviewOpen={openGalleryPreview}
+                onPreviewNavigate={navigateGalleryPreview}
+                onPreviewClose={closeGalleryPreview}
                 onBackHome={() => handleContentPageChange('home')}
               />
             </Suspense>
@@ -698,8 +766,11 @@ export const AppShell: React.FC<AppShellProps> = ({
             >
               <TerminalGalleryView
                 theme={theme}
+                previewId={galleryPreviewId}
+                onPreviewOpen={openGalleryPreview}
+                onPreviewNavigate={navigateGalleryPreview}
+                onPreviewClose={closeGalleryPreview}
                 onBackHome={() => handleContentPageChange('home')}
-                onPreviewOpenChange={setGalleryPreviewOpen}
               />
             </Suspense>
           )
@@ -791,7 +862,13 @@ export const AppShell: React.FC<AppShellProps> = ({
         >
           <div className="border-t border-slate-300/50 dark:border-white/10 pt-5 flex flex-col items-start gap-1.5 sm:flex-row sm:items-center sm:justify-between text-xs font-mono text-slate-400 pr-12 sm:pr-0">
             <span>李白的白 · CarlosWhite (LV.7)</span>
-            <span>MARKDOWN · PIXEL GLASS</span>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <span className="inline-flex items-center gap-1.5">
+                <Eye className="h-3 w-3 text-sky-500 dark:text-cyan-300" />
+                访问量 {siteVisits === null ? '--' : siteVisits.toLocaleString('zh-CN')}
+              </span>
+              <span>MARKDOWN · PIXEL GLASS</span>
+            </div>
           </div>
         </footer>
       )}

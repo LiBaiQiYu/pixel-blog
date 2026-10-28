@@ -160,6 +160,7 @@ const EDITABLE_FIELDS = [
   'city',
   'country',
   'locationName',
+  'locationVisible',
   'accent',
 ] as const;
 

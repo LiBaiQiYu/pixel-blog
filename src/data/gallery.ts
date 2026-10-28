@@ -23,8 +23,17 @@ export const GALLERY_PHOTOS: GalleryPhoto[] = entries
 
     if (!meta || !original) return null;
 
-    return {
+    const locationVisible = entry.locationVisible !== false;
+
+    const photo: GalleryPhoto = {
       ...entry,
+      lat: locationVisible ? entry.lat : undefined,
+      lon: locationVisible ? entry.lon : undefined,
+      area: locationVisible ? entry.area : undefined,
+      place: locationVisible ? entry.place : undefined,
+      city: locationVisible ? entry.city : undefined,
+      country: locationVisible ? entry.country : undefined,
+      locationName: locationVisible ? entry.locationName : undefined,
       src: galleryAsset(assets?.thumbnail) ?? `/gallery/${entry.id}.webp`,
       medium:
         galleryAsset(assets?.medium) ??
@@ -33,9 +42,11 @@ export const GALLERY_PHOTOS: GalleryPhoto[] = entries
       placeholder: placeholders[entry.id] ?? '',
       meta: {
         ...meta,
+        altitude: locationVisible ? meta.altitude : null,
         liveVideo: galleryAsset(assets?.live) ?? null,
       },
-    } satisfies GalleryPhoto;
+    };
+    return photo;
   })
   .filter((photo): photo is GalleryPhoto => photo !== null);
 

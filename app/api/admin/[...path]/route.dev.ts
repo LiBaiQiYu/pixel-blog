@@ -20,11 +20,11 @@ import {
   deleteFiles,
   saveFiles,
 } from '../../../../server/gallery/storage';
+import { saveBlogImage } from '../../../../server/blog/image-store';
 import {
   deleteBlogPost,
   getBlogPostRaw,
   rebuildBlogManifest,
-  saveBlogImage,
   saveBlogPost,
   setBlogPostVisibility,
 } from '../../../../server/blog/store';
@@ -107,6 +107,7 @@ async function handle(
       'place',
       'tags',
       'date',
+      'locationVisible',
     ]) {
       const value = formData.get(key);
       if (typeof value === 'string' && value.trim()) {

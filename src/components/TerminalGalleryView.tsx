@@ -2,16 +2,18 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { CornerDownLeft, Image as ImageIcon, Terminal } from 'lucide-react';
 import { useLiveVideo } from '../hooks/useLiveVideo';
 import { LiquidPixelCard } from './LiquidPixelCard';
-import { PhotoDetail } from './PhotoDetail';
+import { PhotoSwiperDetail } from './PhotoSwiperDetail';
 import { GALLERY_CATEGORIES, GALLERY_PHOTOS } from '../data/gallery';
 import type { GalleryPhoto } from '../types/gallery';
 import type { ThemeMode } from '../types/blog';
-import { pixelAudio } from '../utils/sound';
 
 interface TerminalGalleryViewProps {
   theme: ThemeMode;
+  previewId: string | null;
+  onPreviewOpen: (id: string) => void;
+  onPreviewNavigate: (id: string) => void;
+  onPreviewClose: () => void;
   onBackHome: () => void;
-  onPreviewOpenChange?: (open: boolean) => void;
 }
 
 const shortDateFormatter = new Intl.DateTimeFormat('zh-CN', {
@@ -234,11 +236,13 @@ const TerminalGalleryCard: React.FC<{
 
 export const TerminalGalleryView: React.FC<TerminalGalleryViewProps> = ({
   theme,
+  previewId,
+  onPreviewOpen,
+  onPreviewNavigate,
+  onPreviewClose,
   onBackHome,
-  onPreviewOpenChange,
 }) => {
   const [activeCategory, setActiveCategory] = useState('全部');
-  const [activeId, setActiveId] = useState<string | null>(null);
 
   const filtered = useMemo(
     () =>
@@ -252,27 +256,14 @@ export const TerminalGalleryView: React.FC<TerminalGalleryViewProps> = ({
   );
 
   const active = useMemo(
-    () => filtered.find((photo) => photo.id === activeId) || null,
-    [filtered, activeId]
+    () =>
+      previewId
+        ? filtered.find((photo) => photo.id === previewId) ||
+          GALLERY_PHOTOS.find((photo) => photo.id === previewId) ||
+          null
+        : null,
+    [filtered, previewId]
   );
-
-  useEffect(() => {
-    onPreviewOpenChange?.(Boolean(activeId));
-    return () => onPreviewOpenChange?.(false);
-  }, [activeId, onPreviewOpenChange]);
-
-  useEffect(() => {
-    if (activeId) pixelAudio.playCamera();
-  }, [activeId]);
-
-  const navigate = (direction: 1 | -1) => {
-    if (!active) return;
-    const index = filtered.findIndex((photo) => photo.id === active.id);
-    if (index === -1) return;
-    const next =
-      filtered[(index + direction + filtered.length) % filtered.length];
-    setActiveId(next.id);
-  };
 
   return (
     <div className="flex w-full flex-1 min-h-0 flex-col">
@@ -349,7 +340,7 @@ export const TerminalGalleryView: React.FC<TerminalGalleryViewProps> = ({
                   key={photo.id}
                   photo={photo}
                   index={index}
-                  onOpen={() => setActiveId(photo.id)}
+                  onOpen={() => onPreviewOpen(photo.id)}
                 />
               ))}
             </div>
@@ -372,12 +363,14 @@ export const TerminalGalleryView: React.FC<TerminalGalleryViewProps> = ({
       </LiquidPixelCard>
 
       {active && (
-        <PhotoDetail
+        <PhotoSwiperDetail
           photo={active}
-          photos={filtered}
+          photos={filtered.some((photo) => photo.id === active.id)
+            ? filtered
+            : [active]}
           theme={theme}
-          onClose={() => setActiveId(null)}
-          onNavigate={navigate}
+          onClose={onPreviewClose}
+          onActiveChange={onPreviewNavigate}
         />
       )}
     </div>

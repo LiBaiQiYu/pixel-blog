@@ -583,7 +583,7 @@ export const GalleryMap: React.FC<GalleryMapProps> = ({
               MAPBOX TOKEN 未配置
             </span>
             <span className="font-mono text-[10px] text-slate-400 dark:text-slate-500">
-              在 .env.local 填写 VITE_MAPBOX_ACCESS_TOKEN
+              请在 .env.local 填写 NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN
             </span>
           </div>
         )}

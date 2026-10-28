@@ -46,6 +46,7 @@ export interface GalleryPhoto {
   city?: string;
   country?: string;
   locationName?: string;
+  locationVisible?: boolean;
   accent: 'cyan' | 'magenta' | 'emerald' | 'amber' | 'violet';
   meta: GalleryMeta;
 }

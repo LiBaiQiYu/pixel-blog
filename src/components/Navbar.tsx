@@ -2,6 +2,7 @@ import React from 'react';
 import {
   Sun,
   Moon,
+  Monitor,
   Volume2,
   VolumeX,
   ChevronRight,
@@ -14,7 +15,7 @@ import {
 import {
   BlogPost,
   ContentPage,
-  ThemeMode,
+  ThemePreference,
   ViewMode,
 } from '../types/blog';
 import { PixelLogoMark } from './PixelArtwork';
@@ -29,7 +30,7 @@ interface NavbarProps {
   viewMode: ViewMode;
   contentPage: ContentPage;
   onContentPageChange: (page: ContentPage) => void;
-  theme: ThemeMode;
+  themePreference: ThemePreference;
   onThemeToggle: () => void;
   soundEnabled: boolean;
   onSoundToggle: () => void;
@@ -51,7 +52,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   viewMode,
   contentPage,
   onContentPageChange,
-  theme,
+  themePreference,
   onThemeToggle,
   soundEnabled,
   onSoundToggle,
@@ -227,9 +228,20 @@ export const Navbar: React.FC<NavbarProps> = ({
             data-custom-sound
             onClick={onThemeToggle}
             className="liquid-pill px-2.5 py-1.5 rounded-xl flex items-center gap-1.5 text-xs font-mono text-slate-700 dark:text-slate-200"
-            title="切换深色/浅色主题"
+            title={`主题模式：${
+              themePreference === 'auto'
+                ? '自动'
+                : themePreference === 'dark'
+                  ? '深色'
+                  : '浅色'
+            }（点击切换）`}
           >
-            {theme === 'dark' ? (
+            {themePreference === 'auto' ? (
+              <>
+                <Monitor className="w-3.5 h-3.5 text-sky-500 dark:text-cyan-300" />
+                <span className="hidden sm:inline">自动</span>
+              </>
+            ) : themePreference === 'dark' ? (
               <>
                 <Moon className="w-3.5 h-3.5 text-cyan-400" />
                 <span className="hidden sm:inline">深色</span>

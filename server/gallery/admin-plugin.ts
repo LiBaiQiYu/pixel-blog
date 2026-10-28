@@ -18,11 +18,11 @@ import {
 } from './data';
 import { processUpload, type UploadFields } from './processing';
 import { deleteFiles, saveFiles } from './storage';
+import { saveBlogImage } from '../blog/image-store';
 import {
   deleteBlogPost,
   getBlogPostRaw,
   rebuildBlogManifest,
-  saveBlogImage,
   saveBlogPost,
   setBlogPostVisibility,
 } from '../blog/store';

@@ -31,6 +31,12 @@ interface LikeResponse {
   stats: PostStats;
 }
 
+interface SiteVisitResponse {
+  ok: boolean;
+  counted: boolean;
+  visits: number;
+}
+
 function createClientId(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return crypto.randomUUID();
@@ -90,6 +96,15 @@ export async function recordPostView(postId: string): Promise<PostStats> {
     keepalive: true,
   });
   return data.stats;
+}
+
+export async function recordSiteVisit(): Promise<number> {
+  const data = await request<SiteVisitResponse>('/visit', {
+    method: 'POST',
+    body: JSON.stringify({ clientId: getStatsClientId() }),
+    keepalive: true,
+  });
+  return data.visits;
 }
 
 export async function setPostLike(

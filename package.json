@@ -9,13 +9,18 @@
     "prebuild": "node scripts/fetch-weather.mjs",
     "build": "next build",
     "start": "next start -p 5173",
+    "cf:build": "opennextjs-cloudflare build",
+    "cf:preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "cf:deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "gallery:meta": "node scripts/generate-gallery-meta.mjs",
     "gallery:manifest": "node scripts/upload-gallery.mjs --manifest-only",
     "gallery:upload": "node scripts/upload-gallery.mjs",
     "gallery:upload:dry": "node scripts/upload-gallery.mjs --dry-run",
     "music:generate": "node scripts/generate-chiptune.mjs",
-    "stats:schema": "npx wrangler d1 execute DB --remote --file=worker/schema.sql",
-    "stats:deploy": "npx wrangler deploy"
+    "stats:schema": "wrangler d1 execute DB --remote --config worker/wrangler.toml --file=worker/schema.sql",
+    "stats:migrate:reactions": "wrangler d1 execute DB --remote --config worker/wrangler.toml --file=worker/migrations/2026-10-28-photo-reactions-9.sql",
+    "stats:deploy": "wrangler deploy --config worker/wrangler.toml"
   },
   "dependencies": {
     "heic-to": "^1.6.6",
@@ -23,11 +28,13 @@
     "mapbox-gl": "^3.33.0",
     "next": "^16.4.3",
     "react": "^19.3.1",
-    "react-dom": "^19.3.1"
+    "react-dom": "^19.3.1",
+    "swiper": "^14.3.0"
   },
   "devDependencies": {
     "@aws-sdk/client-s3": "^3.1154.0",
     "@netlify/plugin-nextjs": "^5.16.4",
+    "@opennextjs/cloudflare": "^1.20.13",
     "@types/busboy": "^1.5.5",
     "@types/node": "^26.6.5",
     "@types/react": "^19.3.0",
@@ -42,6 +49,7 @@
     "sharp": "^0.35.5",
     "tailwindcss": "^3.4.16",
     "typescript": "^5.6.3",
-    "vite": "^6.0.3"
+    "vite": "^6.0.3",
+    "wrangler": "^4.154.0"
   }
 }

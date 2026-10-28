@@ -190,6 +190,82 @@ class PixelAudioEngine {
     });
   }
 
+  playViewerOpen() {
+    const ctx = this.getContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    [392, 523.25, 659.25].forEach((freq, index) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const start = now + index * 0.045;
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, start);
+      gain.gain.setValueAtTime(0.028, start);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.09);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(start);
+      osc.stop(start + 0.1);
+    });
+  }
+
+  playViewerClose() {
+    const ctx = this.getContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    [659.25, 523.25, 392].forEach((freq, index) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const start = now + index * 0.04;
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, start);
+      gain.gain.setValueAtTime(0.026, start);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.08);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(start);
+      osc.stop(start + 0.09);
+    });
+  }
+
+  playInfoOpen() {
+    const ctx = this.getContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    [587.33, 880].forEach((freq, index) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const start = now + index * 0.04;
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(freq, start);
+      gain.gain.setValueAtTime(0.022, start);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.06);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(start);
+      osc.stop(start + 0.07);
+    });
+  }
+
+  playInfoClose() {
+    const ctx = this.getContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    [880, 587.33].forEach((freq, index) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const start = now + index * 0.04;
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, start);
+      gain.gain.setValueAtTime(0.022, start);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.06);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(start);
+      osc.stop(start + 0.07);
+    });
+  }
+
   playThemeSwitch() {
     const ctx = this.getContext();
     if (!ctx) return;
@@ -222,6 +298,85 @@ class PixelAudioEngine {
     gain.connect(ctx.destination);
     osc.start(now);
     osc.stop(now + 0.07);
+  }
+
+  playCommentOpen() {
+    const ctx = this.getContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    [440, 660].forEach((freq, index) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const start = now + index * 0.045;
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, start);
+      gain.gain.setValueAtTime(0.03, start);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.08);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(start);
+      osc.stop(start + 0.09);
+    });
+  }
+
+  playCommentPost() {
+    const ctx = this.getContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    [523.25, 659.25, 783.99, 1046.5].forEach((freq, index) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const start = now + index * 0.038;
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(freq, start);
+      gain.gain.setValueAtTime(0.028, start);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.08);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(start);
+      osc.stop(start + 0.09);
+    });
+  }
+
+  playCommentError() {
+    const ctx = this.getContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    [220, 164.81].forEach((freq, index) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const start = now + index * 0.07;
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(freq, start);
+      gain.gain.setValueAtTime(0.025, start);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.1);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(start);
+      osc.stop(start + 0.11);
+    });
+  }
+
+  playReaction(selected: boolean) {
+    const ctx = this.getContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    const notes = selected
+      ? [523.25, 659.25, 783.99, 1046.5]
+      : [783.99, 659.25, 523.25, 392];
+    notes.forEach((freq, index) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const start = now + index * 0.035;
+      osc.type = selected ? 'square' : 'triangle';
+      osc.frequency.setValueAtTime(freq, start);
+      gain.gain.setValueAtTime(0.03, start);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.07);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(start);
+      osc.stop(start + 0.08);
+    });
   }
 
   playHeart(liked: boolean) {

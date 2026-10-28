@@ -1,4 +1,4 @@
-﻿@tailwind base;
+@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
@@ -294,6 +294,39 @@ html:not(.dark) .crt-scanlines {
   .cursor-grabbing-pixel {
     cursor: var(--cursor-pixel-grabbing) !important;
   }
+
+  .swiper-slide-zoomed,
+  .swiper-slide-zoomed .swiper-zoom-container,
+  .swiper-slide-zoomed .swiper-zoom-target {
+    cursor: var(--cursor-pixel-grab) !important;
+  }
+
+  .swiper-slide-zoomed:active,
+  .swiper-slide-zoomed:active .swiper-zoom-container,
+  .swiper-slide-zoomed:active .swiper-zoom-target {
+    cursor: var(--cursor-pixel-grabbing) !important;
+  }
+}
+
+/* First-open pixel shatter splash */
+.pixel-splash {
+  display: none;
+  background: #ffffff;
+  overscroll-behavior: none;
+  touch-action: none;
+}
+
+html.dark .pixel-splash {
+  background: #000000;
+}
+
+html.pixel-splash-pending,
+html.pixel-splash-pending body {
+  overflow: hidden;
+}
+
+html.pixel-splash-pending .pixel-splash {
+  display: block;
 }
 
 /* Randomized Pixel Shard Burst Animation on Mouse Click */
@@ -663,3 +696,648 @@ html.dark .mapboxgl-ctrl-icon {
   }
 }
 
+
+/* Pixel reaction matrix */
+.reaction-pixel-button {
+  border-radius: 2px;
+  box-shadow: 3px 3px 0 0 rgba(15, 23, 42, 0.12);
+  image-rendering: pixelated;
+  transition:
+    transform 80ms steps(2, end),
+    box-shadow 100ms step-end,
+    border-color 120ms step-end,
+    background-color 120ms step-end,
+    opacity 120ms step-end;
+  will-change: transform;
+}
+
+html.dark .reaction-pixel-button {
+  box-shadow: 3px 3px 0 0 rgba(56, 189, 248, 0.12);
+}
+
+.reaction-pixel-button:hover:not(:disabled) {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 0 rgba(56, 189, 248, 0.25);
+}
+
+.reaction-pixel-button:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 0 rgba(56, 189, 248, 0.16);
+}
+
+.reaction-tone-positive {
+  --reaction-accent: 52 211 153;
+}
+
+.reaction-tone-neutral {
+  --reaction-accent: 251 191 36;
+}
+
+.reaction-tone-negative {
+  --reaction-accent: 251 113 133;
+}
+
+.reaction-pixel-button[aria-pressed='true'] {
+  box-shadow:
+    3px 3px 0 0 rgb(var(--reaction-accent) / 0.32),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+.reaction-led {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 4px;
+  height: 4px;
+  background: rgba(148, 163, 184, 0.55);
+  box-shadow: 2px 0 0 0 rgba(148, 163, 184, 0.18);
+  transition: background-color 100ms step-end, box-shadow 100ms step-end;
+}
+
+.reaction-pixel-button[aria-pressed='true'] .reaction-led {
+  background: rgb(var(--reaction-accent));
+  box-shadow:
+    2px 0 0 0 rgb(var(--reaction-accent) / 0.35),
+    0 0 6px rgb(var(--reaction-accent) / 0.75);
+}
+
+.reaction-pixel-select {
+  animation: reactionPixelSelect 280ms steps(4, end) both;
+}
+
+.reaction-pixel-deselect {
+  animation: reactionPixelDeselect 240ms steps(4, end) both;
+}
+
+.reaction-count-pop {
+  animation: reactionCountPop 260ms steps(3, end) both;
+}
+
+@keyframes reactionPixelSelect {
+  0% {
+    transform: scale(0.9);
+  }
+  35% {
+    transform: translateY(-3px) scale(1.12);
+  }
+  65% {
+    transform: translateY(1px) scale(0.98);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+@keyframes reactionPixelDeselect {
+  0% {
+    transform: translateY(-1px) scale(1.04);
+  }
+  35% {
+    transform: translate(1px, 2px) scale(0.9);
+  }
+  65% {
+    transform: translate(-1px, -1px) scale(1.02);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+@keyframes reactionCountPop {
+  0% {
+    opacity: 0.3;
+    transform: translateY(3px) scale(0.8);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-2px) scale(1.15);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.reaction-burst {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.reaction-burst span {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 3px;
+  height: 3px;
+  background: #38bdf8;
+  animation: reactionShard 300ms steps(4, end) forwards;
+}
+
+.reaction-burst span:nth-child(1) {
+  --dx: -18px;
+  --dy: -12px;
+  background: #38bdf8;
+}
+.reaction-burst span:nth-child(2) {
+  --dx: -12px;
+  --dy: -20px;
+  background: #f0abfc;
+}
+.reaction-burst span:nth-child(3) {
+  --dx: 2px;
+  --dy: -22px;
+  background: #fde047;
+}
+.reaction-burst span:nth-child(4) {
+  --dx: 14px;
+  --dy: -16px;
+  background: #38bdf8;
+}
+.reaction-burst span:nth-child(5) {
+  --dx: 20px;
+  --dy: -2px;
+  background: #f472b6;
+}
+.reaction-burst span:nth-child(6) {
+  --dx: 14px;
+  --dy: 12px;
+  background: #a3e635;
+}
+.reaction-burst span:nth-child(7) {
+  --dx: -4px;
+  --dy: 18px;
+  background: #fde047;
+}
+.reaction-burst span:nth-child(8) {
+  --dx: -18px;
+  --dy: 10px;
+  background: #f0abfc;
+}
+
+@keyframes reactionShard {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(
+        calc(-50% + var(--dx, 0px)),
+        calc(-50% + var(--dy, 0px))
+      )
+      scale(0.35);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reaction-pixel-button,
+  .reaction-pixel-select,
+  .reaction-pixel-deselect,
+  .reaction-count-pop,
+  .reaction-burst span {
+    animation: none;
+    transition: none;
+  }
+}
+
+/* Photo comments / engagement */
+@keyframes photoCommentsBackdropIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes photoCommentsBackdropOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes photoCommentsPanelIn {
+  0% {
+    opacity: 0;
+    transform: translateY(56px) scale(0.94);
+  }
+  55% {
+    opacity: 1;
+    transform: translateY(-7px) scale(1.012);
+  }
+  78% {
+    opacity: 1;
+    transform: translateY(2px) scale(0.998);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes photoCommentsPanelOut {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(56px) scale(0.94);
+  }
+}
+
+.photo-comments-backdrop-enter {
+  animation: photoCommentsBackdropIn 240ms ease-out both;
+}
+
+.photo-comments-backdrop-exit {
+  animation: photoCommentsBackdropOut 300ms ease-in both;
+  pointer-events: none;
+}
+
+.photo-comments-panel {
+  animation: photoCommentsPanelIn 420ms cubic-bezier(0.22, 1.35, 0.36, 1) both;
+}
+
+.photo-comments-panel-exit {
+  animation: photoCommentsPanelOut 320ms cubic-bezier(0.55, 0, 0.72, 0.18) both;
+  pointer-events: none;
+}
+
+.photo-comment-item {
+  animation: photoCommentIn 180ms steps(3, end) both;
+}
+
+.pixel-input {
+  border: 2px solid rgba(148, 163, 184, 0.55);
+  border-radius: 0;
+  background: #ffffff;
+  color: var(--text-primary);
+  outline: none;
+  box-shadow: inset 2px 2px 0 0 rgba(15, 23, 42, 0.04);
+  transition:
+    border-color 100ms step-end,
+    box-shadow 120ms steps(2, end),
+    background-color 120ms step-end;
+}
+
+.pixel-input::placeholder {
+  color: rgba(100, 116, 139, 0.65);
+}
+
+.pixel-input:focus {
+  border-color: rgba(56, 189, 248, 0.8);
+  box-shadow:
+    3px 3px 0 0 rgba(56, 189, 248, 0.18),
+    inset 2px 2px 0 0 rgba(56, 189, 248, 0.05);
+}
+
+html.dark .pixel-input {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: #020617;
+  box-shadow: inset 2px 2px 0 0 rgba(56, 189, 248, 0.04);
+}
+
+html.dark .pixel-input::placeholder {
+  color: rgba(148, 163, 184, 0.5);
+}
+
+html.dark .pixel-input:focus {
+  border-color: rgba(103, 232, 249, 0.6);
+  box-shadow:
+    3px 3px 0 0 rgba(56, 189, 248, 0.14),
+    inset 2px 2px 0 0 rgba(56, 189, 248, 0.05);
+}
+
+.pixel-action-button {
+  border-radius: 0;
+  box-shadow: 3px 3px 0 0 rgba(56, 189, 248, 0.2);
+  transition:
+    transform 80ms steps(2, end),
+    box-shadow 100ms step-end,
+    filter 100ms step-end;
+}
+
+.pixel-action-button:hover:not(:disabled) {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 0 rgba(56, 189, 248, 0.28);
+}
+
+.pixel-action-button:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 0 rgba(56, 189, 248, 0.16);
+}
+
+.pixel-icon-button {
+  border: 2px solid transparent;
+  border-radius: 0;
+  padding: 0.35rem;
+  transition:
+    transform 80ms steps(2, end),
+    border-color 100ms step-end,
+    background-color 100ms step-end;
+}
+
+.pixel-icon-button:hover {
+  border-color: rgba(56, 189, 248, 0.28);
+  transform: translate(-1px, -1px);
+}
+
+@keyframes photoCommentIn {
+  from {
+    opacity: 0;
+    transform: translateX(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .photo-comment-item,
+  .pixel-action-button,
+  .pixel-icon-button {
+    animation: none;
+    transition: none;
+  }
+}
+
+/* Photo viewer and info panel transitions */
+@keyframes photoViewerIn {
+  0% {
+    opacity: 0;
+    transform: translateX(72px);
+  }
+  55% {
+    opacity: 1;
+    transform: translateX(-5px);
+  }
+  78% {
+    opacity: 1;
+    transform: translateX(2px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes photoViewerOut {
+  0% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(72px);
+  }
+}
+
+.photo-viewer-enter {
+  animation: photoViewerIn 420ms cubic-bezier(0.22, 1.35, 0.36, 1) both;
+  will-change: transform, opacity;
+}
+
+.photo-viewer-exit {
+  animation: photoViewerOut 320ms cubic-bezier(0.55, 0, 0.72, 0.18) both;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+@keyframes photoInfoIn {
+  0% {
+    opacity: 0;
+    transform: translateX(56px) scale(0.97);
+  }
+  55% {
+    opacity: 1;
+    transform: translateX(-6px) scale(1.005);
+  }
+  78% {
+    opacity: 1;
+    transform: translateX(2px) scale(0.999);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes photoInfoOut {
+  0% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(56px) scale(0.97);
+  }
+}
+
+.photo-info-enter {
+  animation: photoInfoIn 380ms cubic-bezier(0.22, 1.35, 0.36, 1) both;
+  transform-origin: right center;
+}
+
+.photo-info-exit {
+  animation: photoInfoOut 300ms cubic-bezier(0.55, 0, 0.72, 0.18) both;
+  pointer-events: none;
+  transform-origin: right center;
+}
+
+.share-copy-label {
+  max-width: 0;
+  margin-left: 0;
+  opacity: 0;
+  transition:
+    max-width 220ms steps(4, end),
+    margin-left 220ms steps(4, end),
+    opacity 140ms ease-out;
+}
+
+.share-copy-label-visible {
+  max-width: 5rem;
+  margin-left: 0.375rem;
+  opacity: 1;
+}
+
+.share-button-copied {
+  animation: shareButtonCopied 420ms steps(4, end);
+}
+
+.share-copy-icon {
+  animation: shareCopyIconIn 320ms cubic-bezier(0.22, 1.4, 0.36, 1);
+}
+
+@keyframes shareButtonCopied {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+  35% {
+    transform: translateY(-1px) scale(1.08);
+  }
+  70% {
+    transform: translateY(0) scale(0.97);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes shareCopyIconIn {
+  0% {
+    opacity: 0.35;
+    transform: scale(0.4) rotate(-12deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.18) rotate(4deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .photo-viewer-enter,
+  .photo-viewer-exit,
+  .photo-info-enter,
+  .photo-info-exit,
+  .share-copy-label,
+  .share-button-copied,
+  .share-copy-icon {
+    animation: none;
+    transition: none;
+  }
+}
+
+/* Floating reaction dock */
+.photo-action-dock-item {
+  transform-origin: bottom center;
+  will-change: transform, opacity;
+}
+
+.photo-action-dock-enter {
+  animation: photoReactionDockIn 420ms cubic-bezier(0.22, 1.35, 0.36, 1) both;
+  animation-delay: var(--action-delay, 0ms);
+}
+
+.photo-action-dock-exit {
+  animation: photoReactionDockOut 320ms cubic-bezier(0.55, 0, 0.72, 0.18) both;
+  animation-delay: var(--action-delay, 0ms);
+  pointer-events: none;
+}
+
+@keyframes photoReactionDockIn {
+  0% {
+    opacity: 0;
+    transform: translateY(22px) scale(0.36);
+  }
+  55% {
+    opacity: 1;
+    transform: translateY(-5px) scale(1.1);
+  }
+  78% {
+    opacity: 1;
+    transform: translateY(2px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes photoReactionDockOut {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  22% {
+    opacity: 1;
+    transform: translateY(5px) scale(0.92);
+  }
+  45% {
+    opacity: 0.9;
+    transform: translateY(2px) scale(0.98);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(24px) scale(0.32);
+  }
+}
+
+.photo-reaction-popover {
+  transform-origin: bottom right;
+  animation: photoReactionPopoverIn 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.reaction-dock-item {
+  opacity: 0;
+  animation: reactionDockItemIn 240ms steps(3, end) both;
+  animation-delay: var(--dock-delay, 0ms);
+}
+
+@keyframes photoReactionPopoverIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes photoReactionPopoverOut {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(6px) scale(0.94);
+  }
+}
+
+.photo-reaction-popover-exit {
+  animation: photoReactionPopoverOut 160ms ease-in both;
+  pointer-events: none;
+}
+
+@keyframes reactionDockItemIn {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.82);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-1px) scale(1.04);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .photo-comments-backdrop-enter,
+  .photo-comments-backdrop-exit,
+  .photo-comments-panel,
+  .photo-comments-panel-exit,
+  .photo-action-dock-item,
+  .photo-action-dock-enter,
+  .photo-action-dock-exit,
+  .photo-reaction-popover,
+  .photo-reaction-popover-exit,
+  .reaction-dock-item {
+    animation: none;
+    opacity: 1;
+  }
+}

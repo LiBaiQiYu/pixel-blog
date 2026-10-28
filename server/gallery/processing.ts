@@ -23,6 +23,7 @@ export interface UploadFields {
   place?: string;
   tags?: string;
   date?: string;
+  locationVisible?: string;
 }
 
 export interface ProcessedFile {
@@ -256,6 +257,7 @@ export async function processUpload(
     city: undefined,
     country: undefined,
     locationName: undefined,
+    locationVisible: fields.locationVisible !== 'false',
     accent: accentFor(id),
   };
 

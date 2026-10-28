@@ -5,7 +5,7 @@ import {
   CornerDownLeft,
   Trash2,
 } from 'lucide-react';
-import { BlogPost, ThemeMode } from '../types/blog';
+import { BlogPost, ThemeMode, ThemePreference } from '../types/blog';
 import { LiquidPixelCard } from './LiquidPixelCard';
 import {
   PixelHeart,
@@ -27,7 +27,7 @@ import type { WeatherStatus } from '../hooks/useWeather';
 interface TerminalBlogViewProps {
   posts: BlogPost[];
   theme: ThemeMode;
-  onToggleTheme: (target?: ThemeMode) => void;
+  onToggleTheme: (target?: ThemePreference) => void;
   onSwitchToStandard: (post?: BlogPost) => void;
   likedPostIds: string[];
   onToggleLike: (id: string) => void;
@@ -678,14 +678,14 @@ export const TerminalBlogView: React.FC<TerminalBlogViewProps> = ({
 
       case 'theme': {
         const sub = (args[0] || '').toLowerCase();
-        if (sub === 'dark' || sub === 'light') {
+        if (sub === 'auto' || sub === 'dark' || sub === 'light') {
           onToggleTheme(sub);
         } else {
           onToggleTheme();
         }
         return (
           <div className="text-xs font-mono text-emerald-600 dark:text-emerald-400">
-            已切换深色 / 浅色主题。
+            已切换主题模式：自动 / 深色 / 浅色。
           </div>
         );
       }

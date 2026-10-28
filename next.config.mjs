@@ -16,20 +16,21 @@ const env = {
     process.env.NEXT_PUBLIC_GALLERY_BASE_URL ??
     process.env.VITE_GALLERY_BASE_URL ??
     '',
-  NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN:
-    process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ??
-    process.env.VITE_MAPBOX_ACCESS_TOKEN ??
-    '',
   NEXT_PUBLIC_STATS_API_URL:
     process.env.NEXT_PUBLIC_STATS_API_URL ??
     process.env.VITE_STATS_API_URL ??
     '',
 };
 
+const isDev = process.env.NODE_ENV !== 'production';
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   env,
+  pageExtensions: isDev
+    ? ['tsx', 'ts', 'jsx', 'js', 'dev.tsx', 'dev.ts']
+    : ['tsx', 'ts', 'jsx', 'js'],
   serverExternalPackages: [
     'sharp',
     'busboy',
