@@ -42,7 +42,6 @@ export const PhotoSlideContent: React.FC<PhotoSlideContentProps> = ({
   const [bitmap, setBitmap] = useState<ImageBitmap | null>(null);
   const [canvasReady, setCanvasReady] = useState(false);
   const [imageError, setImageError] = useState(false);
-  const [originalImageReady, setOriginalImageReady] = useState(false);
   const [retryToken, setRetryToken] = useState(0);
   const [loadState, setLoadState] = useState<{
     loaded: number;
@@ -62,19 +61,11 @@ export const PhotoSlideContent: React.FC<PhotoSlideContentProps> = ({
     active && Boolean(photo.meta.liveVideo)
   );
   const hasLive = Boolean(photo.meta.liveVideo) && !liveAsset.error;
-  const heicSource = isHeicUrl(photo.original);
   const previewSrc = photo.medium || '';
   const layoutSrc = previewSrc || photo.src;
-  const originalRequestUrl =
-    retryToken > 0
-      ? `${photo.original}${photo.original.includes('?') ? '&' : '?'}retry=${retryToken}`
-      : photo.original;
-  const isLoading =
-    active &&
-    !imageError &&
-    (heicSource ? !bitmap : !originalImageReady);
-  const isConverting = heicSource && isLoading && loadState.phase === 'convert';
-  const isDecoding = heicSource && isLoading && loadState.phase === 'decode';
+  const isLoading = active && !bitmap && !imageError;
+  const isConverting = isLoading && loadState.phase === 'convert';
+  const isDecoding = isLoading && loadState.phase === 'decode';
   const percent =
     loadState.total > 0
       ? Math.min(100, Math.round((loadState.loaded / loadState.total) * 100))
@@ -194,7 +185,6 @@ export const PhotoSlideContent: React.FC<PhotoSlideContentProps> = ({
     if (!active) {
       setBitmap(null);
       setCanvasReady(false);
-      setOriginalImageReady(false);
       setImageError(false);
       setLoadState({ loaded: 0, total: 0, phase: 'download' });
       setHudMode('hidden');
@@ -208,19 +198,18 @@ export const PhotoSlideContent: React.FC<PhotoSlideContentProps> = ({
       return;
     }
 
+    let cancelled = false;
+    let xhr: XMLHttpRequest | null = null;
     setBitmap(null);
     setCanvasReady(false);
-    setOriginalImageReady(false);
     setImageError(false);
     setLoadState({ loaded: 0, total: 0, phase: 'download' });
     setHudMode('loading');
 
-    if (!heicSource) {
-      return;
-    }
-
-    let cancelled = false;
-    let xhr: XMLHttpRequest | null = null;
+    const requestUrl =
+      retryToken > 0
+        ? `${photo.original}${photo.original.includes('?') ? '&' : '?'}retry=${retryToken}`
+        : photo.original;
 
     const openBlob = (url: string) =>
       new Promise<Blob>((resolve, reject) => {
@@ -261,8 +250,8 @@ export const PhotoSlideContent: React.FC<PhotoSlideContentProps> = ({
 
         const url =
           attempt === 0
-            ? originalRequestUrl
-            : `${originalRequestUrl}${originalRequestUrl.includes('?') ? '&' : '?'}autoRetry=${attempt}&t=${Date.now()}`;
+            ? requestUrl
+            : `${requestUrl}${requestUrl.includes('?') ? '&' : '?'}autoRetry=${attempt}&t=${Date.now()}`;
 
         try {
           return await openBlob(url);
@@ -295,7 +284,7 @@ export const PhotoSlideContent: React.FC<PhotoSlideContentProps> = ({
           );
         };
         image.onerror = () => reject(new Error('Image fallback failed'));
-        image.src = originalRequestUrl;
+        image.src = requestUrl;
       });
 
     const load = async () => {
@@ -358,7 +347,7 @@ export const PhotoSlideContent: React.FC<PhotoSlideContentProps> = ({
       xhr?.abort();
       xhr = null;
     };
-  }, [active, heicSource, photo.original, originalRequestUrl]);
+  }, [active, photo.original, retryToken]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -436,35 +425,12 @@ export const PhotoSlideContent: React.FC<PhotoSlideContentProps> = ({
 
       <div className="swiper-zoom-container relative z-10 flex h-full w-full items-center justify-center">
         <div className="relative flex max-h-full max-w-full items-center justify-center">
-          {active && heicSource && (
+          {active && (
             <canvas
               ref={canvasRef}
               aria-label={photo.title}
               className={`absolute inset-0 h-full w-full object-contain ${
                 canvasReady ? 'visible' : 'invisible'
-              }`}
-            />
-          )}
-          {active && !heicSource && (
-            <img
-              key={`${photo.id}-${retryToken}`}
-              src={originalRequestUrl}
-              alt={photo.title}
-              draggable={false}
-              loading="eager"
-              decoding="async"
-              onLoad={() => {
-                setOriginalImageReady(true);
-                setImageError(false);
-                setHudMode('complete');
-              }}
-              onError={() => {
-                setOriginalImageReady(false);
-                setImageError(true);
-                setHudMode('hidden');
-              }}
-              className={`absolute inset-0 h-full w-full select-none object-contain ${
-                originalImageReady ? 'visible' : 'invisible'
               }`}
             />
           )}
@@ -476,10 +442,7 @@ export const PhotoSlideContent: React.FC<PhotoSlideContentProps> = ({
             loading={highQuality ? 'eager' : 'lazy'}
             decoding="async"
             className={`relative block max-h-full max-w-full select-none object-contain ${
-              !active ||
-              (heicSource ? !canvasReady : !originalImageReady)
-                ? 'visible'
-                : 'invisible'
+              previewSrc && (!active || !canvasReady) ? 'visible' : 'invisible'
             }`}
           />
         </div>
