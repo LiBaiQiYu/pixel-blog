@@ -31,14 +31,20 @@ const nextConfig = {
   pageExtensions: isDev
     ? ['tsx', 'ts', 'jsx', 'js', 'dev.tsx', 'dev.ts']
     : ['tsx', 'ts', 'jsx', 'js'],
-  serverExternalPackages: [
-    'sharp',
-    'busboy',
-    'heic-convert',
-    'heic-to',
-    'exiftool-vendored',
-    '@aws-sdk/client-s3',
-  ],
+  images: {
+    unoptimized: true,
+  },
+  ...(isDev
+    ? {
+        serverExternalPackages: [
+          'sharp',
+          'busboy',
+          'heic-convert',
+          'exiftool-vendored',
+          '@aws-sdk/client-s3',
+        ],
+      }
+    : {}),
   async rewrites() {
     return [
       {
