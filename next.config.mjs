@@ -16,6 +16,10 @@ const env = {
     process.env.NEXT_PUBLIC_GALLERY_BASE_URL ??
     process.env.VITE_GALLERY_BASE_URL ??
     '',
+  NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN:
+    process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ??
+    process.env.VITE_MAPBOX_ACCESS_TOKEN ??
+    '',
   NEXT_PUBLIC_STATS_API_URL:
     process.env.NEXT_PUBLIC_STATS_API_URL ??
     process.env.VITE_STATS_API_URL ??

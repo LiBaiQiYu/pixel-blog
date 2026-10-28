@@ -65,7 +65,7 @@ export const PhotoMiniMap: React.FC<PhotoMiniMapProps> = ({ photo, theme }) => {
             MAPBOX TOKEN 未配置
           </span>
           <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500">
-            请在 .env.local 填写 NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN
+            请在 Cloudflare 构建变量或 .env.local 配置 NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN
           </span>
         </div>
       )}
