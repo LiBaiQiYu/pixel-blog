@@ -396,13 +396,14 @@ export const PhotoSlideContent: React.FC<PhotoSlideContentProps> = ({
 
   return (
     <div
-      className="relative h-full w-full overflow-hidden"
+      className="photo-live-hold-surface relative h-full w-full overflow-hidden"
       onPointerDown={handlePhotoPointerDown}
       onPointerMove={handlePhotoPointerMove}
       onPointerUp={handlePhotoPointerEnd}
       onPointerCancel={handlePhotoPointerEnd}
       onPointerLeave={handlePhotoPointerEnd}
       onClickCapture={handlePhotoClickCapture}
+      onDragStart={(event) => event.preventDefault()}
       onContextMenu={(event) => {
         if (hasLive) event.preventDefault();
       }}
@@ -549,7 +550,8 @@ export const PhotoSlideContent: React.FC<PhotoSlideContentProps> = ({
               muted
               loop
               playsInline
-              className="absolute inset-0 z-10 h-full w-full object-contain"
+              disablePictureInPicture
+              className="pointer-events-none absolute inset-0 z-10 h-full w-full select-none object-contain"
             />
           ) : null}
           <div

@@ -1048,6 +1048,22 @@ html.dark .pixel-input:focus {
   transform: translate(-1px, -1px);
 }
 
+.photo-live-hold-surface {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.photo-live-hold-surface img,
+.photo-live-hold-surface canvas,
+.photo-live-hold-surface video {
+  -webkit-touch-callout: none;
+  -webkit-user-drag: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 .live-hold-dock {
   transform-origin: top center;
   will-change: transform, opacity;
