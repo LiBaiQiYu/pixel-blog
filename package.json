@@ -21,6 +21,7 @@
     "gallery:upload": "node scripts/upload-gallery.mjs",
     "gallery:upload:dry": "node scripts/upload-gallery.mjs --dry-run",
     "music:generate": "node scripts/generate-chiptune.mjs",
+    "seo:indexnow": "node scripts/indexnow.mjs",
     "stats:schema": "wrangler d1 execute DB --remote --config worker/wrangler.toml --file=worker/schema.sql",
     "stats:migrate:reactions": "wrangler d1 execute DB --remote --config worker/wrangler.toml --file=worker/migrations/2026-10-28-photo-reactions-9.sql",
     "stats:deploy": "wrangler deploy --config worker/wrangler.toml"
