@@ -23,6 +23,7 @@ import { PixelLogoMark } from './PixelArtwork';
 const CONTENT_PAGES: { id: ContentPage; label: string }[] = [
   { id: 'home', label: '首页' },
   { id: 'gallery', label: '画廊' },
+  { id: 'friends', label: '友链' },
   { id: 'about', label: '关于我' },
 ];
 
@@ -67,34 +68,53 @@ export const Navbar: React.FC<NavbarProps> = ({
   articleDocked = false,
   concealed = false,
 }) => {
+  const activePageIndex = Math.max(
+    0,
+    CONTENT_PAGES.findIndex((page) => page.id === contentPage)
+  );
+
   const renderContentNav = (mobile: boolean) => {
     if (viewMode === 'terminal') return null;
 
     return (
-    <nav
-      className={`${
-        mobile ? 'flex w-full md:hidden' : 'hidden md:flex'
-      } items-center gap-0.5 rounded-xl border border-slate-300/50 bg-white/45 p-0.5 font-mono text-[10px] dark:border-white/10 dark:bg-slate-950/50`}
-    >
-      {CONTENT_PAGES.map((page) => {
-        const active = contentPage === page.id;
-        return (
-          <button
-            key={page.id}
-            type="button"
-            onClick={() => onContentPageChange(page.id)}
-            aria-current={active ? 'page' : undefined}
-            className={`${mobile ? 'flex-1' : ''} rounded-lg px-2 py-1 transition-colors ${
-              active
-                ? 'bg-sky-500 font-semibold text-white'
-                : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
-            }`}
-          >
-            {page.label}
-          </button>
-        );
-      })}
-    </nav>
+      <nav
+        className={`relative grid grid-cols-4 rounded-xl border border-slate-300/50 bg-white/45 p-0.5 font-mono dark:border-white/10 dark:bg-slate-950/50 ${
+          mobile
+            ? 'w-full text-[10px] md:hidden'
+            : 'hidden w-[248px] text-[11px] md:grid lg:w-[264px]'
+        }`}
+      >
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0.5 z-0"
+        >
+          <span
+            className="block h-full rounded-lg bg-sky-500 shadow-[0_2px_12px_rgba(14,165,233,0.35)] transition-transform duration-[420ms] ease-[cubic-bezier(0.34,1.56,0.64,1)] will-change-transform"
+            style={{
+              width: `${100 / CONTENT_PAGES.length}%`,
+              transform: `translateX(${activePageIndex * 100}%)`,
+            }}
+          />
+        </span>
+        {CONTENT_PAGES.map((page) => {
+          const active = contentPage === page.id;
+          return (
+            <button
+              key={page.id}
+              type="button"
+              onClick={() => onContentPageChange(page.id)}
+              aria-current={active ? 'page' : undefined}
+              className={`relative z-10 w-full rounded-lg px-1 py-1.5 text-center transition-colors duration-200 ${
+                active
+                  ? 'font-semibold text-white'
+                  : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+              }`}
+            >
+              {page.label}
+            </button>
+          );
+        })}
+      </nav>
     );
   };
 

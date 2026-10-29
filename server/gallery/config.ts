@@ -187,6 +187,47 @@ export function publicUrlFor(key: string) {
   return `/${key.replace(/^\/+/, '')}`;
 }
 
+function isPrivateIpv4(address: string) {
+  const parts = address.split('.').map(Number);
+  if (
+    parts.length !== 4 ||
+    parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)
+  ) {
+    return false;
+  }
+  return (
+    parts[0] === 10 ||
+    (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) ||
+    (parts[0] === 192 && parts[1] === 168)
+  );
+}
+
+function isVirtualInterface(name: string) {
+  return /(wsl|vethernet|virtualbox|vmware|hyper-v|docker|podman|tailscale|zerotier|vpn|tun|tap)/i.test(
+    name
+  );
+}
+
+export function getNetworkUrls(port = 5173) {
+  const urls = new Set<string>();
+
+  for (const [name, addresses] of Object.entries(os.networkInterfaces())) {
+    if (isVirtualInterface(name)) continue;
+    for (const address of addresses ?? []) {
+      if (
+        address.family !== 'IPv4' ||
+        address.internal ||
+        !isPrivateIpv4(address.address)
+      ) {
+        continue;
+      }
+      urls.add(`http://${address.address}:${port}/admin`);
+    }
+  }
+
+  return [...urls].sort();
+}
+
 export async function getAdminConfig(port = 5173) {
   const storage = await readStorage();
   const accessKey = process.env.R2_ACCESS_KEY_ID ?? '';
@@ -431,17 +472,5 @@ export async function testR2Bucket() {
   } finally {
     client.destroy();
   }
-}
-
-export function getNetworkUrls(port = 5173) {
-  const urls = new Set<string>();
-  for (const addresses of Object.values(os.networkInterfaces())) {
-    for (const address of addresses ?? []) {
-      if (address.family === 'IPv4' && !address.internal) {
-        urls.add(`http://${address.address}:5173/?admin=1`);
-      }
-    }
-  }
-  return [...urls];
 }
 

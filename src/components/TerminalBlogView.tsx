@@ -45,6 +45,7 @@ interface TerminalBlogViewProps {
   weatherHint: string | null;
   onWeatherRelocate: () => void;
   onOpenGallery: () => void;
+  onOpenFriends: () => void;
   onOpenAbout: () => void;
   initialCommand?: string | null;
   onConsumeInitialCommand?: () => void;
@@ -63,6 +64,7 @@ const QUICK_COMMANDS = [
   { cmd: 'tree', label: 'tree (年月时间轴)' },
   { cmd: 'ls', label: 'ls (文件列表)' },
   { cmd: 'gallery', label: 'gallery (生活画廊)' },
+  { cmd: 'friends', label: 'friends (友链)' },
   { cmd: 'about', label: 'about (关于我)' },
   { cmd: 'weather', label: 'weather (天气)' },
   { cmd: 'help', label: 'help (帮助)' },
@@ -89,6 +91,7 @@ export const TerminalBlogView: React.FC<TerminalBlogViewProps> = ({
   weatherHint,
   onWeatherRelocate,
   onOpenGallery,
+  onOpenFriends,
   onOpenAbout,
   initialCommand,
   onConsumeInitialCommand,
@@ -368,6 +371,9 @@ export const TerminalBlogView: React.FC<TerminalBlogViewProps> = ({
             </div>
             <div>
               <code className="text-emerald-600 dark:text-emerald-400 font-bold">gallery</code> — 打开生活画廊（照片 + 地图）
+            </div>
+            <div>
+              <code className="text-emerald-600 dark:text-emerald-400 font-bold">friends</code> — 打开友链板块
             </div>
             <div>
               <code className="text-emerald-600 dark:text-emerald-400 font-bold">about</code> — 打开关于我页面
@@ -705,6 +711,16 @@ export const TerminalBlogView: React.FC<TerminalBlogViewProps> = ({
           </div>
         );
 
+      case 'friends':
+      case 'friend':
+      case 'links':
+        onOpenFriends();
+        return (
+          <div className="text-xs font-mono text-cyan-600 dark:text-cyan-300">
+            正在打开「友链」…
+          </div>
+        );
+
       case 'about':
       case 'me':
         onOpenAbout();
@@ -877,6 +893,7 @@ export const TerminalBlogView: React.FC<TerminalBlogViewProps> = ({
         'cat 03',
         'weather',
         'gallery',
+        'friends',
         'about',
         'seed 01',
         'theme',

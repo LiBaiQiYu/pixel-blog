@@ -12,7 +12,9 @@ import {
   FileText,
   Image as ImageIcon,
   KeyRound,
+  Link2,
   Loader2,
+  Monitor,
   Moon,
   RefreshCw,
   Save,
@@ -22,9 +24,11 @@ import {
   UploadCloud,
 } from 'lucide-react';
 
+import type { ThemeMode, ThemePreference } from '../types/blog';
 import type { GalleryEntry, GalleryMeta } from '../types/gallery';
 import type { GalleryManifestEntry } from '../types/gallery-manifest';
 import { PostsPanel } from './PostsPanel';
+import { FriendsPanel } from './FriendsPanel';
 
 interface LibraryItem {
   entry: GalleryEntry;
@@ -57,9 +61,32 @@ interface UploadRow {
   error?: string;
 }
 
-type Tab = 'storage' | 'upload' | 'library' | 'posts';
+type Tab = 'storage' | 'upload' | 'library' | 'posts' | 'friends';
 
 const TOKEN_KEY = 'pixel_blog_admin_token';
+const SITE_THEME_KEY = 'pixel_blog_theme_preference';
+
+function readSiteThemePreference(): ThemePreference {
+  try {
+    const saved = localStorage.getItem(SITE_THEME_KEY);
+    if (saved === 'light' || saved === 'dark' || saved === 'auto') {
+      return saved;
+    }
+  } catch {
+    // ignore storage access errors
+  }
+  return 'auto';
+}
+
+function readSystemTheme(): ThemeMode {
+  if (
+    typeof window !== 'undefined' &&
+    window.matchMedia('(prefers-color-scheme: dark)').matches
+  ) {
+    return 'dark';
+  }
+  return 'light';
+}
 
 class ApiError extends Error {
   status: number;
@@ -93,18 +120,62 @@ export default function AdminApp() {
   const [token, setToken] = useState(
     () => sessionStorage.getItem(TOKEN_KEY) ?? ''
   );
-  const [theme, setTheme] = useState<'light' | 'dark'>(() =>
-    localStorage.getItem('pixel_blog_admin_theme') === 'light'
-      ? 'light'
-      : 'dark'
+  const [themePreference, setThemePreference] = useState<ThemePreference>(
+    readSiteThemePreference
   );
+  const [systemTheme, setSystemTheme] = useState<ThemeMode>(readSystemTheme);
+  const theme: ThemeMode =
+    themePreference === 'auto' ? systemTheme : themePreference;
   const [needsToken, setNeedsToken] = useState(false);
   const [tokenInput, setTokenInput] = useState(token);
 
+  useEffect(() => {
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
+    const syncSystemTheme = () => {
+      setSystemTheme(media.matches ? 'dark' : 'light');
+    };
+
+    syncSystemTheme();
+    media.addEventListener('change', syncSystemTheme);
+    return () => media.removeEventListener('change', syncSystemTheme);
+  }, []);
+
+  useEffect(() => {
+    const syncSiteTheme = () => {
+      setThemePreference(readSiteThemePreference());
+    };
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === SITE_THEME_KEY || event.key === null) {
+        syncSiteTheme();
+      }
+    };
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') syncSiteTheme();
+    };
+
+    window.addEventListener('storage', handleStorage);
+    window.addEventListener('focus', syncSiteTheme);
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('focus', syncSiteTheme);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, []);
+
   useLayoutEffect(() => {
-    document.documentElement.classList.toggle('dark', theme === 'dark');
-    localStorage.setItem('pixel_blog_admin_theme', theme);
-  }, [theme]);
+    const root = document.documentElement;
+    root.classList.toggle('dark', theme === 'dark');
+    root.style.colorScheme = theme;
+    root.dataset.themePreference = themePreference;
+    const themeColor = document.querySelector<HTMLMetaElement>(
+      'meta[name="theme-color"]'
+    );
+    if (themeColor) {
+      themeColor.content = theme === 'dark' ? '#060913' : '#f8fafc';
+    }
+  }, [theme, themePreference]);
+
   const [tab, setTab] = useState<Tab>('storage');
   const [config, setConfig] = useState<AdminConfig | null>(null);
   const [items, setItems] = useState<LibraryItem[]>([]);
@@ -189,23 +260,23 @@ export default function AdminApp() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() =>
-                setTheme((current) =>
-                  current === 'dark' ? 'light' : 'dark'
-                )
-              }
+            <span
               className="liquid-pill flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-mono text-[11px] text-slate-600 dark:text-slate-300"
-              title="切换深浅色"
+              title="自动跟随站点主题模式"
             >
-              {theme === 'dark' ? (
-                <Sun className="h-3.5 w-3.5" />
+              {themePreference === 'auto' ? (
+                <Monitor className="h-3.5 w-3.5 text-sky-500 dark:text-cyan-300" />
+              ) : themePreference === 'dark' ? (
+                <Moon className="h-3.5 w-3.5 text-cyan-500 dark:text-cyan-300" />
               ) : (
-                <Moon className="h-3.5 w-3.5" />
+                <Sun className="h-3.5 w-3.5 text-amber-500" />
               )}
-              {theme === 'dark' ? '浅色' : '深色'}
-            </button>
+              {themePreference === 'auto'
+                ? `自动 · ${theme === 'dark' ? '深色' : '浅色'}`
+                : themePreference === 'dark'
+                  ? '深色'
+                  : '浅色'}
+            </span>
             <a
               href="/"
               className="liquid-pill flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-mono text-[11px] text-slate-600 dark:text-slate-300"
@@ -233,6 +304,7 @@ export default function AdminApp() {
             ['upload', UploadCloud, '上传图片'],
             ['library', ImageIcon, '图片管理'],
             ['posts', FileText, '博文管理'],
+            ['friends', Link2, '友链审核'],
           ].map(([key, Icon, label]) => (
             <button
               key={key as string}
@@ -310,6 +382,13 @@ export default function AdminApp() {
             )}
             {tab === 'posts' && (
               <PostsPanel
+                api={api}
+                onMessage={setMessage}
+                onError={setError}
+              />
+            )}
+            {tab === 'friends' && (
+              <FriendsPanel
                 api={api}
                 onMessage={setMessage}
                 onError={setError}
@@ -560,18 +639,30 @@ function StoragePanel({
 
       <aside className="space-y-4">
         <div className="rounded-2xl border border-slate-300/60 dark:border-white/10 bg-white/70 dark:bg-white/5 p-4 font-mono text-[10px] text-slate-500 dark:text-slate-400">
-          <div className="mb-2 text-cyan-700 dark:text-cyan-300">PHONE ACCESS</div>
+          <div className="mb-2 text-cyan-700 dark:text-cyan-300">
+            LAN ACCESS // 局域网管理
+          </div>
           {config.networkUrls.length ? (
             <ul className="space-y-1 break-all">
               {config.networkUrls.map((url) => (
-                <li key={url}>{url}</li>
+                <li key={url}>
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-sky-600 underline-offset-2 hover:underline dark:text-cyan-300"
+                  >
+                    {url}
+                  </a>
+                </li>
               ))}
             </ul>
           ) : (
-            <p>未检测到局域网地址。</p>
+            <p>未检测到可用的局域网地址。</p>
           )}
           <p className="mt-3 leading-relaxed text-slate-500">
-            手机与电脑需在同一 Wi-Fi。若设置了 ADMIN_DEV_TOKEN，手机首次访问需要输入。
+            手机与电脑需在同一 Wi-Fi；已过滤虚拟网卡和链路本地地址。若设置了
+            ADMIN_DEV_TOKEN，手机首次访问需要输入。
           </p>
         </div>
         <div className="rounded-2xl border border-slate-300/60 dark:border-white/10 bg-white/70 dark:bg-white/5 p-4 font-mono text-[10px] text-slate-500 dark:text-slate-400">

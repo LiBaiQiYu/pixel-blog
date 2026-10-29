@@ -16,6 +16,7 @@ import {
   PhotoStoryShowcase,
   TerminalPhotoStoryShowcase,
 } from './PhotoStoryShowcase';
+import { PixelHeroAvatar } from './PixelHeroAvatar';
 import type { ViewMode } from '../types/blog';
 
 interface AboutViewProps {
@@ -117,72 +118,6 @@ const CountUp: React.FC<{ value: number; suffix?: string }> = ({
       {display}
       {suffix}
     </>
-  );
-};
-
-const PixelHeroAvatar: React.FC<{
-  kind: 'invoker' | 'yi' | 'ezreal';
-}> = ({ kind }) => {
-  const common = {
-    viewBox: '0 0 16 16',
-    shapeRendering: 'crispEdges' as const,
-    className: 'h-full w-full pixelated',
-    fill: 'none',
-  };
-
-  if (kind === 'invoker') {
-    return (
-      <svg {...common}>
-        <rect width="16" height="16" fill="#160F24" />
-        <rect x="3" y="2" width="10" height="3" fill="#E2E8F0" />
-        <rect x="2" y="4" width="3" height="5" fill="#CBD5E1" />
-        <rect x="11" y="4" width="3" height="5" fill="#CBD5E1" />
-        <rect x="5" y="4" width="6" height="2" fill="#F8FAFC" />
-        <rect x="5" y="6" width="6" height="4" fill="#F1C7A1" />
-        <rect x="6" y="7" width="1" height="1" fill="#7DD3FC" />
-        <rect x="9" y="7" width="1" height="1" fill="#7DD3FC" />
-        <rect x="4" y="10" width="8" height="5" fill="#B91C1C" />
-        <rect x="5" y="10" width="6" height="1" fill="#FBBF24" />
-        <rect x="6" y="11" width="4" height="3" fill="#7F1D1D" />
-        <rect x="11" y="12" width="3" height="3" fill="#A78BFA" />
-        <rect x="12" y="12" width="1" height="1" fill="#F5D0FE" />
-      </svg>
-    );
-  }
-
-  if (kind === 'yi') {
-    return (
-      <svg {...common}>
-        <rect width="16" height="16" fill="#0D1A12" />
-        <rect x="4" y="1" width="8" height="3" fill="#5B8C2A" />
-        <rect x="3" y="3" width="10" height="5" fill="#3F6212" />
-        <rect x="5" y="5" width="6" height="3" fill="#D9B15F" />
-        <rect x="6" y="6" width="1" height="1" fill="#A3E635" />
-        <rect x="9" y="6" width="1" height="1" fill="#A3E635" />
-        <rect x="4" y="10" width="8" height="5" fill="#365314" />
-        <rect x="5" y="11" width="6" height="2" fill="#65A30D" />
-        <rect x="11" y="8" width="2" height="5" fill="#CBD5E1" />
-        <rect x="12" y="7" width="1" height="2" fill="#F8FAFC" />
-        <rect x="3" y="13" width="2" height="2" fill="#FBBF24" />
-      </svg>
-    );
-  }
-
-  return (
-    <svg {...common}>
-      <rect width="16" height="16" fill="#0B1526" />
-      <rect x="4" y="2" width="8" height="3" fill="#F6D365" />
-      <rect x="3" y="4" width="2" height="4" fill="#F6D365" />
-      <rect x="11" y="4" width="2" height="3" fill="#F6D365" />
-      <rect x="5" y="5" width="6" height="4" fill="#F1C7A1" />
-      <rect x="6" y="6" width="1" height="1" fill="#38BDF8" />
-      <rect x="9" y="6" width="1" height="1" fill="#38BDF8" />
-      <rect x="4" y="9" width="8" height="5" fill="#1D4ED8" />
-      <rect x="5" y="10" width="6" height="2" fill="#3B82F6" />
-      <rect x="5" y="9" width="6" height="1" fill="#FBBF24" />
-      <rect x="11" y="11" width="3" height="3" fill="#FBBF24" />
-      <rect x="12" y="11" width="1" height="1" fill="#FEF3C7" />
-    </svg>
   );
 };
 

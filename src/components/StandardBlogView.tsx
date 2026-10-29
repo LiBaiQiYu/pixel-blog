@@ -44,6 +44,8 @@ interface StandardBlogViewProps {
   onSetWeatherPreview: (kind: WeatherKind | null) => void;
   weatherPreviewIntensity: number | null;
   onSetWeatherPreviewIntensity: (intensity: number | null) => void;
+  weatherPreviewHour: number | null;
+  onSetWeatherPreviewHour: (hour: number | null) => void;
   backOriginRef?: React.RefObject<HTMLButtonElement | null>;
 }
 
@@ -71,6 +73,8 @@ export const StandardBlogView: React.FC<StandardBlogViewProps> = ({
   onSetWeatherPreview,
   weatherPreviewIntensity,
   onSetWeatherPreviewIntensity,
+  weatherPreviewHour,
+  onSetWeatherPreviewHour,
   backOriginRef,
 }) => {
   const [activeCategory, setActiveCategory] = useState<PostCategory>('ALL');
@@ -458,6 +462,8 @@ export const StandardBlogView: React.FC<StandardBlogViewProps> = ({
         onSetPreviewKind={onSetWeatherPreview}
         previewIntensity={weatherPreviewIntensity}
         onSetPreviewIntensity={onSetWeatherPreviewIntensity}
+        previewHour={weatherPreviewHour}
+        onSetPreviewHour={onSetWeatherPreviewHour}
       />
 
       {/* Year-Month Timeline Archive Content */}

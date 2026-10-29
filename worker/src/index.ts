@@ -18,6 +18,21 @@ interface D1Database {
 
 interface Env {
   DB: D1Database;
+  FRIENDS_ADMIN_TOKEN?: string;
+}
+
+type FriendStatus = 'pending' | 'approved' | 'rejected';
+
+interface FriendLinkRow {
+  id: number;
+  name: string;
+  url: string;
+  seed: number;
+  description: string;
+  tags: string;
+  status: FriendStatus;
+  created_at: string;
+  updated_at: string;
 }
 
 interface StatsRow {
@@ -80,8 +95,8 @@ function emptyReactionCounts(): Record<PhotoReaction, number> {
 
 const CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Methods': 'GET,POST,PATCH,DELETE,OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type,x-admin-token',
   'Access-Control-Max-Age': '86400',
 };
 
@@ -260,6 +275,245 @@ function serializePhotoComment(row: PhotoCommentRow) {
     content: row.content,
     createdAt: isoFromSqliteTimestamp(row.created_at),
   };
+}
+
+const FRIEND_STATUSES = ['pending', 'approved', 'rejected'] as const;
+const FRIEND_NAME_MAX = 48;
+const FRIEND_DESCRIPTION_MAX = 240;
+const FRIEND_TAG_MAX = 16;
+const FRIEND_TAGS_MAX = 6;
+
+function isFriendStatus(value: unknown): value is FriendStatus {
+  return (
+    typeof value === 'string' &&
+    (FRIEND_STATUSES as readonly string[]).includes(value)
+  );
+}
+
+function normalizeFriendName(value: unknown) {
+  if (typeof value !== 'string') return null;
+  const name = value.trim();
+  return name.length >= 1 && name.length <= FRIEND_NAME_MAX ? name : null;
+}
+
+function normalizeFriendDescription(value: unknown) {
+  if (typeof value !== 'string') return null;
+  const description = value.trim();
+  return description.length <= FRIEND_DESCRIPTION_MAX ? description : null;
+}
+
+function normalizeFriendUrl(value: unknown) {
+  if (typeof value !== 'string') return null;
+  const raw = value.trim();
+  if (!raw || raw.length > 500) return null;
+  try {
+    const parsed = new URL(raw);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return null;
+    }
+    return parsed.toString();
+  } catch {
+    return null;
+  }
+}
+
+function normalizeFriendSeed(value: unknown) {
+  const seed = Number(value);
+  return Number.isInteger(seed) && seed >= 1 && seed <= 2147483647
+    ? seed
+    : null;
+}
+
+function normalizeFriendTags(value: unknown) {
+  if (value === undefined || value === null) return [] as string[];
+  if (!Array.isArray(value) || value.length > FRIEND_TAGS_MAX) return null;
+  const tags: string[] = [];
+  for (const item of value) {
+    if (typeof item !== 'string') return null;
+    const tag = item.trim();
+    if (!tag || tag.length > FRIEND_TAG_MAX) return null;
+    if (!tags.includes(tag)) tags.push(tag);
+  }
+  return tags;
+}
+
+function parseStoredFriendTags(value: string) {
+  try {
+    const parsed = JSON.parse(value);
+    if (Array.isArray(parsed)) {
+      return parsed.filter((tag): tag is string => typeof tag === 'string');
+    }
+  } catch {
+    // Fall back to legacy comma-separated tags.
+  }
+  return value
+    .split(',')
+    .map((tag) => tag.trim())
+    .filter(Boolean);
+}
+
+function serializeFriend(row: FriendLinkRow, includeStatus = false) {
+  return {
+    id: Number(row.id),
+    name: row.name,
+    url: row.url,
+    seed: Number(row.seed),
+    description: row.description,
+    tags: parseStoredFriendTags(row.tags),
+    createdAt: isoFromSqliteTimestamp(row.created_at),
+    ...(includeStatus
+      ? {
+          status: row.status,
+          updatedAt: isoFromSqliteTimestamp(row.updated_at),
+        }
+      : {}),
+  };
+}
+
+function isFriendAdmin(request: Request, env: Env) {
+  const expected = env.FRIENDS_ADMIN_TOKEN?.trim();
+  return Boolean(expected) && request.headers.get('x-admin-token') === expected;
+}
+
+async function listApprovedFriends(db: D1Database) {
+  const rows = await db
+    .prepare(
+      `SELECT id, name, url, seed, description, tags, status, created_at, updated_at
+       FROM friend_links
+       WHERE status = 'approved'
+       ORDER BY id DESC`
+    )
+    .all<FriendLinkRow>();
+  return (rows.results ?? []).map((row) => serializeFriend(row));
+}
+
+async function listFriendsForAdmin(db: D1Database) {
+  const rows = await db
+    .prepare(
+      `SELECT id, name, url, seed, description, tags, status, created_at, updated_at
+       FROM friend_links
+       ORDER BY CASE status
+         WHEN 'pending' THEN 0
+         WHEN 'approved' THEN 1
+         ELSE 2
+       END, id DESC`
+    )
+    .all<FriendLinkRow>();
+  return (rows.results ?? []).map((row) => serializeFriend(row, true));
+}
+
+async function getFriendLink(db: D1Database, id: number) {
+  const row = await db
+    .prepare(
+      `SELECT id, name, url, seed, description, tags, status, created_at, updated_at
+       FROM friend_links
+       WHERE id = ?`
+    )
+    .bind(id)
+    .first<FriendLinkRow>();
+  return row;
+}
+
+interface FriendApplicationInput {
+  name: string;
+  url: string;
+  seed: number;
+  description: string;
+  tags: string[];
+}
+
+async function createFriendApplication(
+  db: D1Database,
+  input: FriendApplicationInput
+) {
+  const duplicate = await db
+    .prepare(
+      `SELECT id FROM friend_links
+       WHERE url = ? AND status IN ('pending', 'approved')
+       LIMIT 1`
+    )
+    .bind(input.url)
+    .first<{ id: number }>();
+
+  if (duplicate) return null;
+
+  const result = await db
+    .prepare(
+      `INSERT INTO friend_links (name, url, seed, description, tags)
+       VALUES (?, ?, ?, ?, ?)`
+    )
+    .bind(
+      input.name,
+      input.url,
+      input.seed,
+      input.description,
+      JSON.stringify(input.tags)
+    )
+    .run();
+
+  const id = Number(result.meta?.last_row_id ?? 0);
+  return id > 0 ? getFriendLink(db, id) : null;
+}
+
+interface FriendPatch {
+  name?: string;
+  url?: string;
+  seed?: number;
+  description?: string;
+  tags?: string[];
+  status?: FriendStatus;
+}
+
+async function updateFriendLink(
+  db: D1Database,
+  id: number,
+  patch: FriendPatch
+) {
+  const setters: string[] = [];
+  const values: unknown[] = [];
+
+  if (patch.name !== undefined) {
+    setters.push('name = ?');
+    values.push(patch.name);
+  }
+  if (patch.url !== undefined) {
+    setters.push('url = ?');
+    values.push(patch.url);
+  }
+  if (patch.seed !== undefined) {
+    setters.push('seed = ?');
+    values.push(patch.seed);
+  }
+  if (patch.description !== undefined) {
+    setters.push('description = ?');
+    values.push(patch.description);
+  }
+  if (patch.tags !== undefined) {
+    setters.push('tags = ?');
+    values.push(JSON.stringify(patch.tags));
+  }
+  if (patch.status !== undefined) {
+    setters.push('status = ?');
+    values.push(patch.status);
+  }
+
+  if (setters.length === 0) return undefined;
+
+  setters.push('updated_at = CURRENT_TIMESTAMP');
+  await db
+    .prepare(`UPDATE friend_links SET ${setters.join(', ')} WHERE id = ?`)
+    .bind(...values, id)
+    .run();
+
+  return getFriendLink(db, id);
+}
+
+async function deleteFriendLink(db: D1Database, id: number) {
+  const result = await db
+    .prepare('DELETE FROM friend_links WHERE id = ?')
+    .bind(id)
+    .run();
+  return Boolean(result.meta?.changes);
 }
 
 async function getPhotoCommentCount(db: D1Database, photoId: string) {
@@ -479,6 +733,136 @@ export default {
 
       if (request.method === 'GET' && path === '/site') {
         return json({ ok: true, visits: await getSiteVisits(env.DB) });
+      }
+
+      if (request.method === 'GET' && path === '/friends') {
+        return json({ ok: true, friends: await listApprovedFriends(env.DB) });
+      }
+
+      if (request.method === 'POST' && path === '/friends/apply') {
+        const body = await readJson(request);
+        const name = normalizeFriendName(body?.name);
+        const url = normalizeFriendUrl(body?.url);
+        const seed = normalizeFriendSeed(body?.seed);
+        const description =
+          body?.description === undefined
+            ? ''
+            : normalizeFriendDescription(body.description);
+        const tags = normalizeFriendTags(body?.tags);
+
+        if (
+          !body ||
+          !name ||
+          !url ||
+          seed === null ||
+          description === null ||
+          tags === null
+        ) {
+          return json({ ok: false, error: 'invalid_payload' }, 400);
+        }
+
+        const row = await createFriendApplication(env.DB, {
+          name,
+          url,
+          seed,
+          description,
+          tags,
+        });
+        if (!row) {
+          return json({ ok: false, error: 'duplicate_url' }, 409);
+        }
+
+        return json(
+          { ok: true, application: serializeFriend(row, true) },
+          201
+        );
+      }
+
+      if (path.startsWith('/friends/admin')) {
+        if (!env.FRIENDS_ADMIN_TOKEN?.trim()) {
+          return json({ ok: false, error: 'admin_not_configured' }, 503);
+        }
+        if (!isFriendAdmin(request, env)) {
+          return json({ ok: false, error: 'unauthorized' }, 401);
+        }
+
+        if (request.method === 'GET' && path === '/friends/admin') {
+          return json({
+            ok: true,
+            friends: await listFriendsForAdmin(env.DB),
+          });
+        }
+
+        const friendAdminMatch = /^\/friends\/admin\/(\d+)$/.exec(path);
+        if (friendAdminMatch) {
+          const id = Number(friendAdminMatch[1]);
+
+          if (request.method === 'PATCH') {
+            const body = await readJson(request);
+            if (!body) {
+              return json({ ok: false, error: 'invalid_payload' }, 400);
+            }
+
+            const patch: FriendPatch = {};
+            if (body.name !== undefined) {
+              const name = normalizeFriendName(body.name);
+              if (!name) {
+                return json({ ok: false, error: 'invalid_payload' }, 400);
+              }
+              patch.name = name;
+            }
+            if (body.url !== undefined) {
+              const url = normalizeFriendUrl(body.url);
+              if (!url) {
+                return json({ ok: false, error: 'invalid_payload' }, 400);
+              }
+              patch.url = url;
+            }
+            if (body.seed !== undefined) {
+              const seed = normalizeFriendSeed(body.seed);
+              if (seed === null) {
+                return json({ ok: false, error: 'invalid_payload' }, 400);
+              }
+              patch.seed = seed;
+            }
+            if (body.description !== undefined) {
+              const description = normalizeFriendDescription(body.description);
+              if (description === null) {
+                return json({ ok: false, error: 'invalid_payload' }, 400);
+              }
+              patch.description = description;
+            }
+            if (body.tags !== undefined) {
+              const tags = normalizeFriendTags(body.tags);
+              if (tags === null) {
+                return json({ ok: false, error: 'invalid_payload' }, 400);
+              }
+              patch.tags = tags;
+            }
+            if (body.status !== undefined) {
+              if (!isFriendStatus(body.status)) {
+                return json({ ok: false, error: 'invalid_payload' }, 400);
+              }
+              patch.status = body.status;
+            }
+
+            const row = await updateFriendLink(env.DB, id, patch);
+            if (row === undefined) {
+              return json({ ok: false, error: 'invalid_payload' }, 400);
+            }
+            if (!row) {
+              return json({ ok: false, error: 'not_found' }, 404);
+            }
+            return json({ ok: true, friend: serializeFriend(row, true) });
+          }
+
+          if (request.method === 'DELETE') {
+            if (!(await deleteFriendLink(env.DB, id))) {
+              return json({ ok: false, error: 'not_found' }, 404);
+            }
+            return json({ ok: true, id });
+          }
+        }
       }
 
       if (request.method === 'GET' && path === '/photo-reactions') {

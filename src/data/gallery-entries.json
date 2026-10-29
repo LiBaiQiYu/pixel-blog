@@ -576,5 +576,49 @@
     "place": "冲乎尔镇",
     "city": "布尔津县",
     "locationName": "冲乎尔镇，布尔津县，阿勒泰地区，新疆"
+  },
+  {
+    "id": "IMG_1389",
+    "title": "木桩上的熊大",
+    "category": "生活",
+    "description": "禾木的木栈道上，熊大站在树桩上张开双臂，像在替秋天迎接每一个路过的人。",
+    "date": "2026-09-23T10:49:09.707Z",
+    "width": 4284,
+    "height": 5712,
+    "aspect": 0.75,
+    "lat": 48.571397,
+    "lon": 87.426614,
+    "locationVisible": true,
+    "accent": "violet"
+  },
+  {
+    "id": "IMG_1390",
+    "title": "招手的熊二",
+    "category": "生活",
+    "description": "熊二伸出枝条做成的手臂，笑容被刻在圆木上；身后是秋天、游客和还没散场的热闹。",
+    "date": "2026-09-23T10:49:36.519Z",
+    "width": 4284,
+    "height": 5712,
+    "aspect": 0.75,
+    "lat": 48.571367,
+    "lon": 87.426558,
+    "locationVisible": true,
+    "accent": "magenta"
+  },
+  {
+    "id": "IMG_1391",
+    "title": "白桦木小熊",
+    "category": "生活",
+    "description": "一段白桦木长出两条腿，头顶留着一小截树桩，安静地站在满地金黄里。——AI生成XD",
+    "date": "2026-09-23T10:50:00.000Z",
+    "width": 4284,
+    "height": 5712,
+    "aspect": 0.75,
+    "lat": 48.571339,
+    "lon": 87.426514,
+    "locationVisible": true,
+    "accent": "emerald",
+    "area": "",
+    "place": ""
   }
 ]

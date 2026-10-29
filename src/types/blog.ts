@@ -1,7 +1,7 @@
 import { CoverArtType } from '../components/PixelArtwork';
 
 export type ViewMode = 'standard' | 'terminal';
-export type ContentPage = 'home' | 'gallery' | 'about';
+export type ContentPage = 'home' | 'gallery' | 'friends' | 'about';
 export type ThemeMode = 'dark' | 'light';
 export type ThemePreference = 'auto' | ThemeMode;
 

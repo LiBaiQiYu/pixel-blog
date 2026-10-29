@@ -192,6 +192,8 @@ export const PixelWeatherIcon: React.FC<PixelWeatherIconProps> = ({
   );
 };
 
+const PREVIEW_HOURS = Array.from({ length: 24 }, (_, index) => index);
+
 interface WeatherWidgetProps {
   weather: WeatherData;
   status: WeatherStatus;
@@ -201,6 +203,8 @@ interface WeatherWidgetProps {
   onSetPreviewKind: (kind: WeatherKind | null) => void;
   previewIntensity: number | null;
   onSetPreviewIntensity: (intensity: number | null) => void;
+  previewHour: number | null;
+  onSetPreviewHour: (hour: number | null) => void;
 }
 
 export const WeatherWidget: React.FC<WeatherWidgetProps> = ({
@@ -212,6 +216,8 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({
   onSetPreviewKind,
   previewIntensity,
   onSetPreviewIntensity,
+  previewHour,
+  onSetPreviewHour,
 }) => {
   const [showPreview, setShowPreview] = useState(false);
   const kind = useMemo(
@@ -306,14 +312,22 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({
               {hint}
             </span>
           )}
-          {previewKind && (
+          {(previewKind || previewHour !== null) && (
             <span className="basis-full text-pink-500 sm:basis-auto dark:text-pink-400">
-              背景预览中（
-              {WEATHER_KIND_OPTIONS.find((o) => o.kind === previewKind)?.label}
-              {previewIntensity !== null
-                ? ` · ${getIntensityLabel(previewIntensity)}`
+              背景预览中
+              {previewKind
+                ? `（${
+                    WEATHER_KIND_OPTIONS.find((o) => o.kind === previewKind)
+                      ?.label ?? previewKind
+                  }${
+                    previewIntensity !== null
+                      ? ` · ${getIntensityLabel(previewIntensity)}`
+                      : ''
+                  }）`
                 : ''}
-              ）
+              {previewHour !== null
+                ? ` · ${String(previewHour).padStart(2, '0')}:00 太阳时`
+                : ''}
             </span>
           )}
           <span className="whitespace-nowrap">更新于 {weather.updatedAt}</span>
@@ -373,6 +387,36 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({
               {option.label}
             </button>
           ))}
+        </div>
+      )}
+
+      {/* Preview Solar Time */}
+      {showPreview && (
+        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+          <span className="mr-1 text-[10px] font-mono text-slate-400 dark:text-slate-500">
+            太阳时:
+          </span>
+          <select
+            value={previewHour ?? ''}
+            onChange={(event) =>
+              onSetPreviewHour(
+                event.target.value === '' ? null : Number(event.target.value)
+              )
+            }
+            className="rounded-lg border border-slate-300/60 bg-white/40 px-2 py-0.5 font-mono text-[11px] text-slate-600 outline-none transition-colors hover:border-sky-400/50 focus:border-sky-400 dark:border-white/10 dark:bg-slate-900/50 dark:text-slate-300"
+            aria-label="预览太阳时"
+            title="按当前位置经度计算的太阳时，用于预览日出、日落和夜间背景"
+          >
+            <option value="">自动（当前时间）</option>
+            {PREVIEW_HOURS.map((hour) => (
+              <option key={hour} value={hour}>
+                {String(hour).padStart(2, '0')}:00
+              </option>
+            ))}
+          </select>
+          <span className="ml-1 text-[10px] font-mono text-slate-400 dark:text-slate-500">
+            按经度模拟日出日落与月相
+          </span>
         </div>
       )}
 

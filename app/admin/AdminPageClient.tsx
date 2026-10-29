@@ -7,7 +7,7 @@ const AdminApp = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex min-h-screen items-center justify-center bg-slate-950 font-mono text-xs text-cyan-300">
+      <div className="flex min-h-screen items-center justify-center bg-slate-100 font-mono text-xs text-cyan-700 dark:bg-slate-950 dark:text-cyan-300">
         LOADING ADMIN...
       </div>
     ),

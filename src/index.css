@@ -1014,6 +1014,117 @@ html.dark .pixel-input:focus {
     inset 2px 2px 0 0 rgba(56, 189, 248, 0.05);
 }
 
+.pixel-number-input::-webkit-inner-spin-button,
+.pixel-number-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.pixel-number-input {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.friend-seed-step {
+  cursor: pointer;
+  background: rgba(139, 92, 246, 0.04);
+  transition:
+    background-color 80ms step-end,
+    color 80ms step-end,
+    box-shadow 80ms steps(2, end),
+    transform 70ms steps(2, end);
+}
+
+.friend-seed-step:hover:not(:disabled) {
+  background: rgba(139, 92, 246, 0.18);
+  box-shadow: inset 2px 0 0 0 rgba(139, 92, 246, 0.26);
+}
+
+.friend-seed-step:active:not(:disabled) {
+  background: rgba(139, 92, 246, 0.28);
+  transform: translateY(1px);
+}
+
+html.dark .friend-seed-step {
+  background: rgba(167, 139, 250, 0.05);
+}
+
+html.dark .friend-seed-step:hover:not(:disabled) {
+  background: rgba(167, 139, 250, 0.2);
+  box-shadow: inset 2px 0 0 0 rgba(196, 181, 253, 0.24);
+}
+
+@keyframes friendTagIn {
+  0% {
+    opacity: 0;
+    transform: translateY(7px) scale(0.7);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-2px) scale(1.06);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes friendTagOut {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(2px, -6px) scale(0.72);
+  }
+}
+
+.friend-tag-chip {
+  transform-origin: left bottom;
+  animation: friendTagIn 190ms steps(4, end) both;
+  transition:
+    background-color 80ms step-end,
+    border-color 80ms step-end,
+    transform 90ms steps(2, end),
+    box-shadow 90ms step-end;
+}
+
+.friend-tag-chip:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 0 rgba(124, 58, 237, 0.24);
+}
+
+.friend-tag-chip-exit {
+  animation: friendTagOut 170ms steps(3, end) both;
+  pointer-events: none;
+}
+
+.friend-tag-close {
+  transition:
+    transform 70ms steps(2, end),
+    background-color 80ms step-end,
+    border-color 80ms step-end,
+    color 80ms step-end;
+}
+
+.friend-tag-close:hover {
+  transform: translate(-1px, -1px);
+  border-color: rgba(244, 63, 94, 0.55);
+  background-color: rgba(244, 63, 94, 0.16);
+  color: #e11d48;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .friend-tag-chip,
+  .friend-tag-chip-exit,
+  .friend-seed-step,
+  .friend-tag-close {
+    animation: none;
+    transition: none;
+  }
+}
+
 .pixel-action-button {
   border-radius: 0;
   box-shadow: 3px 3px 0 0 rgba(56, 189, 248, 0.2);

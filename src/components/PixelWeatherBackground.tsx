@@ -15,6 +15,8 @@ interface PixelWeatherBackgroundProps {
   longitude?: number;
   /** Beaufort wind scale (0-12) from the weather API, drives slant & drift */
   windScale?: number;
+  /** Preview hour in true solar time (0-23), null uses the real clock */
+  previewHour?: number | null;
 }
 
 interface RainDrop {
@@ -232,10 +234,75 @@ function moonPhaseFraction(date: Date): number {
   return phase < 0 ? phase + 1 : phase;
 }
 
+function isBlueMoon(date: Date) {
+  const start = Date.UTC(
+    date.getUTCFullYear(),
+    date.getUTCMonth(),
+    1
+  );
+  const end = Date.UTC(
+    date.getUTCFullYear(),
+    date.getUTCMonth() + 1,
+    1
+  );
+  const step = 6 * 60 * 60 * 1000;
+  const events: number[] = [];
+  let previous = moonPhaseFraction(new Date(start));
+
+  for (let time = start + step; time < end; time += step) {
+    const current = moonPhaseFraction(new Date(time));
+    if (previous < 0.5 && current >= 0.5) {
+      events.push(time);
+    }
+    previous = current;
+  }
+
+  if (events.length < 2) return false;
+  const now = date.getTime();
+  return events.some(
+    (event, index) =>
+      index > 0 && Math.abs(now - event) < 18 * 60 * 60 * 1000
+  );
+}
+
+function mixRgb(
+  a: [number, number, number],
+  b: [number, number, number],
+  t: number
+): [number, number, number] {
+  return [
+    Math.round(a[0] + (b[0] - a[0]) * t),
+    Math.round(a[1] + (b[1] - a[1]) * t),
+    Math.round(a[2] + (b[2] - a[2]) * t),
+  ];
+}
+
+function smoothstep(min: number, max: number, value: number) {
+  const t = Math.max(0, Math.min(1, (value - min) / (max - min)));
+  return t * t * (3 - 2 * t);
+}
+
+function rgbaColor(
+  color: [number, number, number],
+  alpha = 1
+) {
+  return `rgba(${color[0]},${color[1]},${color[2]},${alpha})`;
+}
+
 const J2000 = 2451545;
 
 const julianToDate = (julian: number) =>
   new Date((julian + 0.5 - 2440588) * 86400000);
+
+const dateForSolarHour = (hour: number, longitude: number) => {
+  const now = new Date();
+  const utcMidnight = Date.UTC(
+    now.getUTCFullYear(),
+    now.getUTCMonth(),
+    now.getUTCDate()
+  );
+  return new Date(utcMidnight + (hour * 60 - longitude * 4) * 60000);
+};
 
 // Sunrise / sunset for the current location (SunCalc algorithm, h0 = -0.833°)
 function getSunTimes(date: Date, latDeg: number, lonDeg: number) {
@@ -296,6 +363,7 @@ export const PixelWeatherBackground: React.FC<PixelWeatherBackgroundProps> = ({
   latitude = 31.23,
   longitude = 121.47,
   windScale = 0,
+  previewHour = null,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -337,10 +405,15 @@ export const PixelWeatherBackground: React.FC<PixelWeatherBackgroundProps> = ({
     let nextStrikeIn = 1200 + Math.random() * 4200;
 
     let lastSolarCheck = 0;
-    let solar = solarPosition(new Date(), latitude, longitude);
-    let lunar = moonPosition(new Date(), latitude, longitude);
-    let phase = moonPhaseFraction(new Date());
-    let sunTimes = getSunTimes(new Date(), latitude, longitude);
+    let sceneTime =
+      previewHour === null
+        ? new Date()
+        : dateForSolarHour(previewHour, longitude);
+    let solar = solarPosition(sceneTime, latitude, longitude);
+    let lunar = moonPosition(sceneTime, latitude, longitude);
+    let phase = moonPhaseFraction(sceneTime);
+    let blueMoon = isBlueMoon(sceneTime);
+    let sunTimes = getSunTimes(sceneTime, latitude, longitude);
 
     const group = (() => {
       if (kind === 'partly' || kind === 'cloud') return 'cloudy';
@@ -355,9 +428,8 @@ export const PixelWeatherBackground: React.FC<PixelWeatherBackgroundProps> = ({
 
     // Day or night strictly by local sunrise / sunset, independent of theme
     const isNight = () => {
-      const now = new Date();
       if (sunTimes.sunrise && sunTimes.sunset) {
-        return now < sunTimes.sunrise || now >= sunTimes.sunset;
+        return sceneTime < sunTimes.sunrise || sceneTime >= sunTimes.sunset;
       }
       return solar.altitude < -0.0083; // polar fallback (h0 = -0.833°)
     };
@@ -584,7 +656,7 @@ export const PixelWeatherBackground: React.FC<PixelWeatherBackgroundProps> = ({
       }
 
       return {
-        x: Math.max(6, Math.min(cols - 6, x)),
+        x: Math.max(12, Math.min(cols - 12, x)),
         y: Math.max(rows * 0.1, Math.min(rows * 0.38, y)),
       };
     };
@@ -597,7 +669,7 @@ export const PixelWeatherBackground: React.FC<PixelWeatherBackgroundProps> = ({
 
       // Sun gets bigger and warmer near the horizon (sunrise / sunset)
       const heightFactor = Math.max(0, Math.min(1, altitude / (35 * RAD)));
-      const r = 5.6 + (1 - heightFactor) * 1.8 + Math.sin(t / 1400) * 0.5;
+      const r = 7.2 + (1 - heightFactor) * 2.4 + Math.sin(t / 1400) * 0.55;
       const coreColor = lerpColor([253, 224, 71], [253, 186, 116], 1 - heightFactor);
       const bodyColor = lerpColor([251, 191, 36], [244, 114, 60], 1 - heightFactor);
       const rayAlpha = 0.55 + 0.25 * heightFactor;
@@ -653,10 +725,45 @@ export const PixelWeatherBackground: React.FC<PixelWeatherBackgroundProps> = ({
       const pos = mapCelestialPosition(altitude, azimuth);
       const cx = Math.round(pos.x);
       const cy = Math.round(pos.y);
-      const r = 5 + Math.sin(t / 2000) * 0.3;
+      const r = 8.2 + Math.sin(t / 2000) * 0.5;
+      const fullness = Math.max(0, 1 - Math.abs(phase - 0.5) * 2);
+      const fullMoon = fullness > 0.9;
+      const blueFullMoon = fullMoon && blueMoon;
+      const litColor = blueFullMoon
+        ? '#DBEAFE'
+        : fullMoon
+          ? '#FECACA'
+          : '#F8FAFC';
+      const edgeColor = blueFullMoon
+        ? '#93C5FD'
+        : fullMoon
+          ? '#FCA5A5'
+          : '#CBD5E1';
+      const shadowColor = blueFullMoon
+        ? 'rgba(30,64,175,0.32)'
+        : fullMoon
+          ? 'rgba(127,29,29,0.26)'
+          : 'rgba(100,116,139,0.30)';
 
-      // Phase-accurate pixel moon (theme independent, only time changes it).
-      // Northern-hemisphere convention: waxing moon lit on the right.
+      if (fullMoon) {
+        ctx.globalAlpha = blueFullMoon ? 0.24 : 0.18;
+        ctx.fillStyle = blueFullMoon
+          ? 'rgba(96,165,250,0.55)'
+          : 'rgba(251,113,133,0.48)';
+        const glowRadius = Math.ceil(r) + 4;
+        for (let y = -glowRadius; y <= glowRadius; y++) {
+          for (let x = -glowRadius; x <= glowRadius; x++) {
+            const d2 = x * x + y * y;
+            if (d2 > r * r && d2 <= glowRadius * glowRadius) {
+              ctx.fillRect(cx + x, cy + y, 1, 1);
+            }
+          }
+        }
+        ctx.globalAlpha = 1;
+      }
+
+      // Phase-accurate pixel moon. Lit side flips in the southern hemisphere.
+      const hemisphere = latitude >= 0 ? 1 : -1;
       const beta = 2 * Math.PI * phase;
       const sinB = Math.sin(beta);
       const cosB = Math.cos(beta);
@@ -667,18 +774,21 @@ export const PixelWeatherBackground: React.FC<PixelWeatherBackgroundProps> = ({
           if (d2 > r * r) continue;
           const nx = x / r;
           const nz = Math.sqrt(Math.max(0, 1 - (nx * nx + (y * y) / (r * r))));
-          const lit = nx * sinB - nz * cosB > 0;
+          const lit = nx * sinB * hemisphere - nz * cosB > 0;
           ctx.fillStyle = lit
             ? Math.abs(x) > r - 2
-              ? '#CBD5E1'
-              : '#F8FAFC'
-            : 'rgba(100,116,139,0.30)';
+              ? edgeColor
+              : litColor
+            : shadowColor;
           ctx.fillRect(cx + x, cy + y, 1, 1);
         }
       }
 
-      // Crater pixels on the lit side only
-      ctx.fillStyle = 'rgba(148,163,184,0.55)';
+      ctx.fillStyle = fullMoon
+        ? blueFullMoon
+          ? 'rgba(147,197,253,0.55)'
+          : 'rgba(254,202,202,0.55)'
+        : 'rgba(148,163,184,0.55)';
       if (phase < 0.5 || phase > 0.85) {
         ctx.fillRect(cx - 2, cy - 1, 1, 1);
       }
@@ -754,16 +864,82 @@ export const PixelWeatherBackground: React.FC<PixelWeatherBackgroundProps> = ({
       // Recompute solar/lunar position periodically (cheap, keeps sun moving with real time)
       if (t - lastSolarCheck > 15000) {
         lastSolarCheck = t;
-        const now = new Date();
-        solar = solarPosition(now, latitude, longitude);
-        lunar = moonPosition(now, latitude, longitude);
-        phase = moonPhaseFraction(now);
-        sunTimes = getSunTimes(now, latitude, longitude);
+        sceneTime =
+          previewHour === null
+            ? new Date()
+            : dateForSolarHour(previewHour, longitude);
+        solar = solarPosition(sceneTime, latitude, longitude);
+        lunar = moonPosition(sceneTime, latitude, longitude);
+        phase = moonPhaseFraction(sceneTime);
+        blueMoon = isBlueMoon(sceneTime);
+        sunTimes = getSunTimes(sceneTime, latitude, longitude);
       }
 
       const night = isNight();
+      const altitudeDeg = solar.altitude / RAD;
+      const dayness = smoothstep(-8, 10, altitudeDeg);
+      const twilight = Math.max(0, 1 - Math.abs(altitudeDeg) / 10);
+      const warmTwilight =
+        kind === 'sun' || kind === 'partly' ? twilight : 0;
 
-      // Sky tint: day vs night, plus weather mood (scaled by weather strength)
+      const nightTop: [number, number, number] = isDark
+        ? [2, 6, 16]
+        : [88, 100, 115];
+      const nightBottom: [number, number, number] = isDark
+        ? [8, 18, 34]
+        : [126, 137, 151];
+      const dayTop: [number, number, number] = isDark
+        ? [17, 39, 68]
+        : [219, 239, 252];
+      const dayBottom: [number, number, number] = isDark
+        ? [8, 19, 35]
+        : [245, 250, 255];
+      const duskTop: [number, number, number] = isDark
+        ? [78, 32, 42]
+        : [232, 139, 93];
+      const duskBottom: [number, number, number] = isDark
+        ? [180, 76, 43]
+        : [255, 218, 148];
+
+      let skyTop = mixRgb(nightTop, dayTop, dayness);
+      let skyBottom = mixRgb(nightBottom, dayBottom, dayness);
+      skyTop = mixRgb(skyTop, duskTop, warmTwilight * 0.82);
+      skyBottom = mixRgb(skyBottom, duskBottom, warmTwilight * 0.7);
+      const skyAlpha = isDark
+        ? 0.45 + (1 - dayness) * 0.38 + warmTwilight * 0.08
+        : 0.3 + (1 - dayness) * 0.27 + warmTwilight * 0.08;
+
+      ctx.clearRect(0, 0, cols, rows);
+      const skyGradient = ctx.createLinearGradient(0, 0, 0, rows);
+      skyGradient.addColorStop(0, rgbaColor(skyTop, skyAlpha));
+      skyGradient.addColorStop(
+        0.56,
+        rgbaColor(mixRgb(skyTop, skyBottom, 0.56), skyAlpha * 0.94)
+      );
+      skyGradient.addColorStop(1, rgbaColor(skyBottom, skyAlpha * 0.84));
+      ctx.fillStyle = skyGradient;
+      ctx.fillRect(0, 0, cols, rows);
+
+      if (warmTwilight > 0.04) {
+        const horizonGlow = ctx.createLinearGradient(
+          0,
+          rows * 0.32,
+          0,
+          rows * 0.74
+        );
+        horizonGlow.addColorStop(
+          0,
+          `rgba(251,146,60,${0.3 * warmTwilight})`
+        );
+        horizonGlow.addColorStop(
+          1,
+          'rgba(253,230,138,0)'
+        );
+        ctx.fillStyle = horizonGlow;
+        ctx.fillRect(0, 0, cols, rows);
+      }
+
+      // Weather mood overlay
       const moodAlpha = Math.min(2.2, 0.6 + strength * 0.5);
       let tint: string;
       if (night) {
@@ -808,7 +984,6 @@ export const PixelWeatherBackground: React.FC<PixelWeatherBackgroundProps> = ({
         tint = isDark ? 'rgba(148,163,184,0.045)' : 'rgba(100,116,139,0.04)';
       }
 
-      ctx.clearRect(0, 0, cols, rows);
       ctx.fillStyle = tint;
       ctx.fillRect(0, 0, cols, rows);
 
@@ -1321,7 +1496,16 @@ export const PixelWeatherBackground: React.FC<PixelWeatherBackgroundProps> = ({
       if (rafId) cancelAnimationFrame(rafId);
       window.removeEventListener('resize', resize);
     };
-  }, [kind, enabled, theme, intensity, latitude, longitude, windScale]);
+  }, [
+    kind,
+    enabled,
+    theme,
+    intensity,
+    latitude,
+    longitude,
+    windScale,
+    previewHour,
+  ]);
 
   if (!enabled) return null;
 

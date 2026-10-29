@@ -28,6 +28,8 @@ import { BlogShellProvider } from './components/BlogShellContext';
 import { Navbar } from './components/Navbar';
 import { StandardBlogView } from './components/StandardBlogView';
 import { TerminalBlogView } from './components/TerminalBlogView';
+import { FriendsView } from './components/FriendsView';
+import { TerminalFriendsView } from './components/TerminalFriendsView';
 import { PixelWeatherBackground } from './components/PixelWeatherBackground';
 import { FlyingBackButton } from './components/FlyingBackButton';
 import { useWeather } from './hooks/useWeather';
@@ -74,6 +76,16 @@ interface AppShellProps {
   children: React.ReactNode;
 }
 
+function parseWeatherPreviewHour(value: string | null) {
+  if (value === null) return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const hour = Number(trimmed);
+  return Number.isInteger(hour) && hour >= 0 && hour <= 23
+    ? hour
+    : null;
+}
+
 export const AppShell: React.FC<AppShellProps> = ({
   initialPosts,
   children,
@@ -88,9 +100,11 @@ export const AppShell: React.FC<AppShellProps> = ({
   const galleryPreviewOpen = Boolean(galleryPreviewId);
   const contentPage: ContentPage = pathname.startsWith('/gallery')
     ? 'gallery'
-    : pathname.startsWith('/about')
-      ? 'about'
-      : 'home';
+    : pathname.startsWith('/friends')
+      ? 'friends'
+      : pathname.startsWith('/about')
+        ? 'about'
+        : 'home';
 
   const [prefsReady, setPrefsReady] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('standard');
@@ -190,6 +204,8 @@ export const AppShell: React.FC<AppShellProps> = ({
   // Temporary preview override: ?weather=rain in URL, or sessionStorage, or terminal/widget switcher
   const [weatherPreviewKind, setWeatherPreviewKind] =
     useState<WeatherKind | null>(null);
+  const [weatherPreviewHour, setWeatherPreviewHour] =
+    useState<number | null>(null);
 
   const handleSetWeatherPreview = (kind: WeatherKind | null) => {
     setWeatherPreviewKind(kind);
@@ -203,7 +219,9 @@ export const AppShell: React.FC<AppShellProps> = ({
       } else {
         sessionStorage.removeItem('pixel_blog_weather_preview');
         sessionStorage.removeItem('pixel_blog_weather_preview_intensity');
+        sessionStorage.removeItem('pixel_blog_weather_preview_hour');
         setWeatherPreviewIntensity(null);
+        setWeatherPreviewHour(null);
       }
     } catch {
       // ignore storage errors
@@ -262,6 +280,18 @@ export const AppShell: React.FC<AppShellProps> = ({
           setWeatherPreviewIntensity(savedIntensity);
         }
       }
+
+      const urlHour = parseWeatherPreviewHour(params.get('wh'));
+      if (urlHour !== null) {
+        setWeatherPreviewHour(urlHour);
+      } else {
+        const savedHour = parseWeatherPreviewHour(
+          sessionStorage.getItem('pixel_blog_weather_preview_hour')
+        );
+        if (savedHour !== null) {
+          setWeatherPreviewHour(savedHour);
+        }
+      }
     } catch {
       // ignore storage access errors
     } finally {
@@ -277,6 +307,22 @@ export const AppShell: React.FC<AppShellProps> = ({
       } else {
         sessionStorage.setItem(
           'pixel_blog_weather_preview_intensity',
+          String(value)
+        );
+      }
+    } catch {
+      // ignore storage errors
+    }
+  };
+
+  const handleSetWeatherPreviewHour = (value: number | null) => {
+    setWeatherPreviewHour(value);
+    try {
+      if (value === null) {
+        sessionStorage.removeItem('pixel_blog_weather_preview_hour');
+      } else {
+        sessionStorage.setItem(
+          'pixel_blog_weather_preview_hour',
           String(value)
         );
       }
@@ -673,6 +719,7 @@ export const AppShell: React.FC<AppShellProps> = ({
         latitude={weather.lat ?? 31.23}
         longitude={weather.lon ?? 121.47}
         windScale={weather.current.windScale ?? 0}
+        previewHour={weatherPreviewHour}
       />
 
       {/* Ambient Liquid Glass & Pixel Matrix Background */}
@@ -720,6 +767,14 @@ export const AppShell: React.FC<AppShellProps> = ({
       >
         {isArticleRoute ? (
           children
+        ) : contentPage === 'friends' ? (
+          shellViewMode === 'terminal' ? (
+            <TerminalFriendsView
+              onBackHome={() => handleContentPageChange('home')}
+            />
+          ) : (
+            <FriendsView />
+          )
         ) : contentPage === 'about' ? (
           <Suspense
             fallback={
@@ -808,6 +863,8 @@ export const AppShell: React.FC<AppShellProps> = ({
             onSetWeatherPreview={handleSetWeatherPreview}
             weatherPreviewIntensity={weatherPreviewIntensity}
             onSetWeatherPreviewIntensity={handleSetWeatherPreviewIntensity}
+            weatherPreviewHour={weatherPreviewHour}
+            onSetWeatherPreviewHour={handleSetWeatherPreviewHour}
             backOriginRef={backOriginRef}
             onSwitchToTerminal={(cmd) => {
               if (cmd) setPendingTerminalCmd(cmd);
@@ -843,6 +900,7 @@ export const AppShell: React.FC<AppShellProps> = ({
             weatherHint={weatherHint}
             onWeatherRelocate={requestLiveWeather}
             onOpenGallery={() => handleContentPageChange('gallery')}
+            onOpenFriends={() => handleContentPageChange('friends')}
             onOpenAbout={() => handleContentPageChange('about')}
             initialCommand={pendingTerminalCmd}
             onConsumeInitialCommand={() => setPendingTerminalCmd(null)}

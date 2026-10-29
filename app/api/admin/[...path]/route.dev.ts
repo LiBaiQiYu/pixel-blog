@@ -49,6 +49,43 @@ function authorized(request: NextRequest) {
   return request.headers.get('x-admin-token') === token;
 }
 
+async function proxyFriendsAdmin(
+  request: NextRequest,
+  path: string
+): Promise<NextResponse> {
+  const token = process.env.FRIENDS_ADMIN_TOKEN?.trim();
+  if (!token) {
+    return json(
+      {
+        error:
+          '未配置 FRIENDS_ADMIN_TOKEN，无法访问友链审核接口',
+      },
+      503
+    );
+  }
+
+  const baseUrl = (
+    process.env.NEXT_PUBLIC_STATS_API_URL || 'https://stats.cwa1e.top'
+  ).replace(/\/+$/, '');
+  const target = path.replace(/^friends\/admin/, 'friends/admin');
+  const body =
+    request.method === 'GET' || request.method === 'DELETE'
+      ? undefined
+      : await request.text();
+
+  const response = await fetch(`${baseUrl}/${target}`, {
+    method: request.method,
+    headers: {
+      'Content-Type': 'application/json',
+      'x-admin-token': token,
+    },
+    body,
+    cache: 'no-store',
+  });
+  const data = await response.json().catch(() => ({}));
+  return json(data, response.status);
+}
+
 async function handle(
   request: NextRequest,
   segments: string[]
@@ -82,6 +119,15 @@ async function handle(
       request
     );
     return json(await testStorage(body.origin));
+  }
+
+  if (path === 'friends/admin' && method === 'GET') {
+    return proxyFriendsAdmin(request, path);
+  }
+
+  const friendAdminMatch = /^friends\/admin\/(\d+)$/.exec(path);
+  if (friendAdminMatch && (method === 'PATCH' || method === 'DELETE')) {
+    return proxyFriendsAdmin(request, path);
   }
 
   if (method === 'GET' && path === 'library') {

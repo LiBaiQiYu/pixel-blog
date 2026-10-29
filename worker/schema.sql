@@ -73,6 +73,23 @@ CREATE TABLE IF NOT EXISTS photo_comments (
 CREATE INDEX IF NOT EXISTS idx_photo_comments_photo
 ON photo_comments(photo_id, id DESC);
 
+CREATE TABLE IF NOT EXISTS friend_links (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  url TEXT NOT NULL,
+  seed INTEGER NOT NULL,
+  description TEXT NOT NULL DEFAULT '',
+  tags TEXT NOT NULL DEFAULT '[]',
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (
+    status IN ('pending', 'approved', 'rejected')
+  ),
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_friend_links_status
+ON friend_links(status, id DESC);
+
 CREATE TRIGGER IF NOT EXISTS trg_post_likes_insert
 AFTER INSERT ON post_likes
 BEGIN
