@@ -44,7 +44,7 @@ const HERO_CLOUDS = [
 const FriendHeroArt: React.FC = () => (
   <svg
     viewBox="0 0 760 300"
-    preserveAspectRatio="xMidYMid slice"
+    preserveAspectRatio="xMaxYMid slice"
     className="h-full w-full"
     aria-hidden="true"
     shapeRendering="crispEdges"
@@ -283,8 +283,9 @@ export const FriendsView: React.FC = () => {
           className="relative min-h-[240px] overflow-hidden p-6 sm:min-h-[270px] sm:p-9"
           contentClassName="relative z-10 flex h-full flex-col justify-center"
         >
-          <div className="pointer-events-none absolute inset-y-0 right-0 w-[74%] opacity-75 sm:w-[68%]">
+          <div className="pointer-events-none absolute inset-0 opacity-70 sm:inset-y-0 sm:left-auto sm:right-0 sm:w-[68%] sm:opacity-75">
             <FriendHeroArt />
+            <div className="absolute inset-0 bg-gradient-to-r from-white/95 via-white/45 to-transparent dark:from-slate-950/95 dark:via-slate-950/45" />
           </div>
           <div className="relative max-w-[430px]">
             <div className="flex items-center gap-2 font-pixel text-[10px] tracking-wider text-violet-600 dark:text-violet-300">

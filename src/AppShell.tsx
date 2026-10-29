@@ -98,13 +98,22 @@ export const AppShell: React.FC<AppShellProps> = ({
     ? decodeURIComponent(pathname.slice('/gallery/'.length).split('/')[0])
     : null;
   const galleryPreviewOpen = Boolean(galleryPreviewId);
-  const contentPage: ContentPage = pathname.startsWith('/gallery')
+  const pathContentPage: ContentPage = pathname.startsWith('/gallery')
     ? 'gallery'
     : pathname.startsWith('/friends')
       ? 'friends'
       : pathname.startsWith('/about')
         ? 'about'
         : 'home';
+  const [pendingContentPage, setPendingContentPage] =
+    useState<ContentPage | null>(null);
+  const contentPage = pendingContentPage ?? pathContentPage;
+
+  useEffect(() => {
+    if (pendingContentPage && pathContentPage === pendingContentPage) {
+      setPendingContentPage(null);
+    }
+  }, [pathContentPage, pendingContentPage]);
 
   const [prefsReady, setPrefsReady] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('standard');
@@ -522,6 +531,7 @@ export const AppShell: React.FC<AppShellProps> = ({
 
   const handleContentPageChange = (nextPage: ContentPage) => {
     if (nextPage === contentPage && !isArticleRoute) return;
+    setPendingContentPage(nextPage);
     pixelAudio.playClick();
     router.push(nextPage === 'home' ? '/' : `/${nextPage}`);
     window.scrollTo({ top: 0, behavior: 'auto' });
