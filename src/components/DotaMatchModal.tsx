@@ -100,7 +100,6 @@ export const DotaMatchModal: React.FC<DotaMatchModalProps> = ({
 }) => {
   const { profile, overall, recent, heroes } = summary;
   const rank = profile?.rankLabel;
-  const mmr = profile?.mmr;
 
   return (
     <PixelBloom
@@ -138,7 +137,7 @@ export const DotaMatchModal: React.FC<DotaMatchModalProps> = ({
           <SectionHeader
             index="01"
             title="概况"
-            hint={rank ? `${rank}${mmr ? ` · ${mmr} MMR` : ''}` : undefined}
+            hint={rank ?? undefined}
           />
           {profile && (
             <div className="flex items-center gap-3">
@@ -162,7 +161,6 @@ export const DotaMatchModal: React.FC<DotaMatchModalProps> = ({
                 </div>
                 <div className="mt-0.5 font-mono text-[9px] text-slate-400 dark:text-slate-500">
                   account_id {profile.accountId}
-                  {mmr ? ` · 估算 MMR ${mmr}` : ''}
                 </div>
               </div>
               <a

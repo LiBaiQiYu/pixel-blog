@@ -100,7 +100,6 @@ export const DotaMatchCard: React.FC = () => {
               {rank && (
                 <span className="rounded-full border border-rose-400/35 bg-rose-500/10 px-2.5 py-1 font-mono text-[10px] text-rose-700 dark:border-rose-300/25 dark:bg-rose-400/10 dark:text-rose-200">
                   {rank}
-                  {profile?.mmr ? ` · ${profile.mmr}` : ''}
                 </span>
               )}
               {profile && (
@@ -263,7 +262,6 @@ export const TerminalDotaMatch: React.FC = () => {
             </span>
             <span className="text-slate-700 dark:text-slate-200">
               {profile.rankLabel}
-              {profile.mmr ? ` · ${profile.mmr} MMR` : ''}
             </span>
           </div>
         )}
