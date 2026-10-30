@@ -11,11 +11,18 @@ import {
   isHeicUrl,
 } from '../lib/heic';
 
+export interface PhotoReadyState {
+  medium: boolean;
+  original: boolean;
+  failed: boolean;
+}
+
 interface PhotoSlideContentProps {
   photo: GalleryPhoto;
   active: boolean;
   highQuality: boolean;
   controlsVisible?: boolean;
+  onReadyChange?: (state: PhotoReadyState) => void;
 }
 
 type LoadPhase = 'download' | 'convert' | 'decode';
@@ -37,10 +44,12 @@ export const PhotoSlideContent: React.FC<PhotoSlideContentProps> = ({
   active,
   highQuality,
   controlsVisible = true,
+  onReadyChange,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [bitmap, setBitmap] = useState<ImageBitmap | null>(null);
   const [canvasReady, setCanvasReady] = useState(false);
+  const [mediumReady, setMediumReady] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [retryToken, setRetryToken] = useState(0);
   const [loadState, setLoadState] = useState<{
@@ -389,6 +398,15 @@ export const PhotoSlideContent: React.FC<PhotoSlideContentProps> = ({
   );
 
   useEffect(() => {
+    if (!active) return;
+    onReadyChange?.({
+      medium: mediumReady,
+      original: Boolean(bitmap),
+      failed: imageError,
+    });
+  }, [active, bitmap, imageError, mediumReady, onReadyChange]);
+
+  useEffect(() => {
     if (hudMode !== 'complete') return;
     const timer = window.setTimeout(() => setHudMode('hidden'), 1200);
     return () => window.clearTimeout(timer);
@@ -441,6 +459,8 @@ export const PhotoSlideContent: React.FC<PhotoSlideContentProps> = ({
             draggable={false}
             loading={highQuality ? 'eager' : 'lazy'}
             decoding="async"
+            onLoad={() => setMediumReady(true)}
+            onError={() => setMediumReady(false)}
             className={`relative block max-h-full max-w-full select-none object-contain ${
               previewSrc && (!active || !canvasReady) ? 'visible' : 'invisible'
             }`}

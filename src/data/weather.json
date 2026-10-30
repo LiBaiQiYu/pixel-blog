@@ -1,28 +1,28 @@
 {
   "city": "上海",
-  "updatedAt": "10-30 00:28",
+  "updatedAt": "10-30 10:44",
   "source": "和风天气 QWeather",
   "attribution": "https://www.qweather.com",
   "lat": 31.23,
   "lon": 121.47,
   "timezone": "Asia/Shanghai",
   "current": {
-    "temp": 17,
-    "feelsLike": 17,
-    "text": "雾",
-    "code": 501,
-    "humidity": 80,
-    "windDir": "西北风",
+    "temp": 19,
+    "feelsLike": 19,
+    "text": "晴",
+    "code": 100,
+    "humidity": 64,
+    "windDir": "西西南风",
     "windScale": 2
   },
   "daily": [
     {
       "date": "2026-10-30",
       "weekday": "周五",
-      "text": "晴",
-      "code": 100,
-      "tempMax": 23,
-      "tempMin": 16,
+      "text": "少云",
+      "code": 102,
+      "tempMax": 22,
+      "tempMin": 14,
       "precipProb": 0
     },
     {
@@ -30,8 +30,8 @@
       "weekday": "周六",
       "text": "晴",
       "code": 100,
-      "tempMax": 24,
-      "tempMin": 14,
+      "tempMax": 23,
+      "tempMin": 13,
       "precipProb": 0
     },
     {
@@ -39,9 +39,9 @@
       "weekday": "周日",
       "text": "少云",
       "code": 102,
-      "tempMax": 25,
-      "tempMin": 17,
-      "precipProb": 3
+      "tempMax": 24,
+      "tempMin": 18,
+      "precipProb": 0
     }
   ]
 }

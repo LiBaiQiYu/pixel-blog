@@ -1,6 +1,11 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { createPortal } from 'react-dom';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Zoom } from 'swiper/modules';
@@ -25,7 +30,10 @@ import type { GalleryPhoto } from '../types/gallery';
 import type { ThemeMode } from '../types/blog';
 import { recordPhotoView } from '../lib/photo-engagement';
 import { PhotoReactions } from './PhotoReactions';
-import { PhotoSlideContent } from './PhotoSlideContent';
+import {
+  PhotoSlideContent,
+  type PhotoReadyState,
+} from './PhotoSlideContent';
 import { PhotoCommentsModal } from './PhotoCommentsModal';
 import { PhotoInfoPanel } from './PhotoInfoPanel';
 import { pixelAudio } from '../utils/sound';
@@ -51,6 +59,7 @@ export const PhotoSwiperDetail: React.FC<PhotoSwiperDetailProps> = ({
   );
   const [activeIndex, setActiveIndex] = useState(initialIndex);
   const [zoomScale, setZoomScale] = useState(1);
+  const [zoomReady, setZoomReady] = useState(false);
   const [infoOpen, setInfoOpen] = useState(() =>
     typeof window !== 'undefined' ? window.innerWidth >= 1024 : true
   );
@@ -94,16 +103,107 @@ export const PhotoSwiperDetail: React.FC<PhotoSwiperDetailProps> = ({
     });
   }, [activeIndex, photos]);
 
-  const zoomBy = (delta: number) => {
+  const handleSlideReady = useCallback(
+    (index: number, state: PhotoReadyState) => {
+      if (index !== activeIndex) return;
+      setZoomReady(state.original || (state.failed && state.medium));
+    },
+    [activeIndex]
+  );
+
+  useEffect(() => {
     const swiper = swiperRef.current;
     if (!swiper) return;
-    const current = swiper.zoom.scale || zoomScale;
-    const next = Math.min(6, Math.max(1, current + delta));
+    if (zoomReady) {
+      swiper.zoom.enable();
+      return;
+    }
+    if (swiper.zoom.scale > 1) swiper.zoom.out();
+    swiper.zoom.disable();
+  }, [zoomReady]);
+
+  const zoomAtPoint = (next: number, pageX: number, pageY: number) => {
+    const swiper = swiperRef.current;
+    if (!swiper || !zoomReady) return;
     if (next <= 1.01) {
       swiper.zoom.out();
-    } else {
-      swiper.zoom.in(next);
+      return;
     }
+
+    const slide = swiper.slides[swiper.activeIndex];
+    const wrap = slide?.querySelector<HTMLElement>('.swiper-zoom-container');
+    const image = wrap?.querySelector<HTMLElement>(
+      'picture, img, svg, canvas, .swiper-zoom-target'
+    );
+    if (!wrap || !image) return;
+
+    const slideRect = slide.getBoundingClientRect();
+    const imageTransform = window.getComputedStyle(image).transform;
+    const imageMatrix =
+      imageTransform === 'none'
+        ? new DOMMatrix()
+        : new DOMMatrix(imageTransform);
+    const wrapTransform = window.getComputedStyle(wrap).transform;
+    const wrapMatrix =
+      wrapTransform === 'none'
+        ? new DOMMatrix()
+        : new DOMMatrix(wrapTransform);
+    const currentScale = imageMatrix.a || 1;
+    const baseWidth = image.offsetWidth;
+    const baseHeight = image.offsetHeight;
+    if (!baseWidth || !baseHeight) return;
+
+    const cursorX =
+      pageX - (slideRect.left + window.scrollX) - slideRect.width / 2;
+    const cursorY =
+      pageY - (slideRect.top + window.scrollY) - slideRect.height / 2;
+    const ratio = next / currentScale;
+    let targetX = cursorX * (1 - ratio) + wrapMatrix.e * ratio;
+    let targetY = cursorY * (1 - ratio) + wrapMatrix.f * ratio;
+
+    const minX = Math.min(
+      slideRect.width / 2 - (baseWidth * next) / 2,
+      0
+    );
+    const minY = Math.min(
+      slideRect.height / 2 - (baseHeight * next) / 2,
+      0
+    );
+    targetX = Math.max(minX, Math.min(-minX, targetX));
+    targetY = Math.max(minY, Math.min(-minY, targetY));
+
+    const previousRatio = wrap.getAttribute('data-swiper-zoom');
+    wrap.setAttribute('data-swiper-zoom', String(next));
+    try {
+      const zoomIn = swiper.zoom.in as unknown as (event: {
+        target: Element;
+        pageX: number;
+        pageY: number;
+      }) => void;
+      zoomIn({ target: image, pageX, pageY });
+      wrap.style.transform = `translate3d(${targetX}px, ${targetY}px, 0)`;
+    } finally {
+      if (previousRatio === null) {
+        wrap.removeAttribute('data-swiper-zoom');
+      } else {
+        wrap.setAttribute('data-swiper-zoom', previousRatio);
+      }
+    }
+  };
+
+  const zoomBy = (delta: number) => {
+    const swiper = swiperRef.current;
+    if (!swiper || !zoomReady) return;
+    const current = swiper.zoom.scale || zoomScale;
+    const next = Math.min(6, Math.max(1, current + delta));
+    const slide = swiper.slides[swiper.activeIndex];
+    if (!slide) return;
+    const rect = slide.getBoundingClientRect();
+    zoomAtPoint(
+      next,
+      rect.left + rect.width / 2 + window.scrollX,
+      rect.top + rect.height / 2 + window.scrollY
+    );
   };
 
   const resetZoom = () => {
@@ -202,21 +302,18 @@ export const PhotoSwiperDetail: React.FC<PhotoSwiperDetailProps> = ({
       const swiper = swiperRef.current;
       if (!swiper) return;
       event.preventDefault();
+      if (!zoomReady) return;
       const current = swiper.zoom.scale || 1;
       const next = Math.min(
         6,
         Math.max(1, current + (event.deltaY < 0 ? 0.25 : -0.25))
       );
-      if (next <= 1.01) {
-        swiper.zoom.out();
-      } else {
-        swiper.zoom.in(next);
-      }
+      zoomAtPoint(next, event.pageX, event.pageY);
     };
 
     stage.addEventListener('wheel', onWheel, { passive: false });
     return () => stage.removeEventListener('wheel', onWheel);
-  }, []);
+  }, [zoomReady]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -259,20 +356,15 @@ export const PhotoSwiperDetail: React.FC<PhotoSwiperDetailProps> = ({
       } else if (event.key === 'ArrowRight') {
         swiperRef.current?.slideNext();
       } else if (event.key === '+' || event.key === '=') {
-        const swiper = swiperRef.current;
-        if (swiper) swiper.zoom.in(Math.min(6, swiper.zoom.scale + 0.25));
+        zoomBy(0.25);
       } else if (event.key === '-' || event.key === '_') {
-        const swiper = swiperRef.current;
-        if (!swiper) return;
-        const next = Math.max(1, swiper.zoom.scale - 0.25);
-        if (next <= 1.01) swiper.zoom.out();
-        else swiper.zoom.in(next);
+        zoomBy(-0.25);
       }
     };
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [commentsOpen, onClose, reactionsOpen]);
+  }, [commentsOpen, onClose, reactionsOpen, zoomReady]);
 
   const handleViewportClick = (event: React.MouseEvent<HTMLDivElement>) => {
     const swiper = swiperRef.current;
@@ -346,7 +438,8 @@ export const PhotoSwiperDetail: React.FC<PhotoSwiperDetailProps> = ({
           <button
             type="button"
             onClick={() => zoomBy(-0.25)}
-            className="hidden rounded-lg p-2 text-slate-700 liquid-pill dark:text-slate-200 sm:flex"
+            disabled={!zoomReady}
+            className="hidden rounded-lg p-2 text-slate-700 liquid-pill disabled:cursor-not-allowed disabled:opacity-40 dark:text-slate-200 sm:flex"
             title="缩小 (-)"
           >
             <Minus className="h-4 w-4" />
@@ -363,7 +456,8 @@ export const PhotoSwiperDetail: React.FC<PhotoSwiperDetailProps> = ({
           <button
             type="button"
             onClick={() => zoomBy(0.25)}
-            className="hidden rounded-lg p-2 text-slate-700 liquid-pill dark:text-slate-200 sm:flex"
+            disabled={!zoomReady}
+            className="hidden rounded-lg p-2 text-slate-700 liquid-pill disabled:cursor-not-allowed disabled:opacity-40 dark:text-slate-200 sm:flex"
             title="放大 (+)"
           >
             <Plus className="h-4 w-4" />
@@ -448,6 +542,7 @@ export const PhotoSwiperDetail: React.FC<PhotoSwiperDetailProps> = ({
             modules={[Zoom]}
             onSwiper={(swiper) => {
               swiperRef.current = swiper;
+              swiper.zoom.disable();
             }}
             initialSlide={initialIndex}
             loop={photos.length > 1}
@@ -463,6 +558,7 @@ export const PhotoSwiperDetail: React.FC<PhotoSwiperDetailProps> = ({
               const nextIndex = swiper.realIndex;
               setActiveIndex(nextIndex);
               setZoomScale(1);
+              setZoomReady(false);
               setReactionsOpen(false);
               onActiveChange?.(photos[nextIndex]?.id ?? photo.id);
             }}
@@ -480,6 +576,7 @@ export const PhotoSwiperDetail: React.FC<PhotoSwiperDetailProps> = ({
                     index === (activeIndex - 1 + photos.length) % photos.length
                   }
                   controlsVisible={zoomScale <= 1.01}
+                  onReadyChange={(state) => handleSlideReady(index, state)}
                 />
               </SwiperSlide>
             ))}
