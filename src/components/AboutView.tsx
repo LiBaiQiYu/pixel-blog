@@ -10,6 +10,11 @@ import {
   Terminal,
 } from 'lucide-react';
 import { AvatarVideoModal } from './AvatarVideoModal';
+import { DotaMatchCard, TerminalDotaMatch } from './DotaMatchCard';
+import {
+  DomainOriginEgg,
+  TerminalDomainOriginEgg,
+} from './DomainOriginEgg';
 import { GearShowcase, TerminalGearShowcase } from './GearShowcase';
 import { LiquidPixelCard } from './LiquidPixelCard';
 import {
@@ -17,6 +22,10 @@ import {
   TerminalPhotoStoryShowcase,
 } from './PhotoStoryShowcase';
 import { PixelHeroAvatar } from './PixelHeroAvatar';
+import {
+  SteamProfileCard,
+  TerminalSteamProfile,
+} from './SteamProfileCard';
 import type { ViewMode } from '../types/blog';
 
 interface AboutViewProps {
@@ -269,6 +278,8 @@ export const AboutView: React.FC<AboutViewProps> = ({
                 </p>
               </section>
 
+              <TerminalDomainOriginEgg />
+
               <section className="space-y-2">
                 <p className="text-emerald-600 dark:text-emerald-300"># interests</p>
                 <div className="space-y-1.5 text-[11px] leading-relaxed text-slate-600 dark:text-slate-300">
@@ -310,6 +321,10 @@ export const AboutView: React.FC<AboutViewProps> = ({
                   很喜欢这种灵动飘逸的英雄角色。
                 </p>
               </section>
+
+              <TerminalDotaMatch />
+
+              <TerminalSteamProfile />
 
               <section className="space-y-2 border-l-2 border-emerald-500/40 pl-3">
                 <p className="text-emerald-600 dark:text-emerald-300"># dream</p>
@@ -444,6 +459,8 @@ export const AboutView: React.FC<AboutViewProps> = ({
           </div>
         </LiquidPixelCard>
 
+        <DomainOriginEgg />
+
         <LiquidPixelCard accent="magenta" className="about-reveal p-4 sm:p-5 space-y-3">
           <div className="flex flex-wrap items-end justify-between gap-2">
             <div>
@@ -499,6 +516,10 @@ export const AboutView: React.FC<AboutViewProps> = ({
             </span>
           </div>
         </LiquidPixelCard>
+
+        <DotaMatchCard />
+
+        <SteamProfileCard />
 
         <div className="grid gap-4 md:grid-cols-2">
           <PhotoStoryShowcase />

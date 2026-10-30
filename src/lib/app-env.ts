@@ -24,4 +24,5 @@ export const APP_ENV = {
     process.env.NEXT_PUBLIC_STATS_API_URL,
     'https://stats.cwa1e.top'
   ).replace(/\/+$/, ''),
+  steamId: value(process.env.NEXT_PUBLIC_STEAM_ID, '76561198070168584'),
 };

@@ -645,6 +645,31 @@ button:disabled {
   }
 }
 
+@keyframes domain-scan {
+  from {
+    opacity: 0;
+    transform: translateX(-120%);
+  }
+  25% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: translateX(420%);
+  }
+}
+
+.domain-scan {
+  animation: domain-scan 620ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .domain-scan {
+    animation: none;
+    opacity: 0;
+  }
+}
+
 html.dark .mapboxgl-ctrl-attrib {
   background: rgba(2, 6, 23, 0.75);
   color: #94a3b8;

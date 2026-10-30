@@ -91,6 +91,7 @@ export const PixelBloom: React.FC<PixelBloomProps> = ({
   const [expanded, setExpanded] = useState(false);
   const [backdropVisible, setBackdropVisible] = useState(false);
   const [panelVisible, setPanelVisible] = useState(false);
+  const openStateRef = useRef(false);
   const unmountTimerRef = useRef<number | null>(null);
   const sourceTimerRef = useRef<number | null>(null);
   const firstFrameRef = useRef<number | null>(null);
@@ -121,7 +122,12 @@ export const PixelBloom: React.FC<PixelBloomProps> = ({
   };
 
   useEffect(() => {
+    // Guard on the open transition: this effect re-runs when `mounted` flips,
+    // and clearing timers then would cancel the expansion frames scheduled by
+    // the layout effect below, leaving the panel stuck at the origin box.
     if (open && originRect) {
+      if (openStateRef.current) return;
+      openStateRef.current = true;
       clearTimers();
       setMounted(true);
       setBox(toBox(originRect));
@@ -132,7 +138,8 @@ export const PixelBloom: React.FC<PixelBloomProps> = ({
       return;
     }
 
-    if (!open && mounted) {
+    if (!open && openStateRef.current) {
+      openStateRef.current = false;
       setExpanded(false);
       setBackdropVisible(false);
       setPanelVisible(false);
@@ -147,7 +154,7 @@ export const PixelBloom: React.FC<PixelBloomProps> = ({
         unmountTimerRef.current = null;
       }, UNMOUNT_DELAY);
     }
-  }, [mounted, onSourceVisibilityChange, open, originRect, sourceRevealDelay]);
+  }, [onSourceVisibilityChange, open, originRect, sourceRevealDelay]);
 
   useLayoutEffect(() => {
     if (!open || !mounted || !originRect) return;
