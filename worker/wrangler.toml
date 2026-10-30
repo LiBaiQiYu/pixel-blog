@@ -11,3 +11,8 @@ routes = [
 binding = "DB"
 database_name = "pixel-blog-stats"
 database_id = "80d9cd7e-e75f-49ca-9b1b-ee4dec17256a"
+
+# Non-secret configuration. STEAM_API_KEY must be a Worker secret:
+#   npx wrangler secret put STEAM_API_KEY --config worker/wrangler.toml
+[vars]
+STEAM_ID = "76561198070168584"

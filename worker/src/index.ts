@@ -19,6 +19,8 @@ interface D1Database {
 interface Env {
   DB: D1Database;
   FRIENDS_ADMIN_TOKEN?: string;
+  STEAM_API_KEY?: string;
+  STEAM_ID?: string;
 }
 
 type FriendStatus = 'pending' | 'approved' | 'rejected';
@@ -713,6 +715,496 @@ async function setLike(
   };
 }
 
+const STEAM_API_BASE = 'https://api.steampowered.com';
+const STEAM_CAPSULE_BASE =
+  'https://cdn.cloudflare.steamstatic.com/steam/apps';
+const STEAM_ID_PATTERN = /^\d{17}$/;
+const STEAM_CACHE_SECONDS = 600;
+const STEAM_CACHE_VERSION = 3;
+const STEAM_TOP_GAMES = 20;
+const STEAM_RECENT_GAMES = 8;
+
+interface SteamProfileSummary {
+  steamId: string;
+  name: string;
+  realName: string | null;
+  avatar: string;
+  profileUrl: string;
+  state: number;
+  visibility: number;
+  countryCode: string | null;
+  createdAt: number;
+  lastLogOff: number;
+  currentGame: { appid: number; name: string } | null;
+}
+
+interface SteamGame {
+  appid: number;
+  name: string;
+  minutes: number;
+  twoWeekMinutes: number;
+  lastPlayed: number;
+  icon: string | null;
+}
+
+interface SteamPlatforms {
+  windows: number;
+  mac: number;
+  linux: number;
+  deck: number;
+}
+
+interface SteamLibrary {
+  totalGames: number;
+  playedGames: number;
+  totalMinutes: number;
+  twoWeekMinutes: number;
+  platforms: SteamPlatforms;
+  topGames: SteamGame[];
+  recentGames: SteamGame[];
+}
+
+interface SteamLevel {
+  level: number;
+  xp: number;
+  xpToNextLevel: number;
+  xpCurrentLevel: number;
+  badgeCount: number;
+}
+
+interface SteamCommunity {
+  friends: number | null;
+  groups: number | null;
+  vacBanned: boolean;
+  communityBanned: boolean;
+  gameBans: number;
+  daysSinceLastBan: number;
+  economyBan: string | null;
+}
+
+interface SteamSummary {
+  profile: SteamProfileSummary | null;
+  level: SteamLevel | null;
+  library: SteamLibrary | null;
+  community: SteamCommunity | null;
+  updatedAt: number;
+}
+
+interface SteamPayloads {
+  players: SteamPlayerSummariesPayload;
+  owned: SteamOwnedGamesPayload | null;
+  level: SteamLevelPayload | null;
+  badges: SteamBadgesPayload | null;
+  recent: SteamRecentGamesPayload | null;
+  friends: SteamFriendListPayload | null;
+  groups: SteamGroupListPayload | null;
+  bans: SteamBansPayload | null;
+}
+
+interface SteamPlayerSummariesPayload {
+  response?: {
+    players?: Array<{
+      steamid?: string;
+      personaname?: string;
+      realname?: string;
+      avatarfull?: string;
+      avatar?: string;
+      profileurl?: string;
+      personastate?: number;
+      communityvisibilitystate?: number;
+      timecreated?: number;
+      lastlogoff?: number;
+      loccountrycode?: string;
+      gameid?: string;
+      gameextrainfo?: string;
+    }>;
+  };
+}
+
+interface SteamOwnedGamesPayload {
+  response?: {
+    game_count?: number;
+    games?: Array<{
+      appid?: number;
+      name?: string;
+      playtime_forever?: number;
+      playtime_2weeks?: number;
+      playtime_windows_forever?: number;
+      playtime_mac_forever?: number;
+      playtime_linux_forever?: number;
+      playtime_deck_forever?: number;
+      rtime_last_played?: number;
+    }>;
+  };
+}
+
+interface SteamRecentGamesPayload {
+  response?: {
+    total_count?: number;
+    games?: Array<{
+      appid?: number;
+      name?: string;
+      playtime_2weeks?: number;
+      playtime_forever?: number;
+    }>;
+  };
+}
+
+interface SteamLevelPayload {
+  response?: {
+    player_level?: number;
+  };
+}
+
+interface SteamBadgesPayload {
+  response?: {
+    player_xp?: number;
+    player_level?: number;
+    player_xp_needed_to_level_up?: number;
+    player_xp_needed_current_level?: number;
+    badges?: unknown[];
+  };
+}
+
+interface SteamFriendListPayload {
+  friendslist?: {
+    friends?: Array<{ steamid?: string }>;
+  };
+}
+
+interface SteamGroupListPayload {
+  response?: {
+    groups?: Array<{ gid?: string }>;
+  };
+}
+
+interface SteamBansPayload {
+  players?: Array<{
+    SteamId?: string;
+    CommunityBanned?: boolean;
+    VACBanned?: boolean;
+    NumberOfVACBans?: number;
+    DaysSinceLastBan?: number;
+    NumberOfGameBans?: number;
+    EconomyBan?: string;
+  }>;
+}
+
+class SteamApiError extends Error {
+  status: number;
+
+  constructor(status: number) {
+    super(`Steam API responded with ${status}`);
+    this.status = status;
+  }
+}
+
+type EdgeCacheEntry = {
+  expiresAt: number;
+  body: string;
+};
+
+type EdgeCache = {
+  match(request: Request): Promise<Response | undefined>;
+  put(request: Request, response: Response): Promise<void>;
+};
+
+const edgeCache: EdgeCache | null =
+  typeof globalThis === 'object' && 'caches' in globalThis
+    ? (globalThis as unknown as { caches: { default: EdgeCache } }).caches
+        .default
+    : null;
+
+async function readEdgeCache<T>(key: string): Promise<T | null> {
+  if (!edgeCache) return null;
+  try {
+    const hit = await edgeCache.match(new Request(key));
+    if (!hit) return null;
+    const entry = (await hit.json()) as EdgeCacheEntry;
+    if (
+      !entry ||
+      typeof entry.expiresAt !== 'number' ||
+      typeof entry.body !== 'string' ||
+      entry.expiresAt <= Date.now()
+    ) {
+      return null;
+    }
+    return JSON.parse(entry.body) as T;
+  } catch {
+    return null;
+  }
+}
+
+async function writeEdgeCache<T>(
+  key: string,
+  data: T,
+  ttlSeconds: number
+): Promise<void> {
+  if (!edgeCache) return;
+  try {
+    const entry: EdgeCacheEntry = {
+      expiresAt: Date.now() + ttlSeconds * 1000,
+      body: JSON.stringify(data),
+    };
+    await edgeCache.put(
+      new Request(key),
+      new Response(JSON.stringify(entry), {
+        headers: {
+          'Content-Type': 'application/json; charset=utf-8',
+          'Cache-Control': `public, max-age=${ttlSeconds}`,
+        },
+      })
+    );
+  } catch {
+    // Cache misses are harmless; the next request refetches upstream.
+  }
+}
+
+// The legacy community icon path (media.steampowered.com/.../apps/<id>/<hash>.jpg)
+// now 404s for most apps; the appid-addressed store capsule still works.
+function steamCapsuleUrl(appid: number): string {
+  return `${STEAM_CAPSULE_BASE}/${appid}/capsule_184x69.jpg`;
+}
+
+function toSteamGame(game: {
+  appid?: number;
+  name?: string;
+  playtime_forever?: number;
+  playtime_2weeks?: number;
+  rtime_last_played?: number;
+}): SteamGame | null {
+  if (typeof game.appid !== 'number') return null;
+  return {
+    appid: game.appid,
+    name: game.name || `App ${game.appid}`,
+    minutes: Math.max(0, Math.trunc(game.playtime_forever ?? 0)),
+    twoWeekMinutes: Math.max(0, Math.trunc(game.playtime_2weeks ?? 0)),
+    lastPlayed: Math.max(0, Math.trunc(game.rtime_last_played ?? 0)),
+    icon: steamCapsuleUrl(game.appid),
+  };
+}
+
+function sumPlatform(
+  games: NonNullable<SteamOwnedGamesPayload['response']>['games'],
+  key: 'playtime_windows_forever' | 'playtime_mac_forever' | 'playtime_linux_forever' | 'playtime_deck_forever'
+): number {
+  if (!games) return 0;
+  return games.reduce((sum, game) => {
+    const value = game[key];
+    return sum + (typeof value === 'number' ? Math.max(0, value) : 0);
+  }, 0);
+}
+
+function buildSteamSummary(steamId: string, payloads: SteamPayloads): SteamSummary {
+  const player = payloads.players?.response?.players?.[0];
+  const profile: SteamProfileSummary | null = player
+    ? {
+        steamId: player.steamid || steamId,
+        name: player.personaname || 'Steam user',
+        realName: player.realname || null,
+        avatar: player.avatarfull || player.avatar || '',
+        profileUrl:
+          player.profileurl || `https://steamcommunity.com/profiles/${steamId}`,
+        state: typeof player.personastate === 'number' ? player.personastate : 0,
+        visibility:
+          typeof player.communityvisibilitystate === 'number'
+            ? player.communityvisibilitystate
+            : 0,
+        countryCode: player.loccountrycode || null,
+        createdAt: Math.max(0, Math.trunc(player.timecreated ?? 0)),
+        lastLogOff: Math.max(0, Math.trunc(player.lastlogoff ?? 0)),
+        currentGame:
+          player.gameid && player.gameextrainfo
+            ? { appid: Number(player.gameid) || 0, name: player.gameextrainfo }
+            : null,
+      }
+    : null;
+
+  const rawGames = payloads.owned?.response?.games;
+  const games = (rawGames ?? [])
+    .map(toSteamGame)
+    .filter((game): game is SteamGame => game !== null);
+  const gameCount = payloads.owned?.response?.game_count;
+
+  const badges = payloads.badges?.response;
+  const steamLevel = payloads.level?.response?.player_level;
+  const level: SteamLevel | null =
+    typeof badges?.player_xp === 'number' || typeof steamLevel === 'number'
+      ? {
+          level:
+            Math.trunc(steamLevel ?? badges?.player_level ?? 0) || 0,
+          xp: Math.max(0, Math.trunc(badges?.player_xp ?? 0)),
+          xpToNextLevel: Math.max(
+            0,
+            Math.trunc(badges?.player_xp_needed_to_level_up ?? 0)
+          ),
+          xpCurrentLevel: Math.max(
+            0,
+            Math.trunc(badges?.player_xp_needed_current_level ?? 0)
+          ),
+          badgeCount: Array.isArray(badges?.badges) ? badges!.badges!.length : 0,
+        }
+      : null;
+
+  const ban = payloads.bans?.players?.[0];
+  const community: SteamCommunity | null = ban
+    ? {
+        friends: payloads.friends?.friendslist?.friends?.length ?? null,
+        groups: payloads.groups?.response?.groups?.length ?? null,
+        vacBanned: Boolean(ban.VACBanned),
+        communityBanned: Boolean(ban.CommunityBanned),
+        gameBans: Math.max(0, Math.trunc(ban.NumberOfGameBans ?? 0)),
+        daysSinceLastBan: Math.max(0, Math.trunc(ban.DaysSinceLastBan ?? 0)),
+        economyBan: ban.EconomyBan && ban.EconomyBan !== 'none' ? ban.EconomyBan : null,
+      }
+    : null;
+
+  if (games.length === 0 && typeof gameCount !== 'number') {
+    return { profile, level, library: null, community, updatedAt: Date.now() };
+  }
+
+  const totalMinutes = games.reduce((sum, game) => sum + game.minutes, 0);
+  const twoWeekMinutes = games.reduce(
+    (sum, game) => sum + game.twoWeekMinutes,
+    0
+  );
+
+  const recentFromSteam = (payloads.recent?.response?.games ?? [])
+    .map(toSteamGame)
+    .filter((game): game is SteamGame => game !== null)
+    .sort((a, b) => b.twoWeekMinutes - a.twoWeekMinutes);
+
+  return {
+    profile,
+    level,
+    library: {
+      totalGames: typeof gameCount === 'number' ? gameCount : games.length,
+      playedGames: games.filter((game) => game.minutes > 0).length,
+      totalMinutes,
+      twoWeekMinutes,
+      platforms: {
+        windows: sumPlatform(rawGames, 'playtime_windows_forever'),
+        mac: sumPlatform(rawGames, 'playtime_mac_forever'),
+        linux: sumPlatform(rawGames, 'playtime_linux_forever'),
+        deck: sumPlatform(rawGames, 'playtime_deck_forever'),
+      },
+      topGames: [...games]
+        .filter((game) => game.minutes > 0)
+        .sort((a, b) => b.minutes - a.minutes)
+        .slice(0, STEAM_TOP_GAMES),
+      recentGames:
+        recentFromSteam.length > 0
+          ? recentFromSteam.slice(0, STEAM_RECENT_GAMES)
+          : games
+              .filter((game) => game.twoWeekMinutes > 0)
+              .sort((a, b) => b.twoWeekMinutes - a.twoWeekMinutes)
+              .slice(0, STEAM_RECENT_GAMES),
+    },
+    community,
+    updatedAt: Date.now(),
+  };
+}
+
+async function fetchSteamJson<T>(url: URL): Promise<T> {
+  const response = await fetch(url.toString(), {
+    headers: { Accept: 'application/json' },
+  });
+  if (!response.ok) {
+    throw new SteamApiError(response.status);
+  }
+  return (await response.json()) as T;
+}
+
+function steamUrl(
+  apiKey: string,
+  path: string,
+  params: Record<string, string>
+): URL {
+  const url = new URL(`${STEAM_API_BASE}${path}`);
+  url.searchParams.set('key', apiKey);
+  url.searchParams.set('format', 'json');
+  for (const [name, value] of Object.entries(params)) {
+    url.searchParams.set(name, value);
+  }
+  return url;
+}
+
+async function loadSteamSummary(
+  apiKey: string,
+  steamId: string
+): Promise<SteamSummary> {
+  const settled = await Promise.allSettled([
+    fetchSteamJson<SteamPlayerSummariesPayload>(
+      steamUrl(apiKey, '/ISteamUser/GetPlayerSummaries/v2/', {
+        steamids: steamId,
+      })
+    ),
+    fetchSteamJson<SteamOwnedGamesPayload>(
+      steamUrl(apiKey, '/IPlayerService/GetOwnedGames/v1/', {
+        steamid: steamId,
+        include_appinfo: '1',
+        include_played_free_games: '1',
+      })
+    ),
+    fetchSteamJson<SteamLevelPayload>(
+      steamUrl(apiKey, '/IPlayerService/GetSteamLevel/v1/', {
+        steamid: steamId,
+      })
+    ),
+    fetchSteamJson<SteamBadgesPayload>(
+      steamUrl(apiKey, '/IPlayerService/GetBadges/v1/', {
+        steamid: steamId,
+      })
+    ),
+    fetchSteamJson<SteamRecentGamesPayload>(
+      steamUrl(apiKey, '/IPlayerService/GetRecentlyPlayedGames/v1/', {
+        steamid: steamId,
+        count: String(STEAM_RECENT_GAMES),
+      })
+    ),
+    fetchSteamJson<SteamFriendListPayload>(
+      steamUrl(apiKey, '/ISteamUser/GetFriendList/v1/', {
+        steamid: steamId,
+        relationship: 'friend',
+      })
+    ),
+    fetchSteamJson<SteamGroupListPayload>(
+      steamUrl(apiKey, '/ISteamUser/GetUserGroupList/v1/', {
+        steamid: steamId,
+      })
+    ),
+    fetchSteamJson<SteamBansPayload>(
+      steamUrl(apiKey, '/ISteamUser/GetPlayerBans/v1/', {
+        steamids: steamId,
+      })
+    ),
+  ]);
+
+  const take = <T,>(index: number): T | null => {
+    const entry = settled[index];
+    return entry.status === 'fulfilled' ? (entry.value as T) : null;
+  };
+
+  const players = take<SteamPlayerSummariesPayload>(0);
+  if (!players) {
+    const failure = settled[0];
+    const reason =
+      failure.status === 'rejected' ? failure.reason : null;
+    throw reason instanceof SteamApiError ? reason : new SteamApiError(502);
+  }
+
+  return buildSteamSummary(steamId, {
+    players,
+    owned: take<SteamOwnedGamesPayload>(1),
+    level: take<SteamLevelPayload>(2),
+    badges: take<SteamBadgesPayload>(3),
+    recent: take<SteamRecentGamesPayload>(4),
+    friends: take<SteamFriendListPayload>(5),
+    groups: take<SteamGroupListPayload>(6),
+    bans: take<SteamBansPayload>(7),
+  });
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     if (request.method === 'OPTIONS') {
@@ -1002,6 +1494,42 @@ export default {
           body.liked
         );
         return json({ ok: true, ...result });
+      }
+
+      if (request.method === 'GET' && path === '/steam/profile') {
+        const apiKey = env.STEAM_API_KEY?.trim();
+        const steamId = env.STEAM_ID?.trim() ?? '';
+
+        if (!apiKey) {
+          return json({ ok: false, error: 'steam_not_configured' }, 503);
+        }
+        if (!STEAM_ID_PATTERN.test(steamId)) {
+          return json({ ok: false, error: 'steam_id_missing' }, 503);
+        }
+
+        const cacheKey = `${url.origin}/__steam-cache/v${STEAM_CACHE_VERSION}/profile/${steamId}`;
+        const cached = await readEdgeCache<SteamSummary>(cacheKey);
+        if (cached) {
+          return json({ ok: true, steam: cached, cached: true });
+        }
+
+        try {
+          const steam = await loadSteamSummary(apiKey, steamId);
+          await writeEdgeCache(cacheKey, steam, STEAM_CACHE_SECONDS);
+          return json({ ok: true, steam, cached: false });
+        } catch (error) {
+          if (error instanceof SteamApiError) {
+            const unauthorized = error.status === 401 || error.status === 403;
+            return json(
+              {
+                ok: false,
+                error: unauthorized ? 'steam_unauthorized' : 'steam_error',
+              },
+              502
+            );
+          }
+          throw error;
+        }
       }
 
       return json({ ok: false, error: 'not_found' }, 404);
