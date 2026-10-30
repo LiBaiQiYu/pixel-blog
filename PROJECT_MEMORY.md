@@ -93,6 +93,8 @@ This file is a portable handoff for other AI tools and developers. It describes 
   - `src/components/PixelBloom.tsx`
   - Expand 300ms ease-out; collapse 250ms ease-in; content reveal 120ms delay / 150ms fade.
   - Do not reimplement its timing in new components.
+  - Its open effect is guarded by `openStateRef`: it must only clear timers on the open transition, otherwise the re-run after `mounted` flips cancels the expansion frame and the panel stays at the origin box at `opacity: 0`.
+  - Do not put `about-reveal` on the same element that toggles `opacity-0` for source hiding — the CSS animation wins over the utility class and the card stays visible.
 
 ## 6. Main Features
 
@@ -155,6 +157,29 @@ This file is a portable handoff for other AI tools and developers. It describes 
   - Master Yi: gold/white horned helmet, green goggles, purple sash.
   - Ezreal: blonde hair, goggles, teal fur collar, blue gauntlet.
 - Pixel avatars use 24×24 SVG grids.
+- Domain easter egg: `src/components/DomainOriginEgg.tsx`
+  - `cwa1e` = `cw` (CarlosWhite) + `a` (`0x0A` = 10) + `1e` (`0x1E` = 30) → birthday 10/30.
+  - Standard mode is a decode card (mono table + `domain-scan` sweep); terminal mode is the `# domain_origin` block.
+  - Both start locked (`??`) and reveal on the decode button; shows a `TODAY` badge on Oct 30.
+  - Search for this component before adding domain-origin content elsewhere.
+- Dota 2 match card: `src/components/DotaMatchCard.tsx` + `src/lib/dota.ts`
+  - Data comes from OpenDota (`api.opendota.com`) **fetched in the visitor's browser**, not from the Worker.
+  - Reason: OpenDota answers `429` to Cloudflare Worker egress IPs; the Worker route was removed and the client calls OpenDota directly (CORS is reflected per origin).
+  - Account id is derived from `NEXT_PUBLIC_STEAM_ID` (17-digit SteamID64) via BigInt subtraction.
+  - Card: rank/MMR chip, 总场次/胜率/KDA/GPM tiles, 20-dot form strip, latest 5 matches in a two-column grid.
+  - Clicking opens `src/components/DotaMatchModal.tsx` (PixelBloom): 01 概况 / 02 最近 20 场 / 03 这 20 场用过的英雄.
+  - Hero images come from `cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/<slug>.png`; the hero list is cached in `localStorage` for 24h (`pixel_blog_dota_heroes_v1`).
+  - Terminal mode renders a `# dota2` block.
+- Shared modal primitives live in `src/components/PanelParts.tsx` (`SectionHeader`, `StatTile`, `MiniStat`) and are used by both modals.
+- Steam library card: `src/components/SteamProfileCard.tsx` + `src/lib/steam.ts`
+  - Data comes from the stats Worker `GET /steam/profile`, never directly from Steam.
+  - Card shows persona, online dot, level, total playtime, game count, two-week playtime, top-5 playtime bars.
+  - Clicking the card (or Enter/Space) opens `src/components/SteamLibraryModal.tsx` through `PixelBloom`, expanding from the card rect.
+  - Modal sections: 01 档案 / 02 数据总览 / 03 游戏时长 TOP 20 / 04 最近在玩 / 05 社区与徽章.
+  - The card hides itself via `onSourceVisibilityChange` while the modal is open.
+  - Renders nothing when the endpoint is missing/unconfigured/private, so the page degrades silently.
+  - LOL cards stay hardcoded; Steam cannot provide League of Legends data.
+  - Badge images and profile showcases are Steam community-page data; the Web API has no endpoint, so the modal shows counts only.
 
 ### Admin
 
@@ -197,6 +222,15 @@ This file is a portable handoff for other AI tools and developers. It describes 
 - Public stats endpoints are CORS-enabled.
 - Admin friend endpoints require `x-admin-token`.
 - Keep the stats Worker custom domain route in `worker/wrangler.toml`; removing it causes Wrangler to drop the Cloudflare custom domain on deploy.
+- `GET /steam/profile` proxies Steam and returns an aggregated summary.
+  - Sources: `GetPlayerSummaries`, `GetOwnedGames`, `GetSteamLevel`, `GetBadges`, `GetRecentlyPlayedGames`, `GetFriendList`, `GetUserGroupList`, `GetPlayerBans` (8 parallel calls; the first one is required, the rest are best-effort).
+  - Response shape: `{ profile, level, library { platforms, topGames[20], recentGames[8] }, community, updatedAt }`.
+  - Requires the Worker secret `STEAM_API_KEY` and the `STEAM_ID` var; without them it answers `503 steam_not_configured` / `steam_id_missing`.
+  - Results are cached in the edge cache for 10 minutes (`STEAM_CACHE_SECONDS`); bump `STEAM_CACHE_VERSION` when the payload shape changes so old entries are ignored (currently 3).
+  - Game thumbnails use the appid-addressed store capsule (`cdn.cloudflare.steamstatic.com/steam/apps/<id>/capsule_184x69.jpg`); the legacy `media.steampowered.com/.../<hash>.jpg` icon path now 404s.
+  - The Steam key is server-side only; never expose it through `NEXT_PUBLIC_*`.
+  - Steam only returns playtime when the profile's "Game details" privacy is public. If not, `library` is `null` and only the persona renders.
+  - `GetFriendList` needs the friends list public; it returns `null` otherwise and the modal shows `未公开`.
 
 ## 8. Commands
 
@@ -243,6 +277,7 @@ Do not commit `.env.local`, `.gallery-admin.env`, Worker secrets, or R2 credenti
 - `netlify.toml`, `@netlify/plugin-nextjs`, and `vite.config.ts` are old deployment leftovers. Cloudflare is the active deployment target.
 - The old `?admin=1` entry is obsolete; use `/admin`.
 - When accessing dev over LAN, use the current LAN IP and `allowedDevOrigins`; HMR WebSocket should work when the host is allowed.
+- Opening the dev server on `127.0.0.1` blocks `/_next/hmr` via `allowedDevOrigins`, and the page then stays unhydrated (buttons look dead). Use `localhost` or add the host to `allowedDevOrigins`.
 - Photo viewer zoom must stay disabled until `PhotoSlideContent` reports original ready (or medium fallback after original failure).
 - `PhotoSwiperDetail` uses custom wheel zoom math; do not replace it with plain `swiper.zoom.in(number)` or the image will shift right.
 - Friend application limits: 6 tags max, 16 characters per tag, seed 1–2147483647.
@@ -252,13 +287,23 @@ Do not commit `.env.local`, `.gallery-admin.env`, Worker secrets, or R2 credenti
 
 ## 11. Current Git State at Handoff
 
-- Latest pushed commit: `489c5fd fix: 优化页面切换与友链移动端配图`
-- The following are currently uncommitted but deployed to Cloudflare:
-  - `src/components/PhotoSlideContent.tsx` — zoom readiness handshake
-  - `src/components/PhotoSwiperDetail.tsx` — cursor-centered wheel zoom + zoom gating
-  - `src/data/weather.json` — generated weather data
-  - `next-env.d.ts` — Next-generated typing file may also show modified
-- Cloudflare currently serves the deployed versions, not necessarily the Git HEAD versions.
+- Latest pushed commit: `d8fdb83 fix: 画廊原图就绪后再解锁缩放并改为光标锚点`
+- Uncommitted in the working tree:
+  - `src/components/DomainOriginEgg.tsx` — domain-origin easter egg (new file)
+  - `src/components/SteamProfileCard.tsx` + `src/components/SteamLibraryModal.tsx` + `src/lib/steam.ts` — Steam card + modal (new files)
+  - `src/components/DotaMatchCard.tsx` + `src/components/DotaMatchModal.tsx` + `src/lib/dota.ts` — Dota 2 card + modal (new files)
+  - `src/components/PanelParts.tsx` — shared modal primitives (new file)
+  - `src/components/PixelBloom.tsx` — open-transition guard bug fix
+  - `src/components/AboutView.tsx` — mounts the cards in standard and terminal modes
+  - `src/lib/app-env.ts` — adds `steamId`
+  - `src/index.css` — `.domain-scan` sweep keyframes
+  - `worker/src/index.ts` + `worker/wrangler.toml` — `/steam/profile` route, `STEAM_ID` var
+  - `PROJECT_MEMORY.md` — this file
+- Deployment order for Steam changes: Worker first (`npm run stats:deploy`), then site (`npm run cf:deploy`); the site reads the new payload fields. Dota 2 needs only the site deploy.
+- On Windows, `npm run cf:deploy` needs `TMP`/`TEMP` pointed inside the repo (OpenNext fails writing its temp config to `%TEMP%` under the DSH sandbox).
+- `STEAM_API_KEY` is stored as a Cloudflare Worker secret (dashboard → Worker → Settings → Variables and Secrets). `npm run stats:deploy` does not remove dashboard secrets.
+- The Steam/Dota cards and the domain easter egg are deployed to Cloudflare but not yet committed to Git.
+- `next-env.d.ts` flips between `.next/types/*` (build) and `.next/dev/types/*` (dev); it is not committed and is restored before commits.
 
 ## 12. Known Limitations / Possible Next Work
 
