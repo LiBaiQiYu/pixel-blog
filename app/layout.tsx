@@ -3,13 +3,16 @@ import '../src/index.css';
 import { GlobalClickSound } from '../src/components/GlobalClickSound';
 import { RouteTransition } from '../src/components/RouteTransition';
 
+const SITE_TITLE = '李白的白 // CarlosWhite · Pixel Blog';
+const SITE_NAME = 'Pixel Blog';
+
 const SITE_DESCRIPTION =
   '数日的疾风把秋末的枯叶袭落，相比于夕阳映衬下的满眼金黄，树木显得病态般瘦削。北边天际的尽头充斥着灰褐色的浓云，日薄西山，黑暗混入云层搅动着渐而昏沉的天色。';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://cwa1e.top'),
   title: {
-    default: 'Pixel Blog',
+    default: SITE_TITLE,
     template: '%s · Pixel Blog',
   },
   description: SITE_DESCRIPTION,
@@ -17,14 +20,14 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'zh_CN',
-    siteName: 'Pixel Blog',
-    title: 'Pixel Blog',
+    siteName: SITE_NAME,
+    title: SITE_TITLE,
     description: SITE_DESCRIPTION,
     url: 'https://cwa1e.top',
   },
   twitter: {
     card: 'summary',
-    title: 'Pixel Blog',
+    title: SITE_TITLE,
     description: SITE_DESCRIPTION,
   },
   robots: {
@@ -43,8 +46,8 @@ export const viewport: Viewport = {
 const siteJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'WebSite',
-  name: 'Pixel Blog',
-  alternateName: '李白的白',
+  name: SITE_NAME,
+  alternateName: '李白的白 // CarlosWhite',
   url: 'https://cwa1e.top',
   description: SITE_DESCRIPTION,
   inLanguage: 'zh-CN',
