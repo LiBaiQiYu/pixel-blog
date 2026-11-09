@@ -4,7 +4,7 @@ import { GlobalClickSound } from '../src/components/GlobalClickSound';
 import { RouteTransition } from '../src/components/RouteTransition';
 
 const SITE_DESCRIPTION =
-  'Pixel Blog —— 一个用像素当骨架、用玻璃当皮肤的个人站点，记录代码、旅途与日常观察。';
+  '数日的疾风把秋末的枯叶袭落，相比于夕阳映衬下的满眼金黄，树木显得病态般瘦削。北边天际的尽头充斥着灰褐色的浓云，日薄西山，黑暗混入云层搅动着渐而昏沉的天色。';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://cwa1e.top'),
