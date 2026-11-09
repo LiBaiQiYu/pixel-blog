@@ -1,6 +1,6 @@
 # Pixel Glass Blog — Project Memory
 
-Last updated: 2026-10-30
+Last updated: 2026-11-09
 
 This file is a portable handoff for other AI tools and developers. It describes the current architecture, deployment, behavior, known constraints, and recent work. Do not put secret values in this file.
 
@@ -13,6 +13,7 @@ This file is a portable handoff for other AI tools and developers. It describes 
 - Public image bucket: https://img.cwa1e.top
 - Stats API: https://stats.cwa1e.top
 - Language/UI: Chinese, pixel-art + liquid-glass visual style
+- Docs: `README.md` is the public product/design intro (with screenshots in `docs/screenshots/`); this file is the engineering handoff. Keep them separate.
 - Runtime: Next.js App Router on Cloudflare Workers via OpenNext
 - Node requirement: Node.js >= 22
 
@@ -166,7 +167,7 @@ This file is a portable handoff for other AI tools and developers. It describes 
   - Data comes from OpenDota (`api.opendota.com`) **fetched in the visitor's browser**, not from the Worker.
   - Reason: OpenDota answers `429` to Cloudflare Worker egress IPs; the Worker route was removed and the client calls OpenDota directly (CORS is reflected per origin).
   - Account id is derived from `NEXT_PUBLIC_STEAM_ID` (17-digit SteamID64) via BigInt subtraction.
-  - Card: rank/MMR chip, 总场次/胜率/KDA/GPM tiles, 20-dot form strip, latest 5 matches in a two-column grid.
+  - Card: rank chip (MMR is intentionally not displayed), 总场次/胜率/KDA/GPM tiles, 20-dot form strip, latest 5 matches in a two-column grid.
   - Clicking opens `src/components/DotaMatchModal.tsx` (PixelBloom): 01 概况 / 02 最近 20 场 / 03 这 20 场用过的英雄.
   - Hero images come from `cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/<slug>.png`; the hero list is cached in `localStorage` for 24h (`pixel_blog_dota_heroes_v1`).
   - Terminal mode renders a `# dota2` block.
@@ -287,22 +288,20 @@ Do not commit `.env.local`, `.gallery-admin.env`, Worker secrets, or R2 credenti
 
 ## 11. Current Git State at Handoff
 
-- Latest pushed commit: `d8fdb83 fix: 画廊原图就绪后再解锁缩放并改为光标锚点`
-- Uncommitted in the working tree:
-  - `src/components/DomainOriginEgg.tsx` — domain-origin easter egg (new file)
-  - `src/components/SteamProfileCard.tsx` + `src/components/SteamLibraryModal.tsx` + `src/lib/steam.ts` — Steam card + modal (new files)
-  - `src/components/DotaMatchCard.tsx` + `src/components/DotaMatchModal.tsx` + `src/lib/dota.ts` — Dota 2 card + modal (new files)
-  - `src/components/PanelParts.tsx` — shared modal primitives (new file)
-  - `src/components/PixelBloom.tsx` — open-transition guard bug fix
-  - `src/components/AboutView.tsx` — mounts the cards in standard and terminal modes
-  - `src/lib/app-env.ts` — adds `steamId`
-  - `src/index.css` — `.domain-scan` sweep keyframes
-  - `worker/src/index.ts` + `worker/wrangler.toml` — `/steam/profile` route, `STEAM_ID` var
-  - `PROJECT_MEMORY.md` — this file
-- Deployment order for Steam changes: Worker first (`npm run stats:deploy`), then site (`npm run cf:deploy`); the site reads the new payload fields. Dota 2 needs only the site deploy.
+- Latest pushed commit: `68fe210 docs: 新增官方 README，聚焦产品理念与设计`
+- Working tree is clean; local `main` is in sync with `origin/main`.
+- Recent history:
+  - `68fe210` — official README + `docs/screenshots/` (WebP)
+  - `5902b51` — Dota 2 card shows rank only, no MMR
+  - `57b1cb3` — regenerated `weather.json`
+  - `b421645` — project memory update
+  - `2ad1111` — stats Worker `/steam/profile`
+  - `bbf9985` — domain easter egg + Steam card + Dota 2 card
+- All of the above is deployed to Cloudflare; `PROJECT_MEMORY.md` and `README.md` are the only handoff docs.
+- Deployment order for Steam changes: Worker first (`npm run stats:deploy`), then site (`npm run cf:deploy`). Dota 2 needs only the site deploy.
 - On Windows, `npm run cf:deploy` needs `TMP`/`TEMP` pointed inside the repo (OpenNext fails writing its temp config to `%TEMP%` under the DSH sandbox).
 - `STEAM_API_KEY` is stored as a Cloudflare Worker secret (dashboard → Worker → Settings → Variables and Secrets). `npm run stats:deploy` does not remove dashboard secrets.
-- The Steam/Dota cards and the domain easter egg are deployed to Cloudflare but not yet committed to Git.
+- Builds regenerate `src/data/weather.json`; restore it before committing unless the refresh is intended.
 - `next-env.d.ts` flips between `.next/types/*` (build) and `.next/dev/types/*` (dev); it is not committed and is restored before commits.
 
 ## 12. Known Limitations / Possible Next Work
@@ -313,3 +312,6 @@ Do not commit `.env.local`, `.gallery-admin.env`, Worker secrets, or R2 credenti
 - Netlify/Vite leftovers could be removed after confirming no fallback deployment is needed.
 - D1 remote migrations require Wrangler authentication and should be run before Worker deploys that depend on new tables.
 - Cloudflare map token must be a build variable for automatic builds.
+- OpenDota rejects Cloudflare Worker egress IPs with `429`, so Dota 2 data must stay client-side. If server-side Dota data is ever needed, it requires an OpenDota API key or a different egress.
+- The Dota 2 card deliberately shows the rank only; `computed_mmr` is still in the payload but must stay out of the UI unless asked.
+- Badge images / Steam showcases would need HTML scraping of the community profile page; not implemented.
