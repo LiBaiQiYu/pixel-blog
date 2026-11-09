@@ -6,7 +6,9 @@ This file is a portable handoff for other AI tools and developers. It describes 
 
 ## 1. Project Overview
 
-- Project: **Pixel Glass Blog / 李白的白 / CarlosWhite**
+- Project: **Pixel Blog / 李白的白 / CarlosWhite** (repo codename: Pixel Glass Blog)
+- Public document title: `Pixel Blog`; title template `%s · Pixel Blog`; site name `Pixel Blog`. Do not reintroduce descriptive suffixes such as「像素液态玻璃博客」.
+- Fixed site description lives in `app/layout.tsx` as `SITE_DESCRIPTION` and is reused for meta/OG/Twitter/JSON-LD.
 - Site: https://cwa1e.top
 - Repository: https://github.com/LiBaiQiYu/pixel-blog
 - Branch: `main`

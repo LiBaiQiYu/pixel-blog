@@ -1,6 +1,6 @@
-<h1 align="center">李白的白</h1>
+<h1 align="center">Pixel Blog</h1>
 
-<p align="center"><strong>一个用像素当骨架、用玻璃当皮肤的个人站点</strong></p>
+<p align="center"><strong>李白的白 · 一个用像素当骨架、用玻璃当皮肤的个人站点</strong></p>
 
 <p align="center"><a href="https://cwa1e.top">cwa1e.top</a> · 随笔 / 画廊 / 友链 / 关于</p>
 

@@ -3,29 +3,29 @@ import '../src/index.css';
 import { GlobalClickSound } from '../src/components/GlobalClickSound';
 import { RouteTransition } from '../src/components/RouteTransition';
 
+const SITE_DESCRIPTION =
+  'Pixel Blog —— 一个用像素当骨架、用玻璃当皮肤的个人站点，记录代码、旅途与日常观察。';
+
 export const metadata: Metadata = {
   metadataBase: new URL('https://cwa1e.top'),
   title: {
-    default: '李白的白 // CarlosWhite · 像素液态玻璃博客',
-    template: '%s // 李白的白',
+    default: 'Pixel Blog',
+    template: '%s · Pixel Blog',
   },
-  description:
-    'CarlosWhite 的个人博客，记录代码、旅途与日常观察。',
+  description: SITE_DESCRIPTION,
   alternates: { canonical: '/' },
   openGraph: {
     type: 'website',
     locale: 'zh_CN',
-    siteName: '李白的白',
-    title: '李白的白 // CarlosWhite',
-    description:
-      'CarlosWhite 的个人博客，记录代码、旅途与日常观察。',
+    siteName: 'Pixel Blog',
+    title: 'Pixel Blog',
+    description: SITE_DESCRIPTION,
     url: 'https://cwa1e.top',
   },
   twitter: {
     card: 'summary',
-    title: '李白的白 // CarlosWhite',
-    description:
-      'CarlosWhite 的个人博客，记录代码、旅途与日常观察。',
+    title: 'Pixel Blog',
+    description: SITE_DESCRIPTION,
   },
   robots: {
     index: true,
@@ -40,6 +40,21 @@ export const viewport: Viewport = {
   interactiveWidget: 'resizes-content',
 };
 
+const siteJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'Pixel Blog',
+  alternateName: '李白的白',
+  url: 'https://cwa1e.top',
+  description: SITE_DESCRIPTION,
+  inLanguage: 'zh-CN',
+  author: {
+    '@type': 'Person',
+    name: 'CarlosWhite',
+    url: 'https://cwa1e.top/about',
+  },
+};
+
 const themeInitScript = `(function(){try{var saved=localStorage.getItem('pixel_blog_theme_preference');var preference=saved==='light'||saved==='dark'||saved==='auto'?saved:'auto';var systemDark=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches;var dark=preference==='dark'||(preference==='auto'&&systemDark);var root=document.documentElement;root.classList.toggle('dark',dark);root.style.colorScheme=dark?'dark':'light';root.dataset.themePreference=preference;}catch(e){}})();`;
 
 const splashInitScript = `(function(){try{var path=window.location.pathname;var home=path==='/'||path==='/index.html';var reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;var seen=sessionStorage.getItem('pixel_blog_splash_seen');if(home&&!seen&&!reduce){document.documentElement.classList.add('pixel-splash-pending');sessionStorage.setItem('pixel_blog_splash_seen','1');window.setTimeout(function(){document.documentElement.classList.remove('pixel-splash-pending');},12000);}}catch(e){}})();`;
@@ -52,6 +67,10 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         <script dangerouslySetInnerHTML={{ __html: splashInitScript }} />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(siteJsonLd) }}
+        />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
           rel="preconnect"
