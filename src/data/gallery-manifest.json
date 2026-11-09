@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-10-29T10:40:11.944Z",
+  "generatedAt": "2026-11-09T03:43:27.870Z",
   "prefix": "gallery",
   "objects": {
     "IMG_1273": {
@@ -970,6 +970,32 @@
         "size": 5429834,
         "contentType": "image/jpeg",
         "uploadedAt": "2026-10-29T10:34:43.141Z",
+        "provider": "r2"
+      }
+    },
+    "IMG_1942": {
+      "thumbnail": {
+        "key": "gallery/IMG_1942.webp",
+        "sha256": "7d0f8deaf7ba0efa42fa8d3c0b6c159e8046c262d4426f409a87c7a2a06542f7",
+        "size": 102026,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-11-09T03:35:41.288Z",
+        "provider": "r2"
+      },
+      "medium": {
+        "key": "gallery/medium/IMG_1942.webp",
+        "sha256": "5a6024af484a1d35d73b9db13c2e06cb74b7dd87c90b59275c62b83ccb61f6ac",
+        "size": 422324,
+        "contentType": "image/webp",
+        "uploadedAt": "2026-11-09T03:35:41.288Z",
+        "provider": "r2"
+      },
+      "original": {
+        "key": "gallery/original/IMG_1942.jpeg",
+        "sha256": "cac0ed9bbbc920172cc13392ea8e211f2f2eeebccb6cd7f94d261a1d0299829b",
+        "size": 4557276,
+        "contentType": "image/jpeg",
+        "uploadedAt": "2026-11-09T03:35:41.288Z",
         "provider": "r2"
       }
     }

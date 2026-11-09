@@ -620,5 +620,21 @@
     "accent": "emerald",
     "area": "",
     "place": ""
+  },
+  {
+    "id": "IMG_1942",
+    "title": "生日蛋糕🍰",
+    "category": "生活",
+    "description": "😊",
+    "date": "2026-10-30T15:34:00.000Z",
+    "width": 4282,
+    "height": 5709,
+    "aspect": 0.7500437905062183,
+    "lat": 43.865739,
+    "lon": 87.586722,
+    "locationVisible": false,
+    "accent": "violet",
+    "area": "",
+    "place": ""
   }
 ]
