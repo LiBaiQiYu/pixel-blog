@@ -176,6 +176,7 @@ This file is a portable handoff for other AI tools and developers. It describes 
 - Shared modal primitives live in `src/components/PanelParts.tsx` (`SectionHeader`, `StatTile`, `MiniStat`) and are used by both modals.
 - Steam library card: `src/components/SteamProfileCard.tsx` + `src/lib/steam.ts`
   - Data comes from the stats Worker `GET /steam/profile`, never directly from Steam.
+  - Game art goes through `src/components/SteamGameArt.tsx`: `capsule_184x69.jpg` → `header.jpg` → generated monogram tile. Some apps (e.g. Deadlock, appid 1422450) ship no `capsule_184x69.jpg`, so never render raw `<img src={game.icon}>` again.
   - Card shows persona, online dot, level, total playtime, game count, two-week playtime, top-5 playtime bars.
   - Clicking the card (or Enter/Space) opens `src/components/SteamLibraryModal.tsx` through `PixelBloom`, expanding from the card rect.
   - Modal sections: 01 档案 / 02 数据总览 / 03 游戏时长 TOP 20 / 04 最近在玩 / 05 社区与徽章.

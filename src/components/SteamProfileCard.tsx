@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ArrowRight, ExternalLink, Gamepad2 } from 'lucide-react';
 import { LiquidPixelCard } from './LiquidPixelCard';
+import { SteamGameArt } from './SteamGameArt';
 import { SteamLibraryModal } from './SteamLibraryModal';
 import {
   fetchSteamSummary,
@@ -218,20 +219,11 @@ export const SteamProfileCard: React.FC = () => {
                   <span className="w-3 shrink-0 text-right font-mono text-[9px] text-slate-400 dark:text-slate-500">
                     {index + 1}
                   </span>
-                  {game.icon ? (
-                    <img
-                      src={game.icon}
-                      alt=""
-                      aria-hidden="true"
-                      loading="lazy"
-                      className="h-[19px] w-10 shrink-0 rounded-sm object-cover"
-                      onError={(event) => {
-                        event.currentTarget.style.visibility = 'hidden';
-                      }}
-                    />
-                  ) : (
-                    <span className="h-[19px] w-10 shrink-0 rounded-sm bg-slate-300/60 dark:bg-slate-700/60" />
-                  )}
+                  <SteamGameArt
+                    appid={game.appid}
+                    name={game.name}
+                    className="h-[19px] w-10 shrink-0 rounded-sm"
+                  />
                   <span className="min-w-0 flex-1 truncate text-[11px] text-slate-700 dark:text-slate-200">
                     {game.name}
                   </span>

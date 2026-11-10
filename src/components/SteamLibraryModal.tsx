@@ -2,6 +2,7 @@ import React from 'react';
 import { ExternalLink, X } from 'lucide-react';
 import { PixelBloom } from './PixelBloom';
 import { MiniStat, SectionHeader, StatTile } from './PanelParts';
+import { SteamGameArt } from './SteamGameArt';
 import {
   countryLabel,
   formatDate,
@@ -36,20 +37,11 @@ const GameRow: React.FC<{
       <span className="w-6 shrink-0 text-right font-mono text-[9px] text-slate-400 dark:text-slate-500">
         {index}
       </span>
-      {game.icon ? (
-        <img
-          src={game.icon}
-          alt=""
-          aria-hidden="true"
-          loading="lazy"
-          className="h-[27px] w-[72px] shrink-0 rounded object-cover"
-          onError={(event) => {
-            event.currentTarget.style.visibility = 'hidden';
-          }}
-        />
-      ) : (
-        <span className="h-[27px] w-[72px] shrink-0 rounded bg-slate-300/60 dark:bg-slate-700/60" />
-      )}
+      <SteamGameArt
+        appid={game.appid}
+        name={game.name}
+        className="h-[27px] w-[72px] shrink-0 rounded"
+      />
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline justify-between gap-2">
           <span className="truncate text-[11px] font-medium text-slate-800 dark:text-slate-100">
@@ -358,20 +350,11 @@ export const SteamLibraryModal: React.FC<SteamLibraryModalProps> = ({
             <div className="flex gap-2 overflow-x-auto pb-1">
               {recentGames.map((game) => (
                 <div key={game.appid} className="w-28 shrink-0">
-                  {game.icon ? (
-                    <img
-                      src={game.icon}
-                      alt=""
-                      aria-hidden="true"
-                      loading="lazy"
-                      className="h-[52px] w-full rounded-md object-cover"
-                      onError={(event) => {
-                        event.currentTarget.style.visibility = 'hidden';
-                      }}
-                    />
-                  ) : (
-                    <div className="h-[52px] w-full rounded-md bg-slate-300/60 dark:bg-slate-700/60" />
-                  )}
+                  <SteamGameArt
+                    appid={game.appid}
+                    name={game.name}
+                    className="h-[52px] w-full rounded-md"
+                  />
                   <div className="mt-1 truncate text-[10px] text-slate-700 dark:text-slate-200">
                     {game.name}
                   </div>
