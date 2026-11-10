@@ -1,18 +1,19 @@
 import React from 'react';
 import { ArrowUpRight, Github } from 'lucide-react';
 import { LiquidPixelCard } from './LiquidPixelCard';
-
-type ProjectGlyph = 'truesight' | 'hive';
+import { TechStack, type TechId } from './TechStack';
 
 interface Project {
   id: string;
   name: string;
   kicker: string;
   summary: string;
-  tags: string[];
+  logo: string;
+  logoAlt: string;
+  accent: string;
+  tech: TechId[];
   site: string;
   repo: string;
-  glyph: ProjectGlyph;
 }
 
 const PROJECTS: Project[] = [
@@ -21,80 +22,28 @@ const PROJECTS: Project[] = [
     name: 'TrueSight',
     kicker: 'DOTA 2 MATCH ANALYZER',
     summary:
-      '本地运行的 Dota 2 对局分析工具：整合 OpenDota / STRATZ 公开数据、Clarity 录像解析与 AI 复盘，从整场概览一路展开到 5 秒级时间轴、出装路线与战斗节点。',
-    tags: ['Windows 客户端', '录像解析', 'AI 复盘'],
+      '面向 Windows 的 Dota 2 对局分析客户端。数据来自 OpenDota 与 STRATZ，录像由本地 Clarity 解析，可查看分钟级时间轴、出装路线与战斗节点，并调用兼容 OpenAI 的模型生成复盘报告。',
+    logo: '/projects/truesight-mark.svg',
+    logoAlt: 'TrueSight 标识',
+    accent: '#3fbf8f',
+    tech: ['vue', 'typescript', 'vite', 'python', 'java', 'electron'],
     site: 'https://truesight.cwa1e.top/',
     repo: 'https://github.com/LiBaiQiYu/TrueSight',
-    glyph: 'truesight',
   },
   {
     id: 'hive',
     name: 'HIVE',
     kicker: 'DOTA2 COMMUNITY WARROOM',
     summary:
-      '把「凑十个人打一场内战」从群聊接龙变成一条可报名、可分队、可追溯的流程：邀请制报名、按位置与实力自动分队、评分构成公开可查，赛后阵容有快照不会悄悄变。',
-    tags: ['邀请制报名', '自动分队', '实力评分'],
+      '面向固定社区的 Dota 2 内战组织平台。提供邀请制报名、按位置与实力自动分队、可解释的实力评分，并完整记录赛事、阵容与战绩，赛后数据以快照留存。',
+    logo: '/projects/hive.png',
+    logoAlt: 'HIVE 标识',
+    accent: '#c8452f',
+    tech: ['vue', 'typescript', 'vite', 'hono', 'cloudflare', 'sqlite'],
     site: 'https://hive.cwa1e.top/',
     repo: 'https://github.com/LiBaiQiYu/hive',
-    glyph: 'hive',
   },
 ];
-
-// 12×12 pixel glyphs, drawn the same way as the hero avatars.
-const GLYPHS: Record<ProjectGlyph, string[]> = {
-  truesight: [
-    '............',
-    '............',
-    '...######...',
-    '..#......#..',
-    '.#........#.',
-    '#...####...#',
-    '#..######..#',
-    '#...####...#',
-    '.#........#.',
-    '..#......#..',
-    '...######...',
-    '............',
-  ],
-  hive: [
-    '............',
-    '............',
-    '...######...',
-    '..#......#..',
-    '.#........#.',
-    '#..........#',
-    '#....##....#',
-    '#..........#',
-    '.#........#.',
-    '..#......#..',
-    '...######...',
-    '............',
-  ],
-};
-
-const PixelGlyph: React.FC<{ kind: ProjectGlyph }> = ({ kind }) => (
-  <svg
-    viewBox="0 0 12 12"
-    className="h-6 w-6"
-    shapeRendering="crispEdges"
-    aria-hidden="true"
-  >
-    {GLYPHS[kind].flatMap((row, y) =>
-      Array.from(row).map((cell, x) =>
-        cell === '#' ? (
-          <rect
-            key={`${x}-${y}`}
-            x={x}
-            y={y}
-            width={1}
-            height={1}
-            fill="currentColor"
-          />
-        ) : null
-      )
-    )}
-  </svg>
-);
 
 const PixelCorners: React.FC = () => (
   <span aria-hidden="true" className="pointer-events-none absolute inset-0">
@@ -109,9 +58,19 @@ const ProjectCard: React.FC<{ project: Project }> = ({ project }) => (
   <article className="group relative flex flex-col gap-3 rounded-lg border border-sky-400/30 bg-white/55 p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-sky-400/60 hover:bg-white/70 dark:border-cyan-400/20 dark:bg-slate-950/50 dark:hover:border-cyan-300/40 dark:hover:bg-slate-950/70">
     <PixelCorners />
 
-    <header className="flex items-center gap-2.5">
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-sm border border-sky-400/40 bg-sky-500/10 text-sky-600 dark:border-cyan-400/25 dark:bg-cyan-400/10 dark:text-cyan-300">
-        <PixelGlyph kind={project.glyph} />
+    <header className="flex items-center gap-3">
+      <span
+        className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-md border border-slate-300/60 bg-white dark:border-white/10 dark:bg-white/[0.06]"
+        style={{
+          backgroundImage: `radial-gradient(circle at 50% 120%, ${project.accent}33, transparent 70%)`,
+        }}
+      >
+        <img
+          src={project.logo}
+          alt={project.logoAlt}
+          loading="lazy"
+          className="h-9 w-9 object-contain"
+        />
       </span>
       <div className="min-w-0">
         <div className="truncate font-mono text-[8px] tracking-[0.16em] text-sky-600 dark:text-cyan-300">
@@ -127,15 +86,11 @@ const ProjectCard: React.FC<{ project: Project }> = ({ project }) => (
       {project.summary}
     </p>
 
-    <div className="flex flex-wrap gap-1.5">
-      {project.tags.map((tag) => (
-        <span
-          key={tag}
-          className="rounded-sm border border-sky-400/25 bg-sky-500/5 px-1.5 py-0.5 font-mono text-[9px] text-sky-700 dark:border-cyan-400/15 dark:bg-cyan-400/5 dark:text-cyan-200"
-        >
-          {tag}
-        </span>
-      ))}
+    <div className="flex items-center gap-2">
+      <span className="shrink-0 font-mono text-[8px] tracking-[0.16em] text-slate-400 dark:text-slate-500">
+        STACK
+      </span>
+      <TechStack ids={project.tech} size="md" />
     </div>
 
     <div className="mt-auto flex items-center gap-2 pt-1">
@@ -169,11 +124,11 @@ export const ProjectShowcase: React.FC = () => (
           PROJECTS // 我的项目
         </div>
         <h2 className="mt-1 text-sm font-bold text-slate-900 dark:text-white">
-          自己写的两个工具
+          独立开发的两个项目
         </h2>
       </div>
       <span className="font-mono text-[9px] text-slate-400 dark:text-slate-500">
-        {PROJECTS.length} 个 / 都在跑
+        2 个 · 持续维护
       </span>
     </div>
 

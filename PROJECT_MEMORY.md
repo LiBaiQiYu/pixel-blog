@@ -176,9 +176,10 @@ This file is a portable handoff for other AI tools and developers. It describes 
 - Shared modal primitives live in `src/components/PanelParts.tsx` (`SectionHeader`, `StatTile`, `MiniStat`) and are used by both modals.
 - Projects section: `src/components/ProjectShowcase.tsx`
   - Two cards: **TrueSight** (`https://truesight.cwa1e.top/`, repo `LiBaiQiYu/TrueSight`) and **HIVE** (`https://hive.cwa1e.top/`, repo `LiBaiQiYu/hive`).
-  - Icons are 12×12 pixel bitmaps in the `GLYPHS` map, rendered as crisp SVG rects (same approach as the hero avatars).
+  - Logos are vendored in `public/projects/`: `truesight-mark.svg` (from the TrueSight site) and `hive.png` (the site's apple-touch icon).
+  - Tech stack renders as brand-coloured icon chips via `src/components/TechStack.tsx`; the SVG paths live in `src/components/techIcons.ts`, inlined from Simple Icons (CC0) so no CDN is hit. Add a tech by adding an entry to `TECH_ICONS`, `TECH_COLORS` and the project's `tech` array.
+  - Copy is deliberately formal and factual (sourced from each repo's README); avoid marketing cadence or em-dash flourishes here.
   - Cards carry pixel corner marks and two links (site + GitHub); terminal mode renders `# projects`.
-  - Add new projects by appending to the `PROJECTS` array; give each one a glyph entry or the icon will throw.
 - Steam library card: `src/components/SteamProfileCard.tsx` + `src/lib/steam.ts`
   - Data comes from the stats Worker `GET /steam/profile`, never directly from Steam.
   - Game art goes through `src/components/SteamGameArt.tsx`: `capsule_184x69.jpg` → `header.jpg` → generated monogram tile. Some apps (e.g. Deadlock, appid 1422450) ship no `capsule_184x69.jpg`, so never render raw `<img src={game.icon}>` again.
