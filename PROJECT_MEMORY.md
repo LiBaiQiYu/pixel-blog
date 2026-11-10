@@ -74,6 +74,7 @@ This file is a portable handoff for other AI tools and developers. It describes 
 - Content page switches use an optimistic `pendingContentPage` in AppShell so the target page/fallback renders immediately before the route RSC response returns.
 - `/admin` and `/__admin/*` are **dev-only**, outside `(site)`, and excluded from production builds.
 - Never mount another AppShell inside page components.
+- Standard-mode footer is the colophon: visits, `MARKDOWN · PIXEL GLASS`, and a GitHub link to `LiBaiQiYu/pixel-blog`. Terminal mode has no footer.
 
 ## 5. Theme and Visual Behavior
 

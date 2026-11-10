@@ -37,7 +37,7 @@ import { isWeatherKind, resolveWeatherVisual } from './utils/weather';
 import type { WeatherKind } from './types/weather';
 import { pixelAudio } from './utils/sound';
 import type { MusicMood } from './utils/sound';
-import { Eye, Terminal, LayoutGrid, Settings, Minimize2 } from 'lucide-react';
+import { Eye, Terminal, LayoutGrid, Settings, Minimize2, Github } from 'lucide-react';
 import { generateRandomSeed } from './components/PixelArtwork';
 import {
   PixelCursorEffects,
@@ -936,6 +936,17 @@ export const AppShell: React.FC<AppShellProps> = ({
                 访问量 {siteVisits === null ? '--' : siteVisits.toLocaleString('zh-CN')}
               </span>
               <span>MARKDOWN · PIXEL GLASS</span>
+              <a
+                href="https://github.com/LiBaiQiYu/pixel-blog"
+                target="_blank"
+                rel="noreferrer"
+                title="本站源码"
+                aria-label="本站源码（GitHub）"
+                className="inline-flex items-center gap-1.5 transition-colors hover:text-sky-600 dark:hover:text-cyan-300"
+              >
+                <Github className="h-3 w-3" />
+                <span className="hidden sm:inline">GitHub</span>
+              </a>
             </div>
           </div>
         </footer>
