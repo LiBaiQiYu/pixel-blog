@@ -15,7 +15,7 @@ This file is a portable handoff for other AI tools and developers. It describes 
 - Public image bucket: https://img.cwa1e.top
 - Stats API: https://stats.cwa1e.top
 - Language/UI: Chinese, pixel-art + liquid-glass visual style
-- Docs: `README.md` is the public product/design intro (with screenshots in `docs/screenshots/`); this file is the engineering handoff. Keep them separate.
+- Docs: `README.md` is the English default and `README.zh-CN.md` is the Chinese mirror; each starts with a language switch link. Screenshots live in `docs/screenshots/` (WebP, ~320 KB total). Keep `README*` product-facing and this file engineering-facing.
 - Runtime: Next.js App Router on Cloudflare Workers via OpenNext
 - Node requirement: Node.js >= 22
 

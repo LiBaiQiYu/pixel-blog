@@ -1,124 +1,212 @@
-<h1 align="center">Pixel Blog</h1>
+# Pixel Blog
 
-<p align="center"><strong>李白的白 · 一个用像素当骨架、用玻璃当皮肤的个人站点</strong></p>
+**English** · [简体中文](./README.zh-CN.md)
 
-<p align="center"><a href="https://cwa1e.top">cwa1e.top</a> · 随笔 / 画廊 / 友链 / 关于</p>
+A personal website built with pixels as its skeleton and glass as its skin — writing, photography, and a few game profiles, designed end to end instead of assembled from a theme.
 
-![首页](./docs/screenshots/home-light.webp)
+[Live site](https://cwa1e.top) · [Gallery](https://cwa1e.top/gallery) · [About](https://cwa1e.top/about)
 
-## 出发点
+[![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)](https://nextjs.org)
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=061427)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
+[![Cloudflare Workers](https://img.shields.io/badge/Cloudflare_Workers-F38020?logo=cloudflareworkers&logoColor=white)](https://workers.cloudflare.com)
 
-这是一个人的网站，不是一套主题。
+![Homepage](./docs/screenshots/home-light.webp)
 
-写作、摄影、几款游戏，还有一个不想被模板定义的自我介绍。所以这里的每个界面都是从一张空白画布开始画的——导航怎么滑、卡片怎么浮起来、点开一张照片时镜头怎么动，都当作设计问题来回答，而不是当成「装个插件」来解决。
+## Contents
 
-它想做到的事只有一件：**让人一眼就认出这是被设计过的**，同时又不会挡住里面的内容。
+- [Overview](#overview)
+- [Design](#design)
+- [Screenshots](#screenshots)
+- [Tech stack](#tech-stack)
+- [Architecture](#architecture)
+- [Project structure](#project-structure)
+- [Getting started](#getting-started)
+- [Scripts](#scripts)
+- [Configuration](#configuration)
+- [Deployment](#deployment)
+- [Known limitations](#known-limitations)
+- [License](#license)
+- [Acknowledgements](#acknowledgements)
 
-## 设计理念
+## Overview
 
-### 01 · 像素是骨架，不是滤镜
+Pixel Blog is the personal site of CarlosWhite (李白的白). It collects three kinds of content — written notes, photographs, and game profiles — and presents them with one visual system: pixel-grid structure, liquid-glass surfaces, and a backdrop that follows real time and real weather.
 
-像素在这里不是给图片加个马赛克那种装饰，而是布局的度量单位。卡片的直角、分隔线的粗细、角落里的方形标记、数字的排布，都落在同一套像素节奏上；圆角只留给需要「软」的地方。
+Everything here is hand-built: routing, motion specs, the photo viewer, the terminal mode, the statistics service. There is no page builder, no theme, and no CMS UI beyond a local-only admin used for uploading.
 
-一套骨架撑起两种性格：**硬的地方像素，软的地方玻璃**。
+## Design
 
-### 02 · 玻璃是皮肤
+**Pixels are structure, not a filter.** Right angles, stepped corner marks, and monospaced labels are used as layout units. Rounded corners are reserved for surfaces that should feel soft.
 
-所有卡片都是一层薄玻璃：半透明底、22px 模糊、190% 饱和度、1px 高光边，鼠标经过时高光会跟着走。
+**Glass is the skin.** Cards are translucent layers — 22px blur, 190% saturation, a 1px highlight edge — so a moving background never turns them into stickers on wallpaper.
 
-它解决了一个具体问题——背景是动态的天气画面，如果卡片是不透明色块，页面就变成了「贴纸叠在壁纸上」；玻璃让卡片和背景发生关系，却又保持可读。
+**Light comes first.** The backdrop tracks the observer's sun and moon position, the lunar phase, and wind force, then layers rain, snow, fog, or storm on top. Content stays in the foreground; weather stays environment.
 
-### 03 · 先有光，再有内容
+**Motion explains space.** A card opens into a panel from its own rectangle — 300ms out, 250ms back, content revealed after 120ms — and every card-to-panel transition reuses the same component (`PixelBloom`).
 
-背景不是一张图，是一套随时间和天气运行的照明系统：
+**Two readings, one skeleton.** The standard and terminal modes share routes, data, and the app shell. The terminal is not a theme; it is another way to read the same content.
 
-- 按观测点的**太阳与月亮位置**决定昼夜配色、光源方向
-- 月亮有**相位**，不是随便挂一个月牙
-- 风按**蒲福风级**给雨丝和雪片加上倾斜与漂移
-- 雨、雪、雾、雷按实时天气叠加，并支持按真实太阳时预览任意时刻
+## Screenshots
 
-内容是前景，天气是环境。环境会变，但永远不抢戏。
+| Standard mode | Terminal mode |
+| --- | --- |
+| ![Homepage in standard mode](./docs/screenshots/home-light.webp) | ![Homepage in terminal mode](./docs/screenshots/home-terminal.webp) |
 
-### 04 · 动效只用来解释空间
+| Gallery | Photo viewer |
+| --- | --- |
+| ![Gallery grid](./docs/screenshots/gallery-light.webp) | ![Photo viewer with EXIF panel](./docs/screenshots/gallery-detail.webp) |
 
-卡片展开成弹窗时，它**从卡片原来的位置长出来**，不是凭空淡入：300ms 展开、250ms 收回、内容延迟 120ms 出现。收回去时先让内容退场，再缩回卡片，最后把卡片还原。
+![About page](./docs/screenshots/about-light.webp)
 
-时间参数写在 `PixelBloom` 里，所有「卡片 → 面板」的交互都复用这一个组件，不各自发挥。
+## Tech stack
 
-### 05 · 两套形态，一套骨架
+| Layer | Choice |
+| --- | --- |
+| Framework | Next.js 16 (App Router), React 19, TypeScript |
+| Styling | Tailwind CSS 3, custom liquid-glass and pixel utilities |
+| Motion | CSS transitions plus a single shared expansion component |
+| Media | Swiper (photo viewer), Canvas rendering, sharp / EXIF / HEIC tooling |
+| Maps | Mapbox GL |
+| Hosting | Cloudflare Workers via OpenNext |
+| Data | Cloudflare D1 (likes, views, comments, friend links), R2 (posts, images) |
+| Third-party | QWeather, Steam Web API, OpenDota, Simple Icons |
 
-标准模式和终端模式不是主题切换，而是同一份内容的两种阅读方式：路由、数据、AppShell 完全共用，终端只是换了一种表达——用 `tree` 看归档、用 `cat 01` 读文章、用命令逛画廊。
+## Architecture
 
-![终端模式](./docs/screenshots/home-terminal.webp)
+```mermaid
+flowchart LR
+  B[Browser]
 
-### 06 · 彩蛋留给愿意多看两眼的人
+  subgraph CF[Cloudflare]
+    W[Site Worker<br/>Next.js · OpenNext]
+    S[Stats Worker<br/>REST API]
+    D1[(D1)]
+    R2[(R2)]
+  end
 
-域名不是随机拼的：
+  Q[QWeather]
+  ST[Steam Web API]
+  OD[OpenDota]
 
-`cw` 是 CarlosWhite，`a` 是十六进制的 `0x0A`（10），`1e` 是 `0x1E`（30）——10 月 30 日。关于页里有一张可解码的卡片，把这三个片段翻成明文；当天打开还会多一个角标。
+  B --> W
+  B -->|likes · views · comments · friends| S
+  B -->|Dota 2 match history| OD
+  W -->|public post index and images| R2
+  W -->|weather proxy| Q
+  S --> D1
+  S -->|profile and library| ST
+```
 
-## 视觉语言
+Notes:
 
-| 维度 | 约定 |
-|---|---|
-| 材质 | 玻璃层（blur 22px / saturate 190% / 1px 边）+ 像素角标 |
-| 色彩 | 青与品红作主色，紫、琥珀作辅助；暗色不压成纯黑，留一点环境光 |
-| 字体 | 等宽字体承担标签、数字、状态；正文用无衬线，克制字号与行高 |
-| 层次 | 环境（背景）→ 容器（玻璃）→ 内容（文字与图）→ 反应（光标、悬停） |
-| 动效 | 缓动统一走 `cubic-bezier(0.16, 1, 0.3, 1)`，状态变化集中在 150 / 250 / 300 三档 |
+- The site Worker renders pages and proxies weather requests. Public content (post index, images) is read from R2 through a public domain, so the browser needs no credentials.
+- The stats Worker owns all writes to D1 and aggregates Steam data behind a 10-minute edge cache.
+- Dota 2 data is fetched in the browser: OpenDota rate-limits Cloudflare egress IPs, so a Worker proxy is not viable.
 
-## 交互
+## Project structure
 
-- **导航滑块**：四个页面共用一条指示条，切换时带轻微弹性，不打断视线
-- **开屏**：首次进入首页，像素碎片铺满屏幕再炸开退场，每个标签页只放一次，尊重「减少动态效果」系统设置
-- **画廊**：瀑布流 + 地图两种浏览方式；点开照片后原图先经 Canvas 渲染再显示，保证方向与 HEIC 一致；缩放以光标为锚点，原图没加载完之前不开放缩放；另有直方图、Live Photo 与评论
-- **游戏档案**：Steam 游戏库与 Dota 2 战绩各一张卡片，点开是从卡片展开的档案面板，分类展示资料、时长榜、最近战绩
+```
+pixel-blog/
+├─ app/                   # App Router routes, layouts, metadata
+│  ├─ (site)/             # public pages sharing the app shell
+│  ├─ api/weather/        # QWeather proxy
+│  └─ admin/              # local-only admin (excluded from production)
+├─ src/
+│  ├─ components/         # shell, cards, modals, gallery, weather
+│  ├─ lib/                # data access, formatting, engagement helpers
+│  ├─ data/               # gallery metadata, generated weather snapshot
+│  ├─ hooks/ utils/ types/
+│  └─ index.css           # design tokens and motion utilities
+├─ worker/                # stats Worker (Cloudflare + D1) and schema
+├─ public/                # static assets, project logos
+├─ docs/screenshots/      # README images
+└─ scripts/               # weather fetch, gallery upload, IndexNow
+```
 
-![画廊](./docs/screenshots/gallery-light.webp)
+## Getting started
 
-## 内容
-
-- **随笔**：按年月归档的长文与短记
-- **画廊**：旅行与日常的照片，带分类、地点与拍摄时间
-- **友链**：申请、审核、标签筛选
-- **关于**：像素英雄头像（24×24 网格）与一点自我介绍
-
-## 技术
-
-- **框架**：Next.js 16 App Router · React 19 · TypeScript · Tailwind CSS
-- **部署**：Cloudflare Workers（OpenNext），站点与统计服务各自独立
-- **数据**：D1（点赞、浏览量、评论、友链）· R2（文章与图库资源）
-- **外部数据**：和风天气、Steam Web API（服务端聚合与缓存）、OpenDota（浏览器直连）
-- **图像**：Swiper + Canvas 渲染、EXIF 与 Live Photo 处理、sharp 预处理
-
-## 本地运行
-
-需要 Node.js 22 及以上。
+Requirements: **Node.js 22 or newer**.
 
 ```bash
+git clone https://github.com/LiBaiQiYu/pixel-blog.git
+cd pixel-blog
 npm install
-npm run dev      # http://localhost:5173
+cp .env.example .env.local   # fill in what you need
+npm run dev                  # http://localhost:5173
 ```
 
-环境变量清单见 `.env.example`（复制为 `.env.local` 后填写）。生产构建与部署：
+The site runs without any credentials for browsing. The local admin (photo upload, post editing) needs the R2 variables; the weather card needs `QWEATHER_*`.
+
+## Scripts
+
+| Command | Description |
+| --- | --- |
+| `npm run dev` | Development server on port 5173 |
+| `npm run build` | Production build with type checking |
+| `npm start` | Serve the production build locally |
+| `npm run cf:build` | OpenNext build for Cloudflare |
+| `npm run cf:preview` | Build and preview on the Workers runtime |
+| `npm run cf:deploy` | Build and deploy the site Worker |
+| `npm run stats:deploy` | Deploy the stats Worker |
+| `npm run stats:migrate:reactions` | Apply the photo reactions migration |
+| `npm run stats:migrate:friends` | Apply the friend links migration |
+| `npm run gallery:meta` | Regenerate gallery metadata |
+| `npm run gallery:upload` | Upload gallery assets to R2 |
+| `npm run seo:indexnow` | Submit the sitemap to IndexNow |
+
+## Configuration
+
+Copy `.env.example` to `.env.local`. Names only — never commit values.
+
+| Variable | Scope | Purpose |
+| --- | --- | --- |
+| `QWEATHER_API_HOST` `QWEATHER_KID` `QWEATHER_PROJECT_ID` `QWEATHER_DEVELOPER_ID` `QWEATHER_PRIVATE_KEY_PATH` `QWEATHER_LAT` `QWEATHER_LON` `QWEATHER_CITY` `QWEATHER_TIMEZONE` | server | Weather API and default location |
+| `NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN` | build | Gallery map |
+| `NEXT_PUBLIC_STATS_API_URL` | build | Stats API base URL |
+| `NEXT_PUBLIC_BLOG_IMAGE_BASE_URL` | build | Public image base |
+| `NEXT_PUBLIC_STEAM_ID` | build | SteamID64 used to derive the Dota account id |
+| `R2_ACCOUNT_ID` `R2_BUCKET` `R2_ACCESS_KEY_ID` `R2_SECRET_ACCESS_KEY` `R2_PREFIX` | local Node | Admin uploads and gallery scripts |
+| `R2_BLOG_PREFIX` | server | Blog object prefix inside the bucket |
+| `ADMIN_DEV_TOKEN` | dev | Protects the local admin when exposed over LAN |
+| `FRIENDS_ADMIN_TOKEN` | Worker secret | Friend review endpoints |
+| `DEV_ALLOWED_ORIGINS` | dev | Extra origins for LAN or tunnel access |
+
+## Deployment
+
+The site and the statistics service are separate Workers.
 
 ```bash
-npm run build        # 生产构建
-npm run cf:deploy    # Cloudflare 部署
+# Stats Worker: D1 migrations first, then the secret and the deploy
+npx wrangler secret put STEAM_API_KEY --config worker/wrangler.toml
+npm run stats:migrate:reactions
+npm run stats:migrate:friends
+npm run stats:deploy
+
+# Site Worker
+npm run cf:deploy
 ```
 
-## 目录
+- `worker/wrangler.toml` holds the custom domain route for `stats.cwa1e.top`. Removing it makes Wrangler drop the domain on the next deploy.
+- `STEAM_API_KEY` is a Worker secret; it is never part of the client bundle. `STEAM_ID` is a plain variable in the same file.
+- The site Worker needs its build-time variables (`NEXT_PUBLIC_*`) configured in the Cloudflare build environment, not only at runtime.
 
-```
-app/          App Router 路由与布局
-src/          组件、数据与工具
-worker/       统计服务（Cloudflare Worker + D1）
-public/       静态资源
-docs/         README 截图
-```
+## Known limitations
 
-## 致谢
+- **No online admin or authentication.** The admin is local-only and requires Node-only image tooling; production returns 404 for `/admin`.
+- **No automated test suite.** Verification is a production build plus manual browser checks.
+- **Steam badges and showcases** exist only on community profile pages, not in the Web API, so the profile panel shows aggregate counts.
+- **Dota 2 data** must stay client-side because OpenDota rejects Cloudflare Worker egress IPs with `429`.
+- Netlify and Vite configuration files remain from an earlier deployment target and are not used.
 
-画廊的灵感与部分理念来自 [ChronoFrame](https://github.com/HoshinoSuzumi/chronoframe)，感谢开源。天气数据由和风天气提供，游戏数据来自 Steam 与 OpenDota。
+## License
 
-站内的文字与照片版权归作者所有；代码可供参考，但未附带开源许可。
+Article text and photographs are © CarlosWhite. The source code is published for reference; no open-source license is granted.
+
+## Acknowledgements
+
+- Gallery concept and parts of the design language inspired by [ChronoFrame](https://github.com/HoshinoSuzumi/chronoframe).
+- Weather data by [QWeather](https://www.qweather.com).
+- Game data from the [Steam Web API](https://steamcommunity.com/dev) and [OpenDota](https://www.opendota.com).
+- Technology icons from [Simple Icons](https://simpleicons.org) (CC0).
