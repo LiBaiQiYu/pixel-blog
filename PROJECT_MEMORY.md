@@ -177,7 +177,7 @@ This file is a portable handoff for other AI tools and developers. It describes 
 - Shared modal primitives live in `src/components/PanelParts.tsx` (`SectionHeader`, `StatTile`, `MiniStat`) and are used by both modals.
 - Projects section: `src/components/ProjectShowcase.tsx`
   - Two cards: **TrueSight** (`https://truesight.cwa1e.top/`, repo `LiBaiQiYu/TrueSight`) and **HIVE** (`https://hive.cwa1e.top/`, repo `LiBaiQiYu/hive`).
-  - Logos are vendored in `public/projects/`: `truesight-mark.svg` (from the TrueSight site) and `hive.png` (the site's apple-touch icon).
+  - Logos are vendored in `public/projects/`: `truesight-mark.svg` (from the TrueSight site) and `hive.png` (HIVE's `favicon-96x96.png`). Use the 96px favicon, **not** `apple-touch-icon.png` — the latter has an opaque dark background baked in and renders as a black square.
   - Tech stack renders as brand-coloured icon chips via `src/components/TechStack.tsx`; the SVG paths live in `src/components/techIcons.ts`, inlined from Simple Icons (CC0) so no CDN is hit. Add a tech by adding an entry to `TECH_ICONS`, `TECH_COLORS` and the project's `tech` array.
   - Copy is deliberately formal and factual (sourced from each repo's README); avoid marketing cadence or em-dash flourishes here.
   - Cards carry pixel corner marks and two links (site + GitHub); terminal mode renders `# projects`.
