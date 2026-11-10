@@ -174,6 +174,11 @@ This file is a portable handoff for other AI tools and developers. It describes 
   - Hero images come from `cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/<slug>.png`; the hero list is cached in `localStorage` for 24h (`pixel_blog_dota_heroes_v1`).
   - Terminal mode renders a `# dota2` block.
 - Shared modal primitives live in `src/components/PanelParts.tsx` (`SectionHeader`, `StatTile`, `MiniStat`) and are used by both modals.
+- Projects section: `src/components/ProjectShowcase.tsx`
+  - Two cards: **TrueSight** (`https://truesight.cwa1e.top/`, repo `LiBaiQiYu/TrueSight`) and **HIVE** (`https://hive.cwa1e.top/`, repo `LiBaiQiYu/hive`).
+  - Icons are 12×12 pixel bitmaps in the `GLYPHS` map, rendered as crisp SVG rects (same approach as the hero avatars).
+  - Cards carry pixel corner marks and two links (site + GitHub); terminal mode renders `# projects`.
+  - Add new projects by appending to the `PROJECTS` array; give each one a glyph entry or the icon will throw.
 - Steam library card: `src/components/SteamProfileCard.tsx` + `src/lib/steam.ts`
   - Data comes from the stats Worker `GET /steam/profile`, never directly from Steam.
   - Game art goes through `src/components/SteamGameArt.tsx`: `capsule_184x69.jpg` → `header.jpg` → generated monogram tile. Some apps (e.g. Deadlock, appid 1422450) ship no `capsule_184x69.jpg`, so never render raw `<img src={game.icon}>` again.
@@ -291,7 +296,7 @@ Do not commit `.env.local`, `.gallery-admin.env`, Worker secrets, or R2 credenti
 
 ## 11. Current Git State at Handoff
 
-- Latest pushed commit: `68fe210 docs: 新增官方 README，聚焦产品理念与设计`
+- Latest pushed commit: `9aeccd4 feat: 关于我新增「我的项目」栏目`
 - Working tree is clean; local `main` is in sync with `origin/main`.
 - Recent history:
   - `68fe210` — official README + `docs/screenshots/` (WebP)
