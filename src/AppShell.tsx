@@ -38,10 +38,6 @@ import type { WeatherKind } from './types/weather';
 import { pixelAudio } from './utils/sound';
 import type { MusicMood } from './utils/sound';
 import { Eye, Terminal, LayoutGrid, Settings, Minimize2, Github } from 'lucide-react';
-import {
-  ENABLE_LIQUID_GLASS_TOGGLE,
-  LiquidGlassModeToggle,
-} from './components/LiquidGlassModeToggle';
 import { generateRandomSeed } from './components/PixelArtwork';
 import {
   PixelCursorEffects,
@@ -986,27 +982,7 @@ export const AppShell: React.FC<AppShellProps> = ({
       )}
 
       {/* Floating mode switch: content page stays the same */}
-      {!isArticleRoute && ENABLE_LIQUID_GLASS_TOGGLE && (
-        <LiquidGlassModeToggle
-          viewMode={viewMode}
-          onToggle={() =>
-            handleViewModeChange(
-              viewMode === 'standard' ? 'terminal' : 'standard'
-            )
-          }
-          className={`fixed z-40 transition-all duration-300 ${
-            galleryPreviewOpen || immersiveWeather
-              ? 'opacity-0 translate-y-6 pointer-events-none'
-              : 'opacity-75 hover:opacity-100'
-          } ${
-            viewMode === 'terminal'
-              ? 'bottom-[5rem] right-3 sm:bottom-[5rem] sm:right-5 min-[1440px]:bottom-5'
-              : 'bottom-3 right-3 sm:bottom-5 sm:right-5'
-          }`}
-        />
-      )}
-
-      {!isArticleRoute && !ENABLE_LIQUID_GLASS_TOGGLE && (
+      {!isArticleRoute && (
         <button
           data-custom-sound
           onClick={() =>

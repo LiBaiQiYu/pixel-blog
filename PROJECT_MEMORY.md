@@ -74,10 +74,6 @@ This file is a portable handoff for other AI tools and developers. It describes 
 - Content page switches use an optimistic `pendingContentPage` in AppShell so the target page/fallback renders immediately before the route RSC response returns.
 - `/admin` and `/__admin/*` are **dev-only**, outside `(site)`, and excluded from production builds.
 - Never mount another AppShell inside page components.
-- Mode-switch button experiment: `src/components/LiquidGlassModeToggle.tsx` + `.liquid-glass-btn` in `src/index.css`.
-  - Glass = `backdrop-filter: blur(12px) saturate(180%)`, layered highlight border, conic chromatic rim, 9s sheen sweep (disabled under reduced motion).
-  - `ENABLE_LIQUID_GLASS_TOGGLE` gates it; set it to `false` to fall back to the original pill button, which is kept inline in `AppShell.tsx` under `!ENABLE_LIQUID_GLASS_TOGGLE`.
-  - React Bits **FluidGlass** was tried first and removed: it only refracts its own canvas content, so it cannot glass the DOM behind a button (it renders as a floating lens or a flat plate). Do not re-add it for UI surfaces.
 - Standard-mode footer is the colophon: visits, `MARKDOWN · PIXEL GLASS`, and a GitHub link to `LiBaiQiYu/pixel-blog`. Terminal mode has no footer.
 
 ## 5. Theme and Visual Behavior
@@ -316,7 +312,6 @@ Do not commit `.env.local`, `.gallery-admin.env`, Worker secrets, or R2 credenti
 - On Windows, `npm run cf:deploy` needs `TMP`/`TEMP` pointed inside the repo (OpenNext fails writing its temp config to `%TEMP%` under the DSH sandbox).
 - `STEAM_API_KEY` is stored as a Cloudflare Worker secret (dashboard → Worker → Settings → Variables and Secrets). `npm run stats:deploy` does not remove dashboard secrets.
 - Builds regenerate `src/data/weather.json`; restore it before committing unless the refresh is intended.
-- Wrangler's OAuth token can expire and cannot refresh in non-interactive runs (`Not logged in... environment is non-interactive`). Run `npx wrangler login` (or set `CLOUDFLARE_API_TOKEN`) before `npm run cf:deploy` / `npm run stats:deploy`.
 - `next-env.d.ts` flips between `.next/types/*` (build) and `.next/dev/types/*` (dev); it is not committed and is restored before commits.
 
 ## 12. Known Limitations / Possible Next Work
