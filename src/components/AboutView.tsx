@@ -23,6 +23,10 @@ import {
 } from './PhotoStoryShowcase';
 import { PixelHeroAvatar } from './PixelHeroAvatar';
 import {
+  ProjectShowcase,
+  TerminalProjectShowcase,
+} from './ProjectShowcase';
+import {
   SteamProfileCard,
   TerminalSteamProfile,
 } from './SteamProfileCard';
@@ -278,6 +282,8 @@ export const AboutView: React.FC<AboutViewProps> = ({
                 </p>
               </section>
 
+              <TerminalProjectShowcase />
+
               <TerminalDomainOriginEgg />
 
               <section className="space-y-2">
@@ -458,6 +464,8 @@ export const AboutView: React.FC<AboutViewProps> = ({
             </div>
           </div>
         </LiquidPixelCard>
+
+        <ProjectShowcase />
 
         <DomainOriginEgg />
 
