@@ -1,6 +1,6 @@
 # Pixel Glass Blog — Project Memory
 
-Last updated: 2026-11-09
+Last updated: 2026-11-11
 
 This file is a portable handoff for other AI tools and developers. It describes the current architecture, deployment, behavior, known constraints, and recent work. Do not put secret values in this file.
 
@@ -99,6 +99,18 @@ This file is a portable handoff for other AI tools and developers. It describes 
   - Do not reimplement its timing in new components.
   - Its open effect is guarded by `openStateRef`: it must only clear timers on the open transition, otherwise the re-run after `mounted` flips cancels the expansion frame and the panel stays at the origin box at `opacity: 0`.
   - Do not put `about-reveal` on the same element that toggles `opacity-0` for source hiding — the CSS animation wins over the utility class and the card stays visible.
+
+### Liquid glass research (2026-11-11)
+
+Goal was to replace the floating mode-switch pill with a real refractive "liquid glass" button. Nothing shipped; the original pill button is restored. Findings, so the research is not repeated:
+
+- **FluidGlass (React Bits) — rejected.** Its fragment shader only samples its own canvas textures (`uMedia` / `uText`); it cannot refract the DOM behind the element. Tested as a floating lens (renders as a grey blob), as a full-pill glass with the label drawn into the canvas (Chinese text becomes illegible even at `refraction` 0.35), and fed a snapshot of the backdrop (1:1 aligned, so the glass is indistinguishable from a transparent hole). Removed from the repo.
+- **Custom canvas refractor — rejected.** Captured the weather canvas plus the pixel grid and displaced it with `drawImage` slices. Looks right at rest but is a static snapshot: no live refraction, and it breaks when a card scrolls behind the button.
+- **GlassIcons (React Bits) — not applicable.** It does refract the real page, but every tile is `width: var(--glass-icons-size); height: var(--glass-icons-size)` with a `roundBox` SDF (radius ≤ size/2), so it can only produce squares or circles, never a capsule; labels sit outside the tile. Fine for an icon wall, not for a pill control.
+- **GlassSurface (React Bits) — viable, not integrated.** Supports `borderRadius` pills, keeps children above the glass, and has **no rAF loop**: it refracts via `backdrop-filter: url(#svgfilter)` (three `feDisplacementMap` passes for chromatic split + a calm centre). Chromium only; Safari/Firefox fall back to WebGL, which can only sample a `backdrop` element you pass in (the weather canvas) or degrade to frosted blur.
+- **Chrome support verified empirically (Chrome 156 headless):** `CSS.supports('backdrop-filter', 'url(#disp)')` returns `true`, the computed style keeps `url("#disp")`, and a screenshot shows the backdrop grid bending at the glass edge — real displacement, not blur. Older Chromium builds may silently drop it.
+
+If this is revisited, start from GlassSurface; do not retry FluidGlass for UI surfaces.
 
 ## 6. Main Features
 
@@ -298,20 +310,21 @@ Do not commit `.env.local`, `.gallery-admin.env`, Worker secrets, or R2 credenti
 
 ## 11. Current Git State at Handoff
 
-- Latest pushed commit: `9aeccd4 feat: 关于我新增「我的项目」栏目`
+- Latest pushed commit: `85673ab Revert "feat: 模式切换按钮改为液态玻璃（实验，可一键回退）"`
 - Working tree is clean; local `main` is in sync with `origin/main`.
 - Recent history:
-  - `68fe210` — official README + `docs/screenshots/` (WebP)
-  - `5902b51` — Dota 2 card shows rank only, no MMR
-  - `57b1cb3` — regenerated `weather.json`
-  - `b421645` — project memory update
-  - `2ad1111` — stats Worker `/steam/profile`
-  - `bbf9985` — domain easter egg + Steam card + Dota 2 card
+  - `85673ab` — reverts `7f31ca5`; the liquid glass experiment and its CSS are gone, the FAB is back to the original pill
+  - `7f31ca5` — liquid glass experiment (reverted, kept only in history)
+  - `0376e70` — official README, English default + `README.zh-CN.md`
+  - `5008eff` — HIVE project icon switched to the transparent `favicon-96x96.png`
+  - `dd62297` — footer GitHub link
+  - `e67a878` / `49f4acd` / `9aeccd4` — 「我的项目」 section with official logos and tech-stack icons
 - All of the above is deployed to Cloudflare; `PROJECT_MEMORY.md` and `README.md` are the only handoff docs.
 - Deployment order for Steam changes: Worker first (`npm run stats:deploy`), then site (`npm run cf:deploy`). Dota 2 needs only the site deploy.
 - On Windows, `npm run cf:deploy` needs `TMP`/`TEMP` pointed inside the repo (OpenNext fails writing its temp config to `%TEMP%` under the DSH sandbox).
 - `STEAM_API_KEY` is stored as a Cloudflare Worker secret (dashboard → Worker → Settings → Variables and Secrets). `npm run stats:deploy` does not remove dashboard secrets.
 - Builds regenerate `src/data/weather.json`; restore it before committing unless the refresh is intended.
+- Wrangler's OAuth token expires and cannot refresh in a non-interactive shell (`Not logged in … environment is non-interactive`). Run `npx wrangler login` (or provide `CLOUDFLARE_API_TOKEN`) before `npm run cf:deploy` / `npm run stats:deploy`.
 - `next-env.d.ts` flips between `.next/types/*` (build) and `.next/dev/types/*` (dev); it is not committed and is restored before commits.
 
 ## 12. Known Limitations / Possible Next Work
