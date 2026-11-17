@@ -43,6 +43,7 @@ import {
   PixelCursorEffects,
   triggerPixelLoadingCursor,
 } from './components/PixelCursorEffects';
+import { PixelCrosshair } from './components/PixelCrosshair';
 import {
   fetchLikedPostIds,
   fetchPostStats,
@@ -719,6 +720,9 @@ export const AppShell: React.FC<AppShellProps> = ({
 
       {/* Custom Pixel Mouse Click Spark & Loading Cursor Manager */}
       <PixelCursorEffects />
+
+      {/* Default pixel reticle: closed crosshair that spreads with pointer speed */}
+      <PixelCrosshair />
 
       {/* Dynamic Pixel Weather Background (driven by live weather kind + strength) */}
       <PixelWeatherBackground

@@ -246,6 +246,14 @@ html:not(.dark) .crt-scanlines {
     cursor: var(--cursor-pixel-default);
   }
 
+  /* Dynamic reticle (PixelCrosshair) replaces the static default cursor:
+     it is drawn in the DOM so it can spread open with pointer speed.
+     Falls back to the static pixel cursor above when reduced motion is on. */
+  html[data-pixel-reticle='on'],
+  html[data-pixel-reticle='on'] body {
+    cursor: none;
+  }
+
   a,
   button,
   select,

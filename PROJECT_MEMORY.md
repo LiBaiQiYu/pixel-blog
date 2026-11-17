@@ -1,6 +1,6 @@
 # Pixel Glass Blog — Project Memory
 
-Last updated: 2026-11-11
+Last updated: 2026-11-17
 
 This file is a portable handoff for other AI tools and developers. It describes the current architecture, deployment, behavior, known constraints, and recent work. Do not put secret values in this file.
 
@@ -111,6 +111,20 @@ Goal was to replace the floating mode-switch pill with a real refractive "liquid
 - **Chrome support verified empirically (Chrome 156 headless):** `CSS.supports('backdrop-filter', 'url(#disp)')` returns `true`, the computed style keeps `url("#disp")`, and a screenshot shows the backdrop grid bending at the glass edge — real displacement, not blur. Older Chromium builds may silently drop it.
 
 If this is revisited, start from GlassSurface; do not retry FluidGlass for UI surfaces.
+
+### Dynamic pixel reticle (2026-11-17)
+
+The default mouse pointer is no longer a static SVG cursor image — it is a DOM reticle that reacts to pointer speed.
+
+- Component: `src/components/PixelCrosshair.tsx`, mounted once in `AppShell` next to `PixelCursorEffects`.
+- `html[data-pixel-reticle='on']` (set by the component) makes the native default cursor `none`; `src/index.css` holds those two rules inside the existing `@media (pointer: fine)` block.
+- Closed at rest: eight pixel-frame segments on the old 24×24 grid plus the cyan centre dot. Each segment has an outward unit vector and is pushed radially out by `spread`, so the ring opens proportional to speed.
+- Speed → spread: measured in px per 60fps frame, normalized over `SPEED_FLOOR 1.2` … `SPEED_CEIL 24`, smoothstepped, max gap `MAX_SPREAD 6.5` grid units. Opening eases at 0.38, closing at 0.12, so it retracts slower than it opens.
+- Inertial drag elements: a lagging cyan ghost ring (`GHOST_RATE 0.3`) plus a five-shard coloured trail that chases through a `CHAIN_RATES` chain. Both fade out when the pointer stops, and the ring snaps back closed.
+- Interactive states are preserved. Every ~100 ms (or on `pointerover`) the component reads `getComputedStyle(elementFromPoint(x, y)).cursor`; when the hovered element declares its own cursor (pointer / text / wait / not-allowed / zoom / grab), the ring+ghost layer fades out and the native pixel cursor takes over, while the shard trail keeps following.
+- Guards: only mounted for `(pointer: fine)`; with `prefers-reduced-motion: reduce` it does not mount at all and the static `--cursor-pixel-default` cursor stays.
+- Click squeeze is built in (`pulse`), and the existing click shard burst in `PixelCursorEffects` still fires.
+- Tuning knobs are the constants at the top of the component. Verified with headless Chrome over CDP: idle spread 0, slow drift 0, fast sweep ≈6.4–6.5, settles back to 0, reticle hidden over controls, no console errors.
 
 ## 6. Main Features
 
